@@ -31,14 +31,17 @@ type Orchestrator struct {
 	ReallocationHeuristic  ReallocationHeuristic
 	domains                Domains
 	cloud                  *Cloud
-	AllServices            []*Task
-	RunningServices        []*Task // change name of task to service
+	AllServices            Tasks
+	RunningServices        Tasks // change name of task to service
 }
 
-func NewOrchestrator(nodeSelectionHeuristic NodeSelectionHeuristic, reallocationHeuristic ReallocationHeuristic) *Orchestrator {
+func NewOrchestrator(nodeSelectionHeuristic NodeSelectionHeuristic, reallocationHeuristic ReallocationHeuristic, cloud *Cloud, domains Domains, services Tasks) *Orchestrator {
 	return &Orchestrator{
 		NodeSelectionHeuristic: nodeSelectionHeuristic,
 		ReallocationHeuristic:  reallocationHeuristic,
+		domains:                domains,
+		cloud:                  cloud,
+		AllServices:            services,
 	}
 }
 

@@ -2,6 +2,6 @@ package scaling
 
 type Event struct {
 	EventType       string
-	TargetDomainID  string
-	TargetServiceID TaskID
+	TargetDomainID  DomainID
+	TargetServiceID ServiceID
 }

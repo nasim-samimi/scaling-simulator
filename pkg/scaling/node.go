@@ -5,7 +5,7 @@ import (
 )
 
 type NodeName string
-type AllocatedTasks map[TaskID]*Task
+type AllocatedServices map[ServiceID]*Service
 
 type Node struct {
 	Cores                    Cores
@@ -14,7 +14,7 @@ type Node struct {
 	NodeAdmission            *AdmissionTest
 	Location                 Location
 	DomainID                 DomainID
-	AllocatedTasks           AllocatedTasks
+	AllocatedServices        AllocatedServices
 	AverageResidualBandwidth float64
 	TotalResidualBandwidth   float64
 }
@@ -30,7 +30,7 @@ func NewNode(cores Cores, heuristic Heuristic, nodeName NodeName) *Node {
 	}
 }
 
-func (n *Node) NodeAllocate(reqCpus uint64, reqBandwidth float64, task *Task) ([]CoreID, error) {
+func (n *Node) NodeAllocate(reqCpus uint64, reqBandwidth float64, service *Service) ([]CoreID, error) {
 	selectedCpus, err := n.NodeAdmission.Admission(reqCpus, reqBandwidth, n.Cores)
 	if err != nil {
 		return selectedCpus, err
@@ -40,40 +40,40 @@ func (n *Node) NodeAllocate(reqCpus uint64, reqBandwidth float64, task *Task) ([
 		core.ConsumedBandwidth += reqBandwidth
 		n.Cores[coreID] = core
 	}
-	n.AllocatedTasks[task.taskID] = task
+	n.AllocatedServices[service.serviceID] = service
 	return selectedCpus, nil
 }
 
-func (n *Node) IntraDomainReallocateTest(newTask *Task, oldTaskID TaskID) (bool, error) {
+func (n *Node) IntraDomainReallocateTest(newService *Service, oldServiceID ServiceID) (bool, error) {
 	NewCores := n.Cores
-	oldTaskCores := n.AllocatedTasks[oldTaskID].allocatedCoresEdge
-	bandwidth := n.AllocatedTasks[oldTaskID].standardMode.bandwidthEdge
-	for _, coreID := range oldTaskCores {
+	oldServiceCores := n.AllocatedServices[oldServiceID].allocatedCoresEdge
+	bandwidth := n.AllocatedServices[oldServiceID].standardMode.bandwidthEdge
+	for _, coreID := range oldServiceCores {
 		NewCores[coreID].ConsumedBandwidth -= bandwidth
 	}
 
-	_, err := n.NodeAdmission.Admission(newTask.standardMode.cpusEdge, newTask.standardMode.bandwidthEdge, NewCores)
+	_, err := n.NodeAdmission.Admission(newService.standardMode.cpusEdge, newService.standardMode.bandwidthEdge, NewCores)
 	if err == nil {
 		return true, nil
 	}
 	return false, err
 }
 
-func (n *Node) IntraNodeReallocateTest(newTask *Task, oldTaskID TaskID) (bool, error) {
+func (n *Node) IntraNodeReallocateTest(newService *Service, oldServiceID ServiceID) (bool, error) {
 	NewCores := n.Cores
-	oldTaskCores := n.AllocatedTasks[oldTaskID].allocatedCoresEdge
-	oldBandwidth := n.AllocatedTasks[oldTaskID].standardMode.bandwidthEdge
-	newBandwidth := newTask.standardMode.bandwidthEdge
-	for _, coreID := range oldTaskCores {
+	oldServiceCores := n.AllocatedServices[oldServiceID].allocatedCoresEdge
+	oldBandwidth := n.AllocatedServices[oldServiceID].standardMode.bandwidthEdge
+	newBandwidth := newService.standardMode.bandwidthEdge
+	for _, coreID := range oldServiceCores {
 		NewCores[coreID].ConsumedBandwidth -= oldBandwidth
 	}
 
-	possibleCores, err := n.NodeAdmission.Admission(newTask.standardMode.cpusEdge, newTask.standardMode.bandwidthEdge, NewCores)
+	possibleCores, err := n.NodeAdmission.Admission(newService.standardMode.cpusEdge, newService.standardMode.bandwidthEdge, NewCores)
 	if err == nil {
 		for _, coreID := range possibleCores {
 			NewCores[coreID].ConsumedBandwidth += newBandwidth
 		}
-		_, err = n.NodeAdmission.Admission(n.AllocatedTasks[oldTaskID].standardMode.cpusEdge, oldBandwidth, NewCores)
+		_, err = n.NodeAdmission.Admission(n.AllocatedServices[oldServiceID].standardMode.cpusEdge, oldBandwidth, NewCores)
 		if err == nil {
 			return true, nil
 		}
@@ -81,17 +81,17 @@ func (n *Node) IntraNodeReallocateTest(newTask *Task, oldTaskID TaskID) (bool, e
 	return false, err
 }
 
-func (n *Node) NodeDeallocate(taskID TaskID) bool {
-	cores := n.AllocatedTasks[taskID].allocatedCoresEdge
-	mode := n.AllocatedTasks[taskID].allocationMode
+func (n *Node) NodeDeallocate(serviceID ServiceID) bool {
+	cores := n.AllocatedServices[serviceID].allocatedCoresEdge
+	mode := n.AllocatedServices[serviceID].allocationMode
 	for _, core := range cores {
 		switch mode {
 		case StandardMode:
-			n.Cores[core].ConsumedBandwidth -= n.AllocatedTasks[taskID].standardMode.bandwidthEdge
+			n.Cores[core].ConsumedBandwidth -= n.AllocatedServices[serviceID].standardMode.bandwidthEdge
 		case ReducedMode:
-			n.Cores[core].ConsumedBandwidth -= n.AllocatedTasks[taskID].reducedMode.bandwidthEdge
+			n.Cores[core].ConsumedBandwidth -= n.AllocatedServices[serviceID].reducedMode.bandwidthEdge
 		}
 	}
-	delete(n.AllocatedTasks, taskID)
+	delete(n.AllocatedServices, serviceID)
 	return true
 }
