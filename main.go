@@ -20,7 +20,7 @@ func main() {
 
 // initialise the node as it turns on
 func initialise() {
-	CloudNodes := io.loadCloudFromCSV("data/cloud.csv")
+	CloudNodes := util.loadCloudFromCSV("data/cloud.csv")
 	cloud := src.NewCloud(CloudNodes)
 	// read domain csv files in domain folder
 	domainFilesNames, err := filepath.Glob("data/domain/*.csv")
@@ -29,7 +29,7 @@ func initialise() {
 	}
 	var domains []*src.Domain
 	for _, fileName := range domainFilesNames {
-		domainNodes := io.loadDomainFromCSV(fileName)
+		domainNodes := util.loadDomainFromCSV(fileName)
 		domains = append(domains, src.NewDomain(domainNodes))
 	}
 	// read task csv files in task folder
@@ -39,7 +39,7 @@ func initialise() {
 	}
 	var svcs []*src.Task
 	for _, fileName := range svcFilesNames {
-		svcs = append(svcs, io.loadTaskFromCSV(fileName))
+		svcs = append(svcs, util.loadTaskFromCSV(fileName))
 	}
 
 }
