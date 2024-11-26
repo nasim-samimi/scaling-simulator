@@ -1,5 +1,0 @@
-NodeName,numCores,partitioningHeuristic
-worker1,4,"worstFit"
-worker2,5,"worstFit"
-worker3,6,"worstFit"
-worker4,7,"worstFit"
