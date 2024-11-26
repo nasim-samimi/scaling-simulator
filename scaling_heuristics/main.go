@@ -14,14 +14,6 @@ func main() {
 	processEvents(orchestrator)
 }
 
-//here must initialise the orchestrator
-// turn on some nodes and initialise them
-// initialise domain
-// initialise cloud
-
-// initialise the task as it arrives
-
-// initialise the node as it turns on
 func initialise() *src.Orchestrator {
 	CloudNodes := util.LoadCloudFromCSV("data/cloud.csv")
 	cloud := src.NewCloud(CloudNodes)
@@ -37,7 +29,7 @@ func initialise() *src.Orchestrator {
 	}
 
 	svcs := util.LoadSVCFromCSV("data/svcs.csv")
-	nodeHeuristic, reallocHeuristic := util.LoadHeuristicFromCSV("data/heuristic.csv")
+	nodeHeuristic, reallocHeuristic := util.LoadHeuristicFromCSV("data/heuristics.csv")
 
 	// initialise the orchestrator
 	orchestrator := src.NewOrchestrator(src.NodeSelectionHeuristic(nodeHeuristic), src.ReallocationHeuristic(reallocHeuristic), cloud, domains, svcs)
@@ -48,7 +40,7 @@ func processEvents(orchestrator *src.Orchestrator) error {
 	events := util.LoadEventsFromCSV("data/events.csv")
 	qosPerCost := make([]int, 0)
 	for _, event := range events {
-		if event.EventType == "migration" {
+		if event.EventType == "allocate" {
 			allocated, qos, cost, err := orchestrator.Allocate(event.TargetDomainID, event.TargetServiceID)
 			if err != nil {
 				fmt.Println(err)
@@ -56,6 +48,9 @@ func processEvents(orchestrator *src.Orchestrator) error {
 			if allocated {
 				qosPerCost = append(qosPerCost, int(qos)/int(cost))
 			}
+		}
+		if event.EventType == "deallocate" {
+			fmt.Println("Deallocate")
 		}
 	}
 	return nil

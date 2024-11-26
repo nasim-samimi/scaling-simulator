@@ -66,13 +66,13 @@ func LoadSVCFromCSV(filePath string) src.Services {
 	for _, record := range records {
 		// Assuming CSV has columns: NodeID, ResidualBandwidth, Capacity
 		svcID := record[0]
+		importanceFactor, _ := strconv.Atoi(record[1])
 		standardBandwidth, _ := strconv.Atoi(record[2])
 		standardCores, _ := strconv.Atoi(record[3])
 		reducedEdgeBandwidth, _ := strconv.Atoi(record[4])
 		reducedEdgeCores, _ := strconv.Atoi(record[5])
 		reducedCloudBandwidth, _ := strconv.Atoi(record[6])
 		reducedCloudCores, _ := strconv.Atoi(record[7])
-		importanceFactor, _ := strconv.Atoi(record[8])
 
 		newSVC := src.NewService(float64(importanceFactor), src.ServiceID(svcID), float64(standardBandwidth), uint64(standardCores), float64(reducedEdgeBandwidth), uint64(reducedEdgeCores), float64(reducedCloudBandwidth), uint64(reducedCloudCores))
 
