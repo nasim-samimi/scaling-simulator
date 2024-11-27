@@ -1,5 +1,7 @@
 package scaling
 
+import "fmt"
+
 type reducedSched struct {
 	bandwidthEdge  float64
 	cpusEdge       uint64
@@ -19,6 +21,7 @@ func (s *standardSched) ServiceAllocate(node *Node) (bool, error) {
 
 	allocatedCores, err := node.NodeAllocate(s.cpusEdge, s.bandwidthEdge, s.service)
 	if err != nil {
+		fmt.Println("Error allocating service: ", err)
 		return allocated, err
 	}
 	s.service.allocatedNodeEdge = node.NodeName
@@ -100,6 +103,8 @@ type Service struct {
 	allocationMode           ServiceMode
 	AverageResidualBandwidth float64
 	TotalResidualBandwidth   float64
+	StandardQoS              QoS
+	ReducedQoS               QoS
 	// serviceModel           serviceModel
 }
 
@@ -121,6 +126,10 @@ func NewService(importanceFactor float64, serviceID ServiceID, standardBandwidth
 		standardMode:     standard,
 		// serviceModel:        serviceModel,
 	}
+	standardQoS := standard.bandwidthEdge * float64(standard.cpusEdge)
+	reducedQoS := reduced.bandwidthEdge*float64(reduced.cpusEdge) + reduced.bandwidthCloud*float64(reduced.cpusCloud)
+	service.StandardQoS = QoS(standardQoS)
+	service.ReducedQoS = QoS(reducedQoS)
 	service.reducedMode.service = service
 	service.standardMode.service = service
 	return service

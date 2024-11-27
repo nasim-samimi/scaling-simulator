@@ -3,10 +3,10 @@ import pandas as pd
 
 # we shouldn't be limited by the number of nodes in the cloud or the domain
 # so we choose high numbers
-numCloudNodes=100
-numDomain=10
-numDomainNodes=20
-numCoreRange=range(10,21,5)
+numCloudNodes=10
+numDomain=2
+numDomainNodes=2
+numCoreRange=[5]#range(10,21,5)
 print(numCoreRange)
 
 main_dir='data/'

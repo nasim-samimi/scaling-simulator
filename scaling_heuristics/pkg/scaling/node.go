@@ -41,6 +41,7 @@ func NewNode(cores Cores, heuristic Heuristic, nodeName NodeName) *Node {
 
 func (n *Node) NodeAllocate(reqCpus uint64, reqBandwidth float64, service *Service) ([]CoreID, error) {
 	selectedCpus, err := n.NodeAdmission.Admission(reqCpus, reqBandwidth, n.Cores)
+	fmt.Println("Selected CPUs: ", selectedCpus)
 	if err != nil {
 		return selectedCpus, err
 	}
@@ -51,6 +52,8 @@ func (n *Node) NodeAllocate(reqCpus uint64, reqBandwidth float64, service *Servi
 	}
 	fmt.Println("Service: ", service)
 	n.AllocatedServices[service.serviceID] = service
+	n.AverageResidualBandwidth = n.AverageResidualBandwidth + reqBandwidth*float64(reqCpus)/float64(len(n.Cores))
+	n.TotalResidualBandwidth = n.TotalResidualBandwidth + reqBandwidth*float64(reqCpus)
 	return selectedCpus, nil
 }
 

@@ -30,6 +30,12 @@ const (
 
 type QoS int
 type Cost int
+
+const (
+	CloudNodeCost Cost = 2
+	EdgeNodeCost  Cost = 1
+)
+
 type Orchestrator struct {
 	NodeSelectionHeuristic NodeSelectionHeuristic
 	ReallocationHeuristic  ReallocationHeuristic
@@ -37,18 +43,19 @@ type Orchestrator struct {
 	cloud                  *Cloud
 	AllServices            Services
 	RunningServices        Services // change name of service to service
-	Cost                   int
-	QoS                    int
+	Cost                   Cost
+	QoS                    QoS
 }
 
 func NewOrchestrator(nodeSelectionHeuristic NodeSelectionHeuristic, reallocationHeuristic ReallocationHeuristic, cloud *Cloud, domains Domains, services Services) *Orchestrator {
+	cost := Cost(len(domains))*EdgeNodeCost + CloudNodeCost
 	o := &Orchestrator{
 		NodeSelectionHeuristic: nodeSelectionHeuristic,
 		ReallocationHeuristic:  reallocationHeuristic,
 		domains:                domains,
 		cloud:                  cloud,
 		AllServices:            services,
-		Cost:                   0,
+		Cost:                   cost,
 		QoS:                    0,
 	}
 
@@ -67,7 +74,9 @@ func (o *Orchestrator) SelectNode(service *Service) *Node {
 }
 
 func (o *Orchestrator) allocateEdge(service *Service, node *Node) (bool, error) {
+	fmt.Println("Allocating service: ", service.serviceID, " to node: ", node.NodeName)
 	allocated, err := service.standardMode.ServiceAllocate(node)
+	fmt.Println("Allocated? ", allocated)
 	return allocated, err
 }
 
@@ -250,6 +259,7 @@ func (o *Orchestrator) SplitSched(service *Service, domain *Domain) (bool, bool,
 
 func (o *Orchestrator) edgePowerOffNode(domainID DomainID) bool {
 	for nodeName, node := range o.domains[domainID].ActiveNodes {
+		node.Status = Inactive
 		o.domains[domainID].InactiveNodes[nodeName] = node
 		delete(o.domains[domainID].ActiveNodes, nodeName)
 		break
@@ -261,6 +271,7 @@ func (o *Orchestrator) edgePowerOffNode(domainID DomainID) bool {
 
 func (o *Orchestrator) cloudPowerOffNode() bool {
 	for nodeName, node := range o.cloud.ActiveNodes {
+		node.Status = Inactive
 		o.cloud.InactiveNodes[nodeName] = node
 		delete(o.cloud.ActiveNodes, nodeName)
 		break
@@ -306,7 +317,8 @@ func (o *Orchestrator) Allocate(domainID DomainID, serviceID ServiceID) (bool, Q
 		node := domain.ActiveNodes[nodeName]
 		allocated, _ = o.allocateEdge(service, node)
 		if allocated {
-			return allocated, 0, 0, nil
+			o.QoS = o.QoS + service.StandardQoS
+			return allocated, o.QoS, o.Cost, nil
 		}
 	}
 

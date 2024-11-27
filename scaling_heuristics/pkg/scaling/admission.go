@@ -31,7 +31,7 @@ func (at *AdmissionTest) QuickFilter(reqCpus uint64, reqBandwidth float64, cores
 }
 
 func (at *AdmissionTest) Admission(reqCpus uint64, reqBandwidth float64, cores Cores) ([]CoreID, error) {
-	const cpuThreshold = 0.95
+	const cpuThreshold = 100
 	type scoredCpu struct {
 		cpu   CoreID
 		score float64

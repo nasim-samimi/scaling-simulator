@@ -4,14 +4,18 @@ import random
 
 #accept a range of values for services
 # variables: total number of services, importance, bandwidth, cores
-totalServices=500
+totalServices=10
 importanceRange=range(1,totalServices+1)
-sBandwidthRange=range(5,81,5)
-sCoresRange=range(2,11,2) # max number of cores should be matched with the number of cores in the system
+sBandwidthRange=range(5,81,1)
+sCoresRange=[2,3,4]#range(2,11,2) # max number of cores should be matched with the number of cores in the system
 
-
-def custom_probability(x):
-    return 0.7 if x < 40 else 0.3 
+totalDuration=100
+timeSteps=1
+serviceIDs=range(1,totalServices)
+domainIDs=[1,2]#range(1,11)
+eventDuration=range(10,51,5)
+eventTypes=['allocate']*8
+eventTypes.append(['deallocate']*2)
 
 
 def reduced(bandwidth:list,cores:list) -> tuple :
@@ -51,3 +55,20 @@ if __name__ == '__main__':
         service(totalServices,importanceRange,sBandwidthRange,sCoresRange,i)
     print('done')
 
+
+    t=0
+    i=0
+    event=[]
+    eventTime=[]
+    eventType=[]
+    allocatedServices=[]
+    df=pd.DataFrame(columns=['EventTime', 'EventType', 'ServiceID','DomainID'])
+    for t in range(0,totalDuration,timeSteps):
+        sID=random.choice(serviceIDs)
+        dID=random.choice(domainIDs)
+        duration=random.choice(eventDuration)
+        df.loc[i]=[t,'allocate',sID,dID]
+        df.loc[i+1]=[t+duration,'deallocate',sID,dID]
+        i+=2
+        df=df.sort_values(by='EventTime')
+    df.to_csv('data/events.csv', index=False)

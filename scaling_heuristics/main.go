@@ -10,11 +10,6 @@ import (
 	util "github.com/nasim-samimi/scaling-simulator/pkg/util"
 )
 
-func main() {
-	orchestrator := initialise()
-	processEvents(orchestrator)
-}
-
 func initialise() *src.Orchestrator {
 	CloudNodes := util.LoadCloudFromCSV("../data/cloud.csv")
 	cloud := src.NewCloud(CloudNodes)
@@ -42,7 +37,7 @@ func initialise() *src.Orchestrator {
 	return orchestrator
 }
 
-func processEvents(orchestrator *src.Orchestrator) error {
+func processEvents(orchestrator *src.Orchestrator) ([]int, error) {
 	events := util.LoadEventsFromCSV("../data/events.csv")
 	qosPerCost := make([]int, 0)
 	test := 0
@@ -58,13 +53,19 @@ func processEvents(orchestrator *src.Orchestrator) error {
 				qosPerCost = append(qosPerCost, int(qos)/int(cost))
 			}
 			test++
-			if test == 2 {
-				break
-			}
+			// if test == 2 {
+			// 	break
+			// }
 		}
 		if event.EventType == "deallocate" {
 			fmt.Println("Deallocate")
 		}
 	}
-	return nil
+	fmt.Println("QoS per Cost: ", qosPerCost)
+	return qosPerCost, nil
+}
+
+func main() {
+	orchestrator := initialise()
+	processEvents(orchestrator)
 }
