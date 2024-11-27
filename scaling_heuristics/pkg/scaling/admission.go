@@ -17,6 +17,19 @@ func NewAdmissionTest(core Cores, heuristic Heuristic) *AdmissionTest {
 	}
 }
 
+func (at *AdmissionTest) QuickFilter(reqCpus uint64, reqBandwidth float64, cores Cores) (bool, error) {
+	i := 0
+	for _, cpuinfo := range cores {
+		if cpuinfo.ConsumedBandwidth+reqBandwidth <= 100.0 {
+			i++
+		}
+		if reqCpus == uint64(i) {
+			return true, nil
+		}
+	}
+	return false, fmt.Errorf("not enough cpus to allocate")
+}
+
 func (at *AdmissionTest) Admission(reqCpus uint64, reqBandwidth float64, cores Cores) ([]CoreID, error) {
 	const cpuThreshold = 0.95
 	type scoredCpu struct {

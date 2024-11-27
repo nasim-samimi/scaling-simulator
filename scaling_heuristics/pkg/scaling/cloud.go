@@ -1,13 +1,15 @@
 package scaling
 
 type Cloud struct {
-	AllNodes Nodes
-	OnNodes  Nodes
+	AllNodes      Nodes
+	ActiveNodes   Nodes
+	InactiveNodes Nodes
 }
 
 func NewCloud(nodes Nodes) *Cloud {
 	return &Cloud{
-		AllNodes: nodes,
-		OnNodes:  make(Nodes),
+		AllNodes:      nodes,
+		ActiveNodes:   make(Nodes),
+		InactiveNodes: nodes,
 	}
 }

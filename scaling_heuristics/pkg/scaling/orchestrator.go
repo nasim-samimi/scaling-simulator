@@ -1,5 +1,10 @@
 package scaling
 
+import (
+	"fmt"
+	"sort"
+)
+
 type Heuristic string
 type NodeSelectionHeuristic Heuristic
 type ReallocationHeuristic Heuristic
@@ -37,7 +42,7 @@ type Orchestrator struct {
 }
 
 func NewOrchestrator(nodeSelectionHeuristic NodeSelectionHeuristic, reallocationHeuristic ReallocationHeuristic, cloud *Cloud, domains Domains, services Services) *Orchestrator {
-	return &Orchestrator{
+	o := &Orchestrator{
 		NodeSelectionHeuristic: nodeSelectionHeuristic,
 		ReallocationHeuristic:  reallocationHeuristic,
 		domains:                domains,
@@ -46,6 +51,13 @@ func NewOrchestrator(nodeSelectionHeuristic NodeSelectionHeuristic, reallocation
 		Cost:                   0,
 		QoS:                    0,
 	}
+
+	o.cloudPowerOnNode()
+	for domainID := range o.domains {
+		o.edgePowerOnNode(domainID)
+	}
+	return o
+
 }
 
 func (o *Orchestrator) SelectNode(service *Service) *Node {
@@ -125,24 +137,32 @@ func (o *Orchestrator) getReallocatedService(node *Node, t *Service) (ServiceID,
 	return selectedServiceID, nil
 }
 
-func (o *Orchestrator) sortNodes(nodes Nodes) ([]NodeName, error) {
+func (o *Orchestrator) sortNodes(nodes Nodes, service *Service) (map[NodeName]float64, error) {
 	// sort nodes according to the heuristic
-	// switch o.NodeSelectionHeuristic {
-	// case MinMin:
-	// 	for _, node := range nodes {
+	sortedNodes := make(map[NodeName]float64)
+	for _, node := range nodes {
+		// must filter out the nodes that do not pass admission test
+		available, _ := node.NodeAdmission.QuickFilter(service.standardMode.cpusEdge, service.standardMode.bandwidthEdge, node.Cores)
+		if available {
+			sortedNodes[node.NodeName] = node.AverageResidualBandwidth
+		}
+	}
+	nodeNames := make([]NodeName, 0, len(sortedNodes))
+	for nodeN := range sortedNodes {
+		nodeNames = append(nodeNames, nodeN)
+	}
+	switch o.NodeSelectionHeuristic {
+	case MinMin:
 
-	// 		for _, cores := range node.Cores {
-	// 			// sort cores
-	// 		}
-	// 	}
-	// case MaxMax:
-	// 	for _, node := range nodes {
-	// 		for _, cores := range node.Cores {
-	// 			// sort cores
-	// 		}
-	// 	}
-	// }
-	return nil, nil
+		sort.Slice(nodeNames, func(i, j int) bool {
+			return sortedNodes[nodeNames[i]] < sortedNodes[nodeNames[j]]
+		})
+	case MaxMax:
+		sort.Slice(nodeNames, func(i, j int) bool {
+			return sortedNodes[nodeNames[i]] > sortedNodes[nodeNames[j]]
+		})
+	}
+	return sortedNodes, nil
 }
 
 func (o *Orchestrator) intraNodeRealloc(service *Service, node *Node) (bool, error) {
@@ -151,7 +171,9 @@ func (o *Orchestrator) intraNodeRealloc(service *Service, node *Node) (bool, err
 	if err != nil {
 		return false, err
 	}
-
+	if reallocatedServiceID == "" {
+		return false, nil
+	}
 	reallocation, err := node.IntraNodeReallocateTest(service, reallocatedServiceID)
 	if err != nil {
 		return false, err
@@ -172,17 +194,20 @@ func (o *Orchestrator) intraNodeRealloc(service *Service, node *Node) (bool, err
 }
 
 func (o *Orchestrator) intraDomainRealloc(service *Service, node *Node, domain *Domain) (bool, error) {
-	searchingNodes := domain.OnNodes
+	searchingNodes := domain.ActiveNodes
 	delete(searchingNodes, node.NodeName)
-	sortedNodes, _ := o.sortNodes(searchingNodes)
+	sortedNodes, _ := o.sortNodes(searchingNodes, service)
 	otherServiceID, _ := o.getReallocatedService(node, service)
+	if otherServiceID == "" {
+		return false, nil
+	}
 	reallocated := false
 
 	otherService := node.AllocatedServices[otherServiceID]
 	reallocation, _ := node.IntraDomainReallocateTest(service, otherServiceID)
 	if reallocation {
-		for _, nodeName := range sortedNodes {
-			otherNode := domain.OnNodes[nodeName]
+		for nodeName := range sortedNodes {
+			otherNode := domain.ActiveNodes[nodeName]
 
 			allocatedCore, _ := otherNode.NodeAdmission.Admission(service.standardMode.cpusEdge, service.standardMode.bandwidthEdge, otherNode.Cores)
 			if allocatedCore != nil {
@@ -201,20 +226,20 @@ func (o *Orchestrator) intraDomainRealloc(service *Service, node *Node, domain *
 
 func (o *Orchestrator) SplitSched(service *Service, domain *Domain) (bool, bool, error) {
 	// edge-cloud split (has qos degradation) -- there is no cloud only apparently
-	sortedNodes, _ := o.sortNodes(domain.OnNodes)
+	sortedNodes, _ := o.sortNodes(domain.ActiveNodes, service)
 	edgeAllocated := false
 	cloudAllocated := false
-	for _, edgeNodeName := range sortedNodes {
-		node := domain.OnNodes[edgeNodeName]
+	for edgeNodeName := range sortedNodes {
+		node := domain.ActiveNodes[edgeNodeName]
 		edgeAllocated, _ = service.reducedMode.ServiceAllocate(node, edgeLoc)
 		if edgeAllocated {
 			break
 		}
 	}
 
-	sortedNodes, _ = o.sortNodes(o.cloud.OnNodes)
-	for _, cloudNodeName := range sortedNodes {
-		node := o.cloud.OnNodes[cloudNodeName]
+	sortedNodes, _ = o.sortNodes(o.cloud.ActiveNodes, service)
+	for cloudNodeName := range sortedNodes {
+		node := o.cloud.ActiveNodes[cloudNodeName]
 		cloudAllocated, _ = service.reducedMode.ServiceAllocate(node, cloudLoc)
 		if cloudAllocated {
 			break
@@ -223,18 +248,50 @@ func (o *Orchestrator) SplitSched(service *Service, domain *Domain) (bool, bool,
 	return edgeAllocated, cloudAllocated, nil
 }
 
-func (o *Orchestrator) PowerOffNode() bool {
+func (o *Orchestrator) edgePowerOffNode(domainID DomainID) bool {
+	for nodeName, node := range o.domains[domainID].ActiveNodes {
+		o.domains[domainID].InactiveNodes[nodeName] = node
+		delete(o.domains[domainID].ActiveNodes, nodeName)
+		break
+	}
+	fmt.Println("ActiveNodes and Inactive nodes after powering off:")
+	fmt.Println(o.domains[domainID].ActiveNodes)
 	return true
 }
 
-func (o *Orchestrator) edgePowerOnNode() bool {
-	// add a node id and initialise it
-	// NewNode()
+func (o *Orchestrator) cloudPowerOffNode() bool {
+	for nodeName, node := range o.cloud.ActiveNodes {
+		o.cloud.InactiveNodes[nodeName] = node
+		delete(o.cloud.ActiveNodes, nodeName)
+		break
+	}
+	fmt.Println("ActiveNodes and Inactive nodes after powering off:")
+	fmt.Println(o.cloud.ActiveNodes)
+	return true
+}
+
+func (o *Orchestrator) edgePowerOnNode(domainID DomainID) bool {
+	for nodeName, node := range o.domains[domainID].InactiveNodes {
+		node.Status = Active
+		o.domains[domainID].ActiveNodes[nodeName] = node
+		delete(o.domains[domainID].InactiveNodes, nodeName)
+		break
+	}
+	fmt.Println("ActiveNodes and Inactive nodes after powering on:")
+	fmt.Println(o.domains[domainID].ActiveNodes)
+
 	return true
 }
 func (o *Orchestrator) cloudPowerOnNode() bool {
-	// add a node id and initialise it
-	// NewNode()
+	for nodeName, node := range o.cloud.InactiveNodes {
+		node.Status = Active
+		o.cloud.ActiveNodes[nodeName] = node
+		delete(o.cloud.InactiveNodes, nodeName)
+		break
+	}
+	fmt.Println("ActiveNodes and Inactive nodes after powering on:")
+	fmt.Println(o.cloud.ActiveNodes)
+
 	return true
 }
 
@@ -243,25 +300,25 @@ func (o *Orchestrator) Allocate(domainID DomainID, serviceID ServiceID) (bool, Q
 	allocated := false
 	domain := o.domains[domainID]
 	service := o.AllServices[serviceID]
-	// sort nodes once here
-	sortedNodes, _ := o.sortNodes(domain.OnNodes)
-	for _, nodeName := range sortedNodes {
-		node := domain.OnNodes[nodeName]
+
+	sortedNodes, _ := o.sortNodes(domain.ActiveNodes, service)
+	for nodeName := range sortedNodes {
+		node := domain.ActiveNodes[nodeName]
 		allocated, _ = o.allocateEdge(service, node)
 		if allocated {
 			return allocated, 0, 0, nil
 		}
 	}
 
-	for _, nodeName := range sortedNodes {
-		node := domain.OnNodes[nodeName]
+	for nodeName := range sortedNodes {
+		node := domain.ActiveNodes[nodeName]
 		allocated, _ := o.intraNodeRealloc(service, node)
 		if allocated {
 			return allocated, 0, 0, nil
 		}
 	}
-	for _, nodeName := range sortedNodes {
-		node := domain.OnNodes[nodeName]
+	for nodeName := range sortedNodes {
+		node := domain.ActiveNodes[nodeName]
 		allocated, _ := o.intraDomainRealloc(service, node, domain)
 		if allocated {
 			return allocated, 0, 0, nil
@@ -272,7 +329,7 @@ func (o *Orchestrator) Allocate(domainID DomainID, serviceID ServiceID) (bool, Q
 		allocated = true
 	} else {
 		if !edgeAllocated {
-			o.edgePowerOnNode()
+			o.edgePowerOnNode(domain.DomainID)
 		}
 		if !cloudAllocated {
 			o.cloudPowerOnNode()

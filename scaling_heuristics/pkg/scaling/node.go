@@ -1,11 +1,15 @@
 package scaling
 
-import (
-	"fmt"
-)
+import "fmt"
 
 type NodeName string
 type AllocatedServices map[ServiceID]*Service
+type NodeStatus string
+
+const (
+	Active   NodeStatus = "Active"
+	Inactive NodeStatus = "Inactive"
+)
 
 type Node struct {
 	Cores                    Cores
@@ -17,16 +21,21 @@ type Node struct {
 	AllocatedServices        AllocatedServices
 	AverageResidualBandwidth float64
 	TotalResidualBandwidth   float64
+	Status                   NodeStatus
 }
 
 func NewNode(cores Cores, heuristic Heuristic, nodeName NodeName) *Node {
 	admissionTest := NewAdmissionTest(cores, heuristic)
-	fmt.Println("Node Admission Test: ", admissionTest)
+	// fmt.Println("Node Admission Test Cores: ", admissionTest.Cores[CoreID("core-0")])
 	return &Node{
-		Cores:            cores,
-		ReallocHeuristic: heuristic,
-		NodeName:         nodeName,
-		NodeAdmission:    admissionTest,
+		Cores:                    cores,
+		ReallocHeuristic:         heuristic,
+		NodeName:                 nodeName,
+		NodeAdmission:            admissionTest,
+		Status:                   Inactive,
+		AverageResidualBandwidth: 0,
+		TotalResidualBandwidth:   0,
+		AllocatedServices:        make(AllocatedServices),
 	}
 }
 
@@ -40,6 +49,7 @@ func (n *Node) NodeAllocate(reqCpus uint64, reqBandwidth float64, service *Servi
 		core.ConsumedBandwidth += reqBandwidth
 		n.Cores[coreID] = core
 	}
+	fmt.Println("Service: ", service)
 	n.AllocatedServices[service.serviceID] = service
 	return selectedCpus, nil
 }

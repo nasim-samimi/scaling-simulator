@@ -18,6 +18,11 @@ func loadNodesFromCSV(filePath string) src.Nodes {
 	defer file.Close()
 
 	reader := csv.NewReader(file)
+	// Read and ignore the first row (headers)
+	_, err = reader.Read()
+	if err != nil {
+		log.Fatalf("Unable to read header row from CSV file %s, %v", filePath, err)
+	}
 	records, err := reader.ReadAll()
 	fmt.Println(records)
 	if err != nil {
@@ -56,6 +61,11 @@ func LoadSVCFromCSV(filePath string) src.Services {
 	defer file.Close()
 
 	reader := csv.NewReader(file)
+	// Read and ignore the first row (headers)
+	_, err = reader.Read()
+	if err != nil {
+		log.Fatalf("Unable to read header row from CSV file %s, %v", filePath, err)
+	}
 	records, err := reader.ReadAll()
 	fmt.Println(records)
 	if err != nil {
@@ -90,6 +100,11 @@ func LoadHeuristicFromCSV(filePath string) (src.Heuristic, src.Heuristic) {
 	defer file.Close()
 
 	reader := csv.NewReader(file)
+	// Read and ignore the first row (headers)
+	_, err = reader.Read()
+	if err != nil {
+		log.Fatalf("Unable to read header row from CSV file %s, %v", filePath, err)
+	}
 	records, err := reader.ReadAll()
 	fmt.Println(records)
 	if err != nil {
@@ -99,8 +114,8 @@ func LoadHeuristicFromCSV(filePath string) (src.Heuristic, src.Heuristic) {
 	var nodeHeu, reallocHeu string
 	for _, record := range records {
 		// Assuming CSV has columns: NodeID, ResidualBandwidth, Capacity
-		nodeHeu = record[0]
-		reallocHeu = record[1]
+		nodeHeu = record[1]
+		reallocHeu = record[0]
 		break
 	}
 	return src.Heuristic(nodeHeu), src.Heuristic(reallocHeu)
@@ -117,8 +132,13 @@ func LoadEventsFromCSV(filePath string) []src.Event {
 	defer file.Close()
 
 	reader := csv.NewReader(file)
+	// Read and ignore the first row (headers)
+	_, err = reader.Read()
+	if err != nil {
+		log.Fatalf("Unable to read header row from CSV file %s, %v", filePath, err)
+	}
 	records, err := reader.ReadAll()
-	fmt.Println(records)
+	// fmt.Println(records)
 	if err != nil {
 		log.Fatalf("Unable to parse CSV file %s, %v", filePath, err)
 	}
@@ -126,14 +146,16 @@ func LoadEventsFromCSV(filePath string) []src.Event {
 	var events []src.Event
 	for _, record := range records {
 		// Assuming CSV has columns: EventType, TargetNodeID, Details
-		eventType := record[0]
-		targetDomainID := record[1]
+		eventTime, _ := strconv.Atoi(record[0])
+		eventType := record[1]
 		TargetServiceID := record[2]
+		targetDomainID := record[3]
 
 		event := src.Event{
 			EventType:       eventType,
 			TargetDomainID:  src.DomainID(targetDomainID),
 			TargetServiceID: src.ServiceID(TargetServiceID),
+			EventTime:       eventTime,
 		}
 		events = append(events, event)
 	}
