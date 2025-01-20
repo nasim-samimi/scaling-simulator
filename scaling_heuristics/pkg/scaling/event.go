@@ -4,6 +4,7 @@ package scaling
 
 type Event struct {
 	EventTime       int
+	EventID         ServiceID
 	EventType       string
 	TargetDomainID  DomainID
 	TargetServiceID ServiceID

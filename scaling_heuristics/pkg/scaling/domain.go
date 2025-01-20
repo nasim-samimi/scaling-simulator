@@ -13,11 +13,14 @@ type Domain struct {
 
 type Domains map[DomainID]*Domain
 
-func NewDomain(nodes Nodes, domainID DomainID) *Domain {
+func NewDomain(nodes Nodes, reservedNodes Nodes, domainID DomainID) *Domain {
+	// fmt.Println("Active Nodes in new domain: ", nodes)
+	// fmt.Println("Reserved Nodes in new domain: ", reservedNodes)
+	// fmt.Println("Domain ID in new domain: ", domainID)
 	return &Domain{
 		AllNodes:          nodes,
-		ActiveNodes:       make(Nodes),
-		InactiveNodes:     nodes,
+		ActiveNodes:       nodes,
+		InactiveNodes:     reservedNodes,
 		DomainID:          domainID,
 		AllocatedServices: nil,
 	}

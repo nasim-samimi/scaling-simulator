@@ -1,0 +1,2 @@
+ReallocationHeuristic,NodeSelectionHeuristic,PartitioningHeuristic
+HBCI,MinMin,firstfit

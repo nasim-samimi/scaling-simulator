@@ -55,7 +55,6 @@ if __name__ == '__main__':
         service(totalServices,importanceRange,sBandwidthRange,sCoresRange,i)
     print('done')
 
-
     t=0
     i=0
     event=[]

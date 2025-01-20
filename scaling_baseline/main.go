@@ -3,60 +3,92 @@ package main
 import (
 	"fmt"
 	"log"
+	"math"
 	"path/filepath"
+	"strconv"
+	"time"
 
 	src "github.com/nasim-samimi/scaling-simulator/pkg/scaling"
 	util "github.com/nasim-samimi/scaling-simulator/pkg/util"
 )
 
-func main() {
-	orchestrator := initialise()
-	processEvents(orchestrator)
-}
-
-//here must initialise the orchestrator
-// turn on some nodes and initialise them
-// initialise domain
-// initialise cloud
-
-// initialise the task as it arrives
-
-// initialise the node as it turns on
 func initialise() *src.Orchestrator {
-	CloudNodes := util.LoadCloudFromCSV("data/cloud.csv")
-	cloud := src.NewCloud(CloudNodes)
+	CloudNodes, reservedCloudNodes := util.LoadCloudFromCSV("../data/cloud.csv")
+	cloud := src.NewCloud(CloudNodes, reservedCloudNodes)
 	// read domain csv files in domain folder
-	domainFilesNames, err := filepath.Glob("data/domain/*.csv")
+	svcs := util.LoadSVCFromCSV("../data/services/services0.csv")
+	nodeHeuristic, reallocHeuristic, partitionHeuristic := util.LoadHeuristicFromCSV("../data/heuristics.csv")
+	fmt.Println("Node Heuristic:", nodeHeuristic)
+	fmt.Println("Realloc Heuristic:", reallocHeuristic)
+
+	domainFilesNames, err := filepath.Glob("../data/domainNodes/" + string(partitionHeuristic) + "/" + string(nodeHeuristic) + "/*.csv")
+	fmt.Println("../data/domainNodes/" + string(nodeHeuristic) + "/" + string(partitionHeuristic))
+	fmt.Println(domainFilesNames)
 	if err != nil {
 		log.Fatal(err)
 	}
 	domains := make(src.Domains)
+	i := 0
 	for _, fileName := range domainFilesNames {
-		domainNodes := util.LoadDomainFromCSV(fileName)
-		domains[src.DomainID(fileName)] = src.NewDomain(domainNodes, src.DomainID(fileName))
+		id := strconv.Itoa(i)
+		i++
+		domainNodes, reservedNodes := util.LoadDomainFromCSV(fileName)
+		domains[src.DomainID(id)] = src.NewDomain(domainNodes, reservedNodes, src.DomainID(id))
 	}
 
-	svcs := util.LoadSVCFromCSV("data/svcs.csv")
-	nodeHeuristic, reallocHeuristic := util.LoadHeuristicFromCSV("data/heuristic.csv")
-
 	// initialise the orchestrator
-	orchestrator := src.NewOrchestrator(src.NodeSelectionHeuristic(nodeHeuristic), src.ReallocationHeuristic(reallocHeuristic), cloud, domains, svcs)
+	orchestrator := src.NewOrchestrator(src.NodeSelectionHeuristic(nodeHeuristic), src.ReallocationHeuristic(reallocHeuristic), src.Heuristic(partitionHeuristic), cloud, domains, svcs)
 	return orchestrator
 }
 
 func processEvents(orchestrator *src.Orchestrator) error {
-	events := util.LoadEventsFromCSV("data/events.csv")
-	qosPerCost := make([]int, 0)
+	events := util.LoadEventsFromCSV("../data/events_1.csv")
+	qosPerCost := make([]float64, 0)
+	durations := make([]float64, 0)
+	test := 0
 	for _, event := range events {
-		if event.EventType == "migration" {
-			allocated, qos, cost, err := orchestrator.Allocate(event.TargetDomainID, event.TargetServiceID)
+		eventID := event.EventID
+		fmt.Println("event:", event)
+		fmt.Println("service:", orchestrator.AllServices[event.TargetServiceID])
+		if event.EventType == "allocate" {
+			startTime := time.Now()
+			allocated, err := orchestrator.Allocate(event.TargetDomainID, event.TargetServiceID, eventID)
+			duration := time.Since(startTime)
+			fmt.Println("Allocate:", allocated, orchestrator.QoS, orchestrator.Cost)
+			fmt.Println("Time to allocate:", duration)
 			if err != nil {
 				fmt.Println(err)
 			}
 			if allocated {
-				qosPerCost = append(qosPerCost, int(qos)/int(cost))
+				qosPerCost = append(qosPerCost, math.Round(float64(orchestrator.QoS)*1000/float64(orchestrator.Cost))/1000)
+				durations = append(durations, float64(duration.Microseconds())/1000)
+				fmt.Println("/////////////////////")
+				fmt.Println("service is allocated ")
+				fmt.Println("/////////////////////")
+			} else {
+				fmt.Println("/////////////////////")
+				fmt.Println("service is rejected ")
+				fmt.Println("/////////////////////")
 			}
+			test++
+		}
+		if event.EventType == "deallocate" {
+			fmt.Println("/////////////////////")
+			fmt.Println("Deallocate")
+			orchestrator.Deallocate(event.TargetDomainID, event.TargetServiceID, eventID)
+			fmt.Println("/////////////////////")
 		}
 	}
+	fmt.Println("QoS per Cost: ", qosPerCost)
+	// save to csv file
+	name := string(orchestrator.NodeSelectionHeuristic) + "_" + string(orchestrator.PartitionHeuristic)
+	util.WriteToCsv("../experiments/results/baseline/qosPerCost_"+name+".csv", qosPerCost)
+	util.WriteToCsv("../experiments/results/baseline/runtimes_"+name+".csv", durations)
+	fmt.Println("Durations: ", durations)
 	return nil
+}
+
+func main() {
+	orchestrator := initialise()
+	processEvents(orchestrator)
 }

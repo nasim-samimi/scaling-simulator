@@ -1,3 +1,0 @@
-NodeName,NumCores,PartitioningHeuristic
-domain0_worker0,5,firstfit
-domain0_worker1,5,firstfit

@@ -1,2 +1,5 @@
-ReallocationHeuristic,NodeSelectionHeuristic
-HBI,MaxMax
+ReallocationHeuristic,NodeSelectionHeuristic,PartitioningHeuristic
+HBIcC,MaxMax,bestfit
+
+
+

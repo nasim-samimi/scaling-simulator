@@ -20,6 +20,14 @@ const (
 	HBI   ReallocationHeuristic = "HBI"
 	HCI   ReallocationHeuristic = "HCI"
 	HBCI  ReallocationHeuristic = "HBCI"
+	HB    ReallocationHeuristic = "HB"
+	HC    ReallocationHeuristic = "HC"
+	HBC   ReallocationHeuristic = "HBC"
+	LB    ReallocationHeuristic = "LB"
+	LC    ReallocationHeuristic = "LC"
+	LBC   ReallocationHeuristic = "LBC"
+	LBHC  ReallocationHeuristic = "LBHC"
+	HBLC  ReallocationHeuristic = "HBLC"
 	HBIcC ReallocationHeuristic = "HBIcC"
 )
 
@@ -30,39 +38,50 @@ const (
 
 type QoS int
 type Cost int
+type EventID string
 
 const (
-	CloudNodeCost Cost = 2
+	CloudNodeCost Cost = 3
 	EdgeNodeCost  Cost = 1
 )
 
 type Orchestrator struct {
 	NodeSelectionHeuristic NodeSelectionHeuristic
 	ReallocationHeuristic  ReallocationHeuristic
-	domains                Domains
-	cloud                  *Cloud
+	PartitionHeuristic     Heuristic
+	Domains                Domains
+	Cloud                  *Cloud
 	AllServices            Services
 	RunningServices        Services // change name of service to service
 	Cost                   Cost
 	QoS                    QoS
 }
 
-func NewOrchestrator(nodeSelectionHeuristic NodeSelectionHeuristic, reallocationHeuristic ReallocationHeuristic, cloud *Cloud, domains Domains, services Services) *Orchestrator {
-	cost := Cost(len(domains))*EdgeNodeCost + CloudNodeCost
+func NewOrchestrator(nodeSelectionHeuristic NodeSelectionHeuristic, reallocationHeuristic ReallocationHeuristic, partitionHeuristic Heuristic, cloud *Cloud, domains Domains, services Services) *Orchestrator {
+	domainCost := Cost(0)
+	for _, d := range domains {
+		domainCost += Cost(len(d.ActiveNodes)) * EdgeNodeCost
+	}
+	fmt.Println("Domain cost:", domainCost)
+	cloudCost := Cost(len(cloud.ActiveNodes)) * CloudNodeCost
+
+	cost := domainCost + cloudCost
 	o := &Orchestrator{
 		NodeSelectionHeuristic: nodeSelectionHeuristic,
 		ReallocationHeuristic:  reallocationHeuristic,
-		domains:                domains,
-		cloud:                  cloud,
+		PartitionHeuristic:     partitionHeuristic,
+		Domains:                domains,
+		Cloud:                  cloud,
 		AllServices:            services,
 		Cost:                   cost,
 		QoS:                    0,
+		RunningServices:        make(Services),
 	}
 
 	o.cloudPowerOnNode()
-	for domainID := range o.domains {
-		o.edgePowerOnNode(domainID)
-	}
+	// for domainID := range o.Domains {
+	// 	o.edgePowerOnNode(domainID)
+	// }
 	return o
 
 }
@@ -73,284 +92,436 @@ func (o *Orchestrator) SelectNode(service *Service) *Node {
 	return node
 }
 
-func (o *Orchestrator) allocateEdge(service *Service, node *Node) (bool, error) {
-	fmt.Println("Allocating service: ", service.serviceID, " to node: ", node.NodeName)
-	allocated, err := service.standardMode.ServiceAllocate(node)
+func (o *Orchestrator) allocateEdge(service *Service, node *Node, eventID ServiceID) (bool, *Service, error) {
+	fmt.Println("Allocating standard service: ", service.serviceID, " to node: ", node.NodeName)
+	allocated, svc, err := service.StandardMode.ServiceAllocate(node, eventID)
+	fmt.Println("service:", svc)
 	fmt.Println("Allocated? ", allocated)
-	return allocated, err
+	return allocated, svc, err
 }
 
 func (o *Orchestrator) getReallocatedService(node *Node, t *Service) (ServiceID, error) {
-	var selectedServiceID ServiceID
-	switch o.ReallocationHeuristic {
-	case HBI:
-		hbi := 0.0
-		for _, service := range node.AllocatedServices {
-			if service.allocationMode == StandardMode {
-				bi := float64(service.importanceFactor) * service.standardMode.bandwidthEdge
-				if bi > hbi {
-					selectedServiceID = service.serviceID
-					hbi = bi
-				}
-			}
-		}
-	case HCI:
-		hci := float64(0)
+	var selectedEventID ServiceID
+	var bestScore float64
 
-		for _, service := range node.AllocatedServices {
-			if service.allocationMode == StandardMode {
-				ci := service.importanceFactor * float64(service.standardMode.cpusEdge)
-				if ci > hci {
-					selectedServiceID = service.serviceID
-					hci = ci
-				}
+	calculateScore := func(service *Service, heuristic ReallocationHeuristic) float64 {
+		switch heuristic {
+		case HB:
+			return (service.StandardMode.bandwidthEdge)
+		case HC:
+			return float64(service.StandardMode.cpusEdge)
+		case HBC:
+			return 1 / (service.StandardMode.bandwidthEdge * float64(service.StandardMode.cpusEdge))
+		case LB:
+			return (1 / service.StandardMode.bandwidthEdge)
+		case LC:
+			return 1 / float64(service.StandardMode.cpusEdge)
+		case LBC:
+			return (service.StandardMode.bandwidthEdge * float64(service.StandardMode.cpusEdge))
+		case HBI:
+			return (service.ImportanceFactor * service.StandardMode.bandwidthEdge)
+		case HCI:
+			return service.ImportanceFactor * float64(service.StandardMode.cpusEdge)
+		case HBCI:
+			return service.ImportanceFactor * (service.StandardMode.bandwidthEdge * float64(service.StandardMode.cpusEdge))
+		case HBLC:
+			return (service.StandardMode.bandwidthEdge * float64(1/service.StandardMode.cpusEdge))
+		case LBHC:
+			return (1 / service.StandardMode.bandwidthEdge * float64(service.StandardMode.cpusEdge))
+		case HBIcC:
+			if service.StandardMode.cpusEdge >= t.StandardMode.cpusEdge {
+				return service.StandardMode.bandwidthEdge
 			}
+			// if service.StandardMode.bandwidthEdge >= t.StandardMode.bandwidthEdge {
+			// 	return 1 / float64(service.StandardMode.cpusEdge)
+			// }
 		}
-	case HBCI:
-		hbci := 0.0
-		for _, service := range node.AllocatedServices {
-			if service.allocationMode == StandardMode {
-				bci := float64(service.importanceFactor) * service.standardMode.bandwidthEdge * float64(service.standardMode.cpusEdge)
-				if bci > hbci {
-					selectedServiceID = service.serviceID
-					hbci = bci
-				}
-			}
-		}
-	case HBIcC:
-		hbic := 0.0
-		for _, service := range node.AllocatedServices {
-			if service.allocationMode == StandardMode {
-				if service.standardMode.cpusEdge > t.standardMode.cpusEdge {
-					bic := float64(service.importanceFactor) * service.standardMode.bandwidthEdge * float64(service.standardMode.cpusEdge)
-					if bic > hbic {
-						selectedServiceID = service.serviceID
-						hbic = bic
-					}
-				}
-			}
-		}
+		return 0
+	}
 
-	default: // HBI
-		hbi := 0.0
-		for _, service := range node.AllocatedServices {
-			if service.allocationMode == StandardMode {
-				bi := float64(service.importanceFactor) * service.standardMode.bandwidthEdge
-				if bi > hbi {
-					selectedServiceID = service.serviceID
-					hbi = bi
-				}
+	for eventID, service := range node.AllocatedServices {
+		if service.AllocationMode == StandardMode {
+			score := calculateScore(service, o.ReallocationHeuristic)
+			if score > bestScore {
+				bestScore = score
+				selectedEventID = eventID
 			}
 		}
 	}
-	return selectedServiceID, nil
+
+	if selectedEventID == "" {
+		return "", fmt.Errorf("no suitable service found for reallocation using heuristic %s", o.ReallocationHeuristic)
+	}
+
+	return selectedEventID, nil
 }
 
-func (o *Orchestrator) sortNodes(nodes Nodes, service *Service) (map[NodeName]float64, error) {
+func (o *Orchestrator) sortNodes(nodes Nodes, serviceCpus uint64, serviceBandwidth float64) ([]NodeName, error) {
 	// sort nodes according to the heuristic
-	sortedNodes := make(map[NodeName]float64)
+	fmt.Println("inside sort nodes")
+	fmt.Println("checking the active nodes for sorting:", nodes)
+	sortedNodes := []Node{}
 	for _, node := range nodes {
 		// must filter out the nodes that do not pass admission test
-		available, _ := node.NodeAdmission.QuickFilter(service.standardMode.cpusEdge, service.standardMode.bandwidthEdge, node.Cores)
+		available, _ := node.NodeAdmission.QuickFilter(serviceCpus, serviceBandwidth, node.Cores)
 		if available {
-			sortedNodes[node.NodeName] = node.AverageResidualBandwidth
+			sortedNodes = append(sortedNodes, *node)
 		}
+		for _, core := range node.Cores {
+			fmt.Println("Node cores: ", core)
+		}
+		fmt.Println("Node: ", node.NodeName, " Average Residual Bandwidth: ", node.AverageResidualBandwidth, "total residual bandwidth: ", node.TotalResidualBandwidth)
 	}
-	nodeNames := make([]NodeName, 0, len(sortedNodes))
-	for nodeN := range sortedNodes {
-		nodeNames = append(nodeNames, nodeN)
-	}
+
+	fmt.Println("inside switch case", o.NodeSelectionHeuristic)
 	switch o.NodeSelectionHeuristic {
+
 	case MinMin:
 
-		sort.Slice(nodeNames, func(i, j int) bool {
-			return sortedNodes[nodeNames[i]] < sortedNodes[nodeNames[j]]
+		sort.Slice(sortedNodes, func(i, j int) bool {
+			return sortedNodes[i].AverageResidualBandwidth < sortedNodes[j].AverageResidualBandwidth
 		})
 	case MaxMax:
-		sort.Slice(nodeNames, func(i, j int) bool {
-			return sortedNodes[nodeNames[i]] > sortedNodes[nodeNames[j]]
+		sort.Slice(sortedNodes, func(i, j int) bool {
+			return sortedNodes[i].AverageResidualBandwidth > sortedNodes[j].AverageResidualBandwidth
 		})
 	}
-	return sortedNodes, nil
+	// Extract sorted NodeNames
+	sortedNodeNames := make([]NodeName, len(sortedNodes))
+	for i, node := range sortedNodes {
+		sortedNodeNames[i] = node.NodeName
+	}
+	return sortedNodeNames, nil
 }
 
-func (o *Orchestrator) intraNodeRealloc(service *Service, node *Node) (bool, error) {
-	reallocatedService := &Service{}
-	reallocatedServiceID, err := o.getReallocatedService(node, service)
-	if err != nil {
-		return false, err
+func (o *Orchestrator) sortNodesNoFilter(nodes Nodes) ([]NodeName, error) {
+	// sort nodes according to the heuristic
+	sortedNodes := []Node{}
+	for _, node := range nodes {
+		// must filter out the nodes that do not pass admission test
+		sortedNodes = append(sortedNodes, *node)
+		fmt.Println("Node: ", node.NodeName, " Average Residual Bandwidth: ", node.AverageResidualBandwidth, "total residual bandwidth: ", node.TotalResidualBandwidth)
 	}
-	if reallocatedServiceID == "" {
+
+	switch o.NodeSelectionHeuristic {
+
+	case MinMin:
+
+		sort.Slice(sortedNodes, func(i, j int) bool {
+			return sortedNodes[i].AverageResidualBandwidth < sortedNodes[j].AverageResidualBandwidth
+		})
+	case MaxMax:
+		sort.Slice(sortedNodes, func(i, j int) bool {
+			return sortedNodes[i].AverageResidualBandwidth > sortedNodes[j].AverageResidualBandwidth
+		})
+	}
+	// Extract sorted NodeNames
+	sortedNodeNames := make([]NodeName, len(sortedNodes))
+	for i, node := range sortedNodes {
+		sortedNodeNames[i] = node.NodeName
+	}
+	return sortedNodeNames, nil
+}
+
+func (o *Orchestrator) intraNodeRealloc(service *Service, node *Node, eventID ServiceID, reallocatedEventID ServiceID, NewCores Cores) (bool, error) {
+
+	if reallocatedEventID == "" {
 		return false, nil
 	}
-	reallocation, err := node.IntraNodeReallocateTest(service, reallocatedServiceID)
+	oldBandwidth := o.RunningServices[reallocatedEventID].StandardMode.bandwidthEdge
+	_, err := node.NodeAdmission.Admission(node.AllocatedServices[reallocatedEventID].StandardMode.cpusEdge, oldBandwidth, NewCores)
+
 	if err != nil {
 		return false, err
 	}
-	if reallocation {
-		return true, nil
-	}
+	fmt.Println("show the status of the intra node reallocation:", true)
 
-	reallocatedService, err = service.standardMode.ServiceDeallocate(node.AllocatedServices[reallocatedServiceID], node)
+	reallocatedService := node.AllocatedServices[reallocatedEventID]
+	_, err = service.StandardMode.ServiceDeallocate(reallocatedEventID, node)
 	if err != nil {
 		return false, err
 	}
-
-	service.standardMode.ServiceAllocate(node)
-	reallocatedService.standardMode.ServiceAllocate(node)
+	_, newSvc, _ := service.StandardMode.ServiceAllocate(node, eventID)
+	fmt.Println("in inra node reallocation, node average residual bandwidth after first allocation: ", node.AverageResidualBandwidth)
+	_, oldSvc, _ := reallocatedService.StandardMode.ServiceAllocate(node, reallocatedEventID)
+	fmt.Println("Allocated services in the end: ", node.AllocatedServices)
+	o.RunningServices[reallocatedEventID] = oldSvc
+	o.RunningServices[eventID] = newSvc
+	fmt.Println("intra node reallocation completed")
 
 	return true, nil
 }
 
-func (o *Orchestrator) intraDomainRealloc(service *Service, node *Node, domain *Domain) (bool, error) {
-	searchingNodes := domain.ActiveNodes
-	delete(searchingNodes, node.NodeName)
-	sortedNodes, _ := o.sortNodes(searchingNodes, service)
-	otherServiceID, _ := o.getReallocatedService(node, service)
-	if otherServiceID == "" {
+func (o *Orchestrator) intraDomainRealloc(service *Service, node *Node, domain *Domain, sortedNodes []NodeName, eventID ServiceID, otherEventID ServiceID) (bool, error) {
+	if otherEventID == "" {
 		return false, nil
 	}
+
 	reallocated := false
 
-	otherService := node.AllocatedServices[otherServiceID]
-	reallocation, _ := node.IntraDomainReallocateTest(service, otherServiceID)
-	if reallocation {
-		for nodeName := range sortedNodes {
-			otherNode := domain.ActiveNodes[nodeName]
+	otherService := node.AllocatedServices[otherEventID]
 
-			allocatedCore, _ := otherNode.NodeAdmission.Admission(service.standardMode.cpusEdge, service.standardMode.bandwidthEdge, otherNode.Cores)
-			if allocatedCore != nil {
-
-				otherService.standardMode.ServiceDeallocate(service, node)
-				service.standardMode.ServiceAllocate(node)
-				otherService.standardMode.ServiceAllocate(otherNode)
-				reallocated = true
-			}
-			break
+	for _, nodeName := range sortedNodes {
+		if nodeName == node.NodeName {
+			continue
 		}
+		otherNode := domain.ActiveNodes[nodeName]
 
+		allocatedCore, _ := otherNode.NodeAdmission.Admission(service.StandardMode.cpusEdge, service.StandardMode.bandwidthEdge, otherNode.Cores)
+		if allocatedCore != nil {
+			fmt.Println("reallocation successful")
+
+			otherService.StandardMode.ServiceDeallocate(otherEventID, node)
+			_, newSvc, _ := service.StandardMode.ServiceAllocate(node, eventID)
+			_, oldSvc, _ := otherService.StandardMode.ServiceAllocate(otherNode, otherEventID)
+			o.RunningServices[otherEventID] = oldSvc
+			o.RunningServices[eventID] = newSvc
+			reallocated = true
+			fmt.Println("intra domain reallocation completed")
+		}
+		return reallocated, nil
 	}
+	fmt.Println("intra domain reallocation failed")
 	return reallocated, nil
 }
 
-func (o *Orchestrator) SplitSched(service *Service, domain *Domain) (bool, bool, error) {
+func (o *Orchestrator) SplitSched(service *Service, domainID DomainID, eventID ServiceID) (bool, bool, *Service, error) {
 	// edge-cloud split (has qos degradation) -- there is no cloud only apparently
-	sortedNodes, _ := o.sortNodes(domain.ActiveNodes, service)
+	fmt.Println("inside split scheduling")
+	sortedNodes, _ := o.sortNodes(o.Domains[domainID].ActiveNodes, service.ReducedMode.cpusEdge, service.ReducedMode.bandwidthEdge)
 	edgeAllocated := false
 	cloudAllocated := false
-	for edgeNodeName := range sortedNodes {
-		node := domain.ActiveNodes[edgeNodeName]
-		edgeAllocated, _ = service.reducedMode.ServiceAllocate(node, edgeLoc)
+	var svcEdge, svcCloud *Service
+
+	for _, edgeNodeName := range sortedNodes {
+		edgeAllocated, svcEdge, _ = service.ReducedMode.ServiceAllocate(o.Domains[domainID].ActiveNodes[edgeNodeName], edgeLoc, eventID)
 		if edgeAllocated {
 			break
 		}
 	}
 
-	sortedNodes, _ = o.sortNodes(o.cloud.ActiveNodes, service)
-	for cloudNodeName := range sortedNodes {
-		node := o.cloud.ActiveNodes[cloudNodeName]
-		cloudAllocated, _ = service.reducedMode.ServiceAllocate(node, cloudLoc)
+	sortedNodes, _ = o.sortNodes(o.Cloud.ActiveNodes, service.ReducedMode.cpusCloud, service.ReducedMode.bandwidthCloud)
+	for _, cloudNodeName := range sortedNodes {
+		cloudAllocated, svcCloud, _ = service.ReducedMode.ServiceAllocate(o.Cloud.ActiveNodes[cloudNodeName], cloudLoc, eventID)
 		if cloudAllocated {
 			break
 		}
 	}
-	return edgeAllocated, cloudAllocated, nil
+	if !edgeAllocated || !cloudAllocated {
+		return false, false, &Service{}, nil
+	}
+	fmt.Println("show svc in split scheduling", svcEdge)
+	fmt.Println("show svc in split scheduling", svcCloud)
+	newSvc := &Service{
+		StandardMode:             svcEdge.StandardMode,
+		ReducedMode:              svcEdge.ReducedMode,
+		ImportanceFactor:         svcEdge.ImportanceFactor,
+		serviceID:                svcEdge.serviceID,
+		AllocatedCoresEdge:       svcEdge.AllocatedCoresEdge,
+		AllocatedCoresCloud:      svcCloud.AllocatedCoresCloud,
+		AllocatedNodeEdge:        svcEdge.AllocatedNodeEdge,
+		AllocatedNodeCloud:       svcCloud.AllocatedNodeCloud,
+		AllocatedDomain:          svcEdge.AllocatedDomain,
+		AllocationMode:           ReducedMode,
+		AverageResidualBandwidth: svcEdge.AverageResidualBandwidth,
+		TotalResidualBandwidth:   svcEdge.TotalResidualBandwidth,
+		StandardQoS:              svcEdge.StandardQoS,
+		ReducedQoS:               svcEdge.ReducedQoS,
+	}
+	svcEdge = nil
+	svcCloud = nil
+	return edgeAllocated, cloudAllocated, newSvc, nil
 }
 
-func (o *Orchestrator) edgePowerOffNode(domainID DomainID) bool {
-	for nodeName, node := range o.domains[domainID].ActiveNodes {
-		node.Status = Inactive
-		o.domains[domainID].InactiveNodes[nodeName] = node
-		delete(o.domains[domainID].ActiveNodes, nodeName)
-		break
-	}
-	fmt.Println("ActiveNodes and Inactive nodes after powering off:")
-	fmt.Println(o.domains[domainID].ActiveNodes)
+func (o *Orchestrator) edgePowerOffNode(domainID DomainID, nodeName NodeName) bool {
+	cores := CreateNodeCores(len(o.Domains[domainID].ActiveNodes[nodeName].Cores))
+	o.Domains[domainID].InactiveNodes[nodeName] = NewNode(cores, o.Domains[domainID].ActiveNodes[nodeName].ReallocHeuristic, nodeName)
+	o.Cost = o.Cost - EdgeNodeCost
+	delete(o.Domains[domainID].ActiveNodes, nodeName)
+
 	return true
 }
 
-func (o *Orchestrator) cloudPowerOffNode() bool {
-	for nodeName, node := range o.cloud.ActiveNodes {
-		node.Status = Inactive
-		o.cloud.InactiveNodes[nodeName] = node
-		delete(o.cloud.ActiveNodes, nodeName)
-		break
-	}
-	fmt.Println("ActiveNodes and Inactive nodes after powering off:")
-	fmt.Println(o.cloud.ActiveNodes)
+func (o *Orchestrator) cloudPowerOffNode(nodeName NodeName) bool {
+	o.Cloud.InactiveNodes[nodeName] = NewNode(o.Cloud.ActiveNodes[nodeName].Cores, o.Cloud.ActiveNodes[nodeName].ReallocHeuristic, nodeName)
+	o.Cost = o.Cost - CloudNodeCost
+	delete(o.Cloud.ActiveNodes, nodeName)
+
 	return true
 }
 
-func (o *Orchestrator) edgePowerOnNode(domainID DomainID) bool {
-	for nodeName, node := range o.domains[domainID].InactiveNodes {
+func (o *Orchestrator) edgePowerOnNode(domainID DomainID) (bool, NodeName) {
+	// fmt.Println("active nodes in domain:", o.Domains[domainID].ActiveNodes)
+	// var nodeName NodeName
+	for nodeName, node := range o.Domains[domainID].InactiveNodes {
 		node.Status = Active
-		o.domains[domainID].ActiveNodes[nodeName] = node
-		delete(o.domains[domainID].InactiveNodes, nodeName)
-		break
+		cores := CreateNodeCores(len(node.Cores))
+		o.Domains[domainID].ActiveNodes[nodeName] = NewNode(cores, node.ReallocHeuristic, nodeName)
+		o.Cost = o.Cost + EdgeNodeCost
+		delete(o.Domains[domainID].InactiveNodes, nodeName)
+		return true, nodeName
 	}
-	fmt.Println("ActiveNodes and Inactive nodes after powering on:")
-	fmt.Println(o.domains[domainID].ActiveNodes)
-
-	return true
+	// fmt.Println("active nodes in domain after powering on:", o.Domains[domainID].ActiveNodes)
+	return false, ""
 }
 func (o *Orchestrator) cloudPowerOnNode() bool {
-	for nodeName, node := range o.cloud.InactiveNodes {
+	// fmt.Println("active nodes in cloud:", o.Cloud.ActiveNodes)
+	for nodeName, node := range o.Cloud.InactiveNodes {
 		node.Status = Active
-		o.cloud.ActiveNodes[nodeName] = node
-		delete(o.cloud.InactiveNodes, nodeName)
+		cores := CreateNodeCores(len(node.Cores))
+		o.Cloud.ActiveNodes[nodeName] = NewNode(cores, node.ReallocHeuristic, nodeName)
+		o.Cost = o.Cost + CloudNodeCost
+		delete(o.Cloud.InactiveNodes, nodeName)
 		break
 	}
-	fmt.Println("ActiveNodes and Inactive nodes after powering on:")
-	fmt.Println(o.cloud.ActiveNodes)
+	// fmt.Println("active nodes in cloud after powering on:", o.Cloud.ActiveNodes)
 
 	return true
 }
 
-func (o *Orchestrator) Allocate(domainID DomainID, serviceID ServiceID) (bool, QoS, Cost, error) {
-	// TODO: calculation of qos per cost is not implemented
+func (o *Orchestrator) Allocate(domainID DomainID, serviceID ServiceID, eventID ServiceID) (bool, error) {
 	allocated := false
-	domain := o.domains[domainID]
+	domain := o.Domains[domainID]
 	service := o.AllServices[serviceID]
+	o.RunningServices[eventID] = NewRunningService(service, eventID)
+	fmt.Println("added running service: ", o.RunningServices[eventID])
 
-	sortedNodes, _ := o.sortNodes(domain.ActiveNodes, service)
-	for nodeName := range sortedNodes {
-		node := domain.ActiveNodes[nodeName]
-		allocated, _ = o.allocateEdge(service, node)
+	fmt.Println("orchestraator domains:", o.Domains)
+	fmt.Println("dimain id:", domainID)
+	fmt.Println("domain:", domain)
+	fmt.Println("domain active nodes:", domain.AllNodes)
+
+	sortedNodes, _ := o.sortNodes(domain.ActiveNodes, service.StandardMode.cpusEdge, service.StandardMode.bandwidthEdge)
+	for _, nodeName := range sortedNodes {
+		fmt.Println("node name after allocation", nodeName)
+		allocated, svc, _ := o.allocateEdge(o.RunningServices[eventID], o.Domains[domainID].ActiveNodes[nodeName], eventID)
 		if allocated {
 			o.QoS = o.QoS + service.StandardQoS
-			return allocated, o.QoS, o.Cost, nil
+			o.RunningServices[eventID] = svc
+			fmt.Println("running services after allocation for eventID:", o.RunningServices[eventID], eventID)
+			fmt.Println("node after allocation", o.Domains[domainID].ActiveNodes[nodeName])
+			fmt.Println("node name after allocation", nodeName)
+			fmt.Println("allocated node:", o.Domains[domainID].ActiveNodes[o.RunningServices[eventID].AllocatedNodeEdge])
+			fmt.Println("allocated cores:", o.RunningServices[eventID].AllocatedCoresEdge)
+			return allocated, nil
 		}
 	}
 
-	for nodeName := range sortedNodes {
+	fmt.Println("the service", service.StandardMode.cpusEdge, service.StandardMode.bandwidthEdge)
+	sortedNodesNoFilter, _ := o.sortNodesNoFilter(domain.ActiveNodes)
+	// newBandwidth := service.StandardMode.bandwidthEdge
+	for _, nodeName := range sortedNodesNoFilter {
 		node := domain.ActiveNodes[nodeName]
-		allocated, _ := o.intraNodeRealloc(service, node)
-		if allocated {
-			return allocated, 0, 0, nil
+		reallocatedEventID, _ := o.getReallocatedService(node, service)
+		if node.AllocatedServices[reallocatedEventID] == nil {
+			fmt.Println("node name:", nodeName)
+			fmt.Println("node allocated services:", node.AllocatedServices)
+			fmt.Println("node BW:", node.TotalResidualBandwidth, node.AverageResidualBandwidth)
+			continue
 		}
-	}
-	for nodeName := range sortedNodes {
-		node := domain.ActiveNodes[nodeName]
-		allocated, _ := o.intraDomainRealloc(service, node, domain)
-		if allocated {
-			return allocated, 0, 0, nil
+		reallocationHelp, NewCores, _ := ReallocateTest(service, reallocatedEventID, *node)
+		if reallocationHelp {
+			allocated, err := o.intraNodeRealloc(o.RunningServices[eventID], node, eventID, reallocatedEventID, NewCores)
+			if allocated {
+				o.QoS = o.QoS + service.StandardQoS
+				fmt.Println("allocated with intra node reallocation")
+				fmt.Println("node average residual bandwidth after allocation:", o.Domains[domainID].ActiveNodes[nodeName].AverageResidualBandwidth, "total residual bandwidth:", o.Domains[domainID].ActiveNodes[nodeName].TotalResidualBandwidth)
+				return allocated, nil
+			}
+			if err != nil {
+				fmt.Println("Error in intra node reallocation: ", err)
+			}
+
+			allocated, err = o.intraDomainRealloc(o.RunningServices[eventID], node, domain, sortedNodesNoFilter, eventID, reallocatedEventID)
+			if allocated {
+				o.QoS = o.QoS + service.StandardQoS
+				fmt.Println("allocated with intra domain reallocation")
+				return allocated, nil
+			}
+			if err != nil {
+				fmt.Println("Error in intra domain reallocation:", err)
+			}
 		}
+
 	}
-	edgeAllocated, cloudAllocated, _ := o.SplitSched(service, domain)
+
+	edgeAllocated, cloudAllocated, svc, _ := o.SplitSched(o.RunningServices[eventID], domainID, eventID)
 	if edgeAllocated && cloudAllocated {
-		allocated = true
+		fmt.Println("show svc in split scheduling", svc)
+		o.RunningServices[eventID] = svc
+		return true, nil
 	} else {
+		fmt.Println("the split scheduling didn't work. powering on some nodes")
 		if !edgeAllocated {
-			o.edgePowerOnNode(domain.DomainID)
+			success, nodeName := o.edgePowerOnNode(domainID)
+			fmt.Println("Edge node powered on, node name: ", nodeName)
+			if success {
+				allocated, svc, _ := o.allocateEdge(o.RunningServices[eventID], o.Domains[domainID].ActiveNodes[nodeName], eventID)
+				if allocated {
+					o.QoS = o.QoS + service.StandardQoS
+					o.RunningServices[eventID] = svc
+					return allocated, nil
+				}
+			}
 		}
+
 		if !cloudAllocated {
 			o.cloudPowerOnNode()
 		}
 	}
+	edgeAllocated, cloudAllocated, svc, _ = o.SplitSched(o.RunningServices[eventID], domainID, eventID)
+	if edgeAllocated && cloudAllocated {
+		allocated = true
+		o.QoS = o.QoS + service.ReducedQoS
+		fmt.Println("show svc in split scheduling", svc)
+		o.RunningServices[eventID] = svc
+	} else {
+		return false, nil
+	}
 
-	return allocated, 0, 0, nil
+	return allocated, nil
 }
 
-func (o *Orchestrator) Deallocate() bool {
+func (o *Orchestrator) Deallocate(domainID DomainID, serviceID ServiceID, eventID ServiceID) bool {
+	domain := o.Domains[domainID]
+	service := o.RunningServices[eventID]
+	allocatedMode := o.RunningServices[eventID].AllocationMode
+	fmt.Println("Deallocating service: ", eventID)
+	fmt.Println("the running services before deallocation: ", o.RunningServices[eventID])
+	fmt.Println("Allocated mode: ", allocatedMode)
+	fmt.Println("domain id", domainID)
+	if allocatedMode == StandardMode {
+		nodeN := service.AllocatedNodeEdge
+		fmt.Println("node name:", nodeN)
+		fmt.Println("node before deallocation", domain.ActiveNodes)
+		node := domain.ActiveNodes[nodeN]
+		cores := o.RunningServices[eventID].AllocatedCoresEdge
+		fmt.Println("node after deallocation", node)
+		fmt.Println("node", node)
+		fmt.Println("cores", cores)
+		service.StandardMode.ServiceDeallocate(eventID, node)
+		// o.QoS = o.QoS - service.StandardQoS
+	}
+	if allocatedMode == ReducedMode {
+		edgeNode := domain.ActiveNodes[o.RunningServices[eventID].AllocatedNodeEdge]
+		cloudNode := o.Cloud.ActiveNodes[o.RunningServices[eventID].AllocatedNodeCloud]
+		service.ReducedMode.ServiceDeallocate(eventID, edgeNode, edgeLoc)
+		service.ReducedMode.ServiceDeallocate(eventID, cloudNode, cloudLoc)
+		// o.QoS = o.QoS - service.ReducedQoS
+	}
+
+	for nodeName, node := range domain.ActiveNodes {
+		if node.AverageResidualBandwidth == 0 && node.TotalResidualBandwidth == 0 {
+			o.edgePowerOffNode(domainID, nodeName)
+		}
+	}
+	for nodeName, node := range o.Cloud.ActiveNodes {
+		if node.AverageResidualBandwidth == 0 && node.TotalResidualBandwidth == 0 {
+			o.cloudPowerOffNode(nodeName)
+		}
+	}
+
+	delete(o.RunningServices, eventID)
+
 	return true
 }

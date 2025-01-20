@@ -1,3 +1,0 @@
-NodeName,NumCores,PartitioningHeuristic
-domain1_worker0,5,worstfit
-domain1_worker1,5,worstfit
