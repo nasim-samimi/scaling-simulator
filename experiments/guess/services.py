@@ -4,10 +4,10 @@ import random
 
 #accept a range of values for services
 # variables: total number of services, importance, bandwidth, cores
-TOTAL_SERVICES = 10
+TOTAL_SERVICES = 100
 importanceRange=range(1,TOTAL_SERVICES+1)
 sBandwidthRange=range(5,81,1)
-sCoresRange=[2,3,4]#range(2,11,2) # max number of cores should be matched with the number of cores in the system
+sCoresRange=range(1,8)#range(2,11,2) # max number of cores should be matched with the number of cores in the system
 
 SERVICE_IDS=range(TOTAL_SERVICES)
 
@@ -21,8 +21,8 @@ def reduced(bandwidth:list,cores:list) -> tuple :
     # reduced strategy has impact on qos
     rEBandwidth=[x / 2 for x in bandwidth]
     rECores=[1 for x in cores]
-    rCBandwidth=[x for x in bandwidth]
-    rCCores=[x for x in cores]
+    rCBandwidth=[x/2 for x in bandwidth]
+    rCCores=[min(x-1,1) for x in cores]
     return rEBandwidth,rECores,rCBandwidth,rCCores
 
 def ServiceGenerator(numServices,importance,sBandwidth,sCores,number): # it returns random values for the services for now

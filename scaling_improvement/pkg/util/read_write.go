@@ -11,7 +11,7 @@ import (
 	src "github.com/nasim-samimi/scaling-simulator/pkg/scaling"
 )
 
-func loadNodesFromCSV(filePath string) src.Nodes {
+func loadNodesFromCSV(filePath string) (src.Nodes, src.Nodes) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		log.Fatalf("Unable to read input file %s, %v", filePath, err)
@@ -31,31 +31,42 @@ func loadNodesFromCSV(filePath string) src.Nodes {
 	}
 
 	nodes := make(src.Nodes)
-	l := int(math.Ceil(float64(len(records) / 10)))
+	reservedNodes := make(src.Nodes)
+	l := int(math.Ceil(float64(len(records)/10))) + 1
+	fmt.Println("l:", l)
 	i := 0
+	// lr := len(records) - l
 	for _, record := range records {
 		// Assuming CSV has columns: NodeID, ResidualBandwidth, Capacity
-		nodeName := record[0]
-		numCores, _ := strconv.Atoi(record[1])
-		cores := src.CreateNodeCores(numCores)
-		partitioningHeuristic := record[2]
+		if i < l {
+			nodeName := record[0]
+			numCores, _ := strconv.Atoi(record[1])
+			cores := src.CreateNodeCores(numCores)
+			partitioningHeuristic := record[2]
 
-		newNode := src.NewNode(cores, src.Heuristic(partitioningHeuristic), src.NodeName(nodeName))
-		nodes[src.NodeName(nodeName)] = newNode
-		i++
-		if i == l {
-			break
+			newNode := src.NewNode(cores, src.Heuristic(partitioningHeuristic), src.NodeName(nodeName))
+			nodes[src.NodeName(nodeName)] = newNode
+
+		} else {
+			nodeName := record[0]
+			numCores, _ := strconv.Atoi(record[1])
+			cores := src.CreateNodeCores(numCores)
+			partitioningHeuristic := record[2]
+
+			newNode := src.NewNode(cores, src.Heuristic(partitioningHeuristic), src.NodeName(nodeName))
+			reservedNodes[src.NodeName(nodeName)] = newNode
 		}
+		i++
 		// 	nodes = append(nodes, newNode)
 	}
-	return nodes
+	return nodes, reservedNodes
 }
 
-func LoadCloudFromCSV(filePath string) src.Nodes {
+func LoadCloudFromCSV(filePath string) (src.Nodes, src.Nodes) {
 	return loadNodesFromCSV(filePath)
 }
 
-func LoadDomainFromCSV(filename string) src.Nodes {
+func LoadDomainFromCSV(filename string) (src.Nodes, src.Nodes) {
 	return loadNodesFromCSV(filename)
 
 }

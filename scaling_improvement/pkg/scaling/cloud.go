@@ -6,10 +6,10 @@ type Cloud struct {
 	InactiveNodes Nodes
 }
 
-func NewCloud(nodes Nodes) *Cloud {
+func NewCloud(nodes Nodes, reservedNodes Nodes) *Cloud {
 	return &Cloud{
 		AllNodes:      nodes,
 		ActiveNodes:   make(Nodes),
-		InactiveNodes: nodes,
+		InactiveNodes: reservedNodes,
 	}
 }

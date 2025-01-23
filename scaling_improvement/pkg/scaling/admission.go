@@ -32,8 +32,8 @@ func (at *AdmissionTest) QuickFilter(reqCpus uint64, reqBandwidth float64, cores
 	return false, fmt.Errorf("not enough cpus to allocate")
 }
 
-func (at *AdmissionTest) Admission(reqCpus uint64, reqBandwidth float64, cores Cores) ([]CoreID, error) {
-	const cpuThreshold = 100
+func (at *AdmissionTest) Admission(reqCpus uint64, reqBandwidth float64, cores Cores, cpuThreshold float64) ([]CoreID, error) {
+	// const cpuThreshold = 100
 	type scoredCpu struct {
 		cpu   CoreID
 		score float64

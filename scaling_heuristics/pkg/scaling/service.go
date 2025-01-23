@@ -7,62 +7,61 @@ type reducedSched struct {
 	cpusEdge       uint64
 	bandwidthCloud float64
 	cpusCloud      uint64
-	service        *Service
 }
 
 type standardSched struct {
 	bandwidthEdge float64
 	cpusEdge      uint64
-	service       *Service
 }
 
-func (s *standardSched) ServiceAllocate(node *Node, eventID ServiceID) (bool, *Service, error) {
+func (s *standardSched) ServiceAllocate(service *Service, node *Node, eventID ServiceID) (bool, *Service, error) {
 	allocated := false
-	fmt.Println("Allocating service: ", s.service)
-	allocatedCores, err := node.NodeAllocate(s.cpusEdge, s.bandwidthEdge, s.service, eventID)
+	fmt.Println("Allocating service: ", service)
+	allocatedCores, err := node.NodeAllocate(s.cpusEdge, s.bandwidthEdge, service, eventID)
 	if err != nil {
 		fmt.Println("Error allocating service: ", err)
-		return allocated, s.service, err
+		return allocated, service, err
 	}
 	fmt.Println("node name:", node.NodeName)
-	s.service.AllocatedNodeEdge = node.NodeName
+	service.AllocatedNodeEdge = node.NodeName
 	allocated = true
-	s.service.AllocatedCoresEdge = allocatedCores
-	s.service.AllocationMode = StandardMode
+	service.AllocatedCoresEdge = allocatedCores
+	service.AllocationMode = StandardMode
 
-	s.service.AverageResidualBandwidth = s.bandwidthEdge
-	s.service.TotalResidualBandwidth = s.bandwidthEdge * float64(s.cpusEdge)
-	s.service.AllocatedDomain = node.DomainID
+	service.AverageResidualBandwidth = s.bandwidthEdge
+	service.TotalResidualBandwidth = s.bandwidthEdge * float64(s.cpusEdge)
+	service.AllocatedDomain = node.DomainID
 	newSvc := &Service{
-		StandardMode:             s.service.StandardMode,
-		ReducedMode:              s.service.ReducedMode,
-		ImportanceFactor:         s.service.ImportanceFactor,
-		serviceID:                s.service.serviceID,
-		AllocatedCoresEdge:       s.service.AllocatedCoresEdge,
-		AllocatedCoresCloud:      s.service.AllocatedCoresCloud,
-		AllocatedNodeEdge:        s.service.AllocatedNodeEdge,
-		AllocatedNodeCloud:       s.service.AllocatedNodeCloud,
-		AllocatedDomain:          s.service.AllocatedDomain,
-		AllocationMode:           s.service.AllocationMode,
-		AverageResidualBandwidth: s.service.AverageResidualBandwidth,
-		TotalResidualBandwidth:   s.service.TotalResidualBandwidth,
-		StandardQoS:              s.service.StandardQoS,
+		StandardMode:             service.StandardMode,
+		ReducedMode:              service.ReducedMode,
+		ImportanceFactor:         service.ImportanceFactor,
+		serviceID:                service.serviceID,
+		AllocatedCoresEdge:       service.AllocatedCoresEdge,
+		AllocatedCoresCloud:      service.AllocatedCoresCloud,
+		AllocatedNodeEdge:        service.AllocatedNodeEdge,
+		AllocatedNodeCloud:       service.AllocatedNodeCloud,
+		AllocatedDomain:          service.AllocatedDomain,
+		AllocationMode:           service.AllocationMode,
+		AverageResidualBandwidth: service.AverageResidualBandwidth,
+		TotalResidualBandwidth:   service.TotalResidualBandwidth,
+		StandardQoS:              service.StandardQoS,
+		ReducedQoS:               service.ReducedQoS,
 	}
 	node.AllocatedServices[eventID] = &Service{
-		ImportanceFactor:         s.service.ImportanceFactor,
+		ImportanceFactor:         service.ImportanceFactor,
 		serviceID:                eventID,
-		ReducedMode:              s.service.ReducedMode,
-		StandardMode:             s.service.StandardMode,
+		ReducedMode:              service.ReducedMode,
+		StandardMode:             service.StandardMode,
 		AllocatedCoresEdge:       allocatedCores,
 		AllocatedNodeEdge:        node.NodeName,
 		AllocatedDomain:          node.DomainID,
 		AllocationMode:           StandardMode,
-		AverageResidualBandwidth: s.service.AverageResidualBandwidth,
-		TotalResidualBandwidth:   s.service.TotalResidualBandwidth,
-		StandardQoS:              s.service.StandardQoS,
-		ReducedQoS:               s.service.ReducedQoS,
+		AverageResidualBandwidth: service.AverageResidualBandwidth,
+		TotalResidualBandwidth:   service.TotalResidualBandwidth,
+		StandardQoS:              service.StandardQoS,
+		ReducedQoS:               service.ReducedQoS,
 	}
-	fmt.Println("Allocating service after: ", s.service)
+	fmt.Println("Allocating service after: ", service)
 	return allocated, newSvc, err
 }
 
@@ -71,89 +70,89 @@ func (s *standardSched) ServiceDeallocate(eventID ServiceID, node *Node) (Servic
 	return eventID, nil
 }
 
-func (r *reducedSched) ServiceAllocate(node *Node, loc Location, eventID ServiceID) (bool, *Service, error) {
+func (r *reducedSched) ServiceAllocate(service *Service, node *Node, loc Location, eventID ServiceID) (bool, *Service, error) {
 	allocated := false
 
 	switch loc {
 	case edgeLoc:
-		allocatedCores, err := node.NodeAllocate(r.cpusEdge, r.bandwidthEdge, r.service, eventID)
+		allocatedCores, err := node.NodeAllocate(r.cpusEdge, r.bandwidthEdge, service, eventID)
 
 		if err != nil {
-			return allocated, r.service, err
+			return allocated, service, err
 		}
-		r.service.AllocatedNodeEdge = node.NodeName
+		service.AllocatedNodeEdge = node.NodeName
 		allocated = true
-		r.service.AllocatedCoresEdge = allocatedCores
-		r.service.AllocationMode = ReducedMode
-		r.service.TotalResidualBandwidth = r.bandwidthEdge*float64(r.cpusEdge) + r.bandwidthCloud*float64(r.cpusCloud)
-		r.service.AverageResidualBandwidth = r.service.TotalResidualBandwidth / float64(r.cpusEdge+r.cpusCloud)
+		service.AllocatedCoresEdge = allocatedCores
+		service.AllocationMode = ReducedMode
+		service.TotalResidualBandwidth = r.bandwidthEdge*float64(r.cpusEdge) + r.bandwidthCloud*float64(r.cpusCloud)
+		service.AverageResidualBandwidth = service.TotalResidualBandwidth / float64(r.cpusEdge+r.cpusCloud)
 		newSvc := &Service{
-			ImportanceFactor:         r.service.ImportanceFactor,
-			serviceID:                r.service.serviceID,
-			ReducedMode:              r.service.ReducedMode,
-			StandardMode:             r.service.StandardMode,
+			ImportanceFactor:         service.ImportanceFactor,
+			serviceID:                service.serviceID,
+			ReducedMode:              service.ReducedMode,
+			StandardMode:             service.StandardMode,
 			AllocatedCoresEdge:       allocatedCores,
 			AllocatedNodeEdge:        node.NodeName,
 			AllocatedDomain:          node.DomainID,
 			AllocationMode:           ReducedMode,
-			AverageResidualBandwidth: r.service.AverageResidualBandwidth,
-			TotalResidualBandwidth:   r.service.TotalResidualBandwidth,
-			StandardQoS:              r.service.StandardQoS,
-			ReducedQoS:               r.service.ReducedQoS,
+			AverageResidualBandwidth: service.AverageResidualBandwidth,
+			TotalResidualBandwidth:   service.TotalResidualBandwidth,
+			StandardQoS:              service.StandardQoS,
+			ReducedQoS:               service.ReducedQoS,
 		}
 		node.AllocatedServices[eventID] = &Service{
-			ImportanceFactor:         r.service.ImportanceFactor,
-			serviceID:                r.service.serviceID,
-			ReducedMode:              r.service.ReducedMode,
-			StandardMode:             r.service.StandardMode,
+			ImportanceFactor:         service.ImportanceFactor,
+			serviceID:                service.serviceID,
+			ReducedMode:              service.ReducedMode,
+			StandardMode:             service.StandardMode,
 			AllocatedCoresEdge:       allocatedCores,
 			AllocatedNodeEdge:        node.NodeName,
 			AllocatedDomain:          node.DomainID,
 			AllocationMode:           ReducedMode,
-			AverageResidualBandwidth: r.service.AverageResidualBandwidth,
-			TotalResidualBandwidth:   r.service.TotalResidualBandwidth,
-			StandardQoS:              r.service.StandardQoS,
-			ReducedQoS:               r.service.ReducedQoS,
+			AverageResidualBandwidth: service.AverageResidualBandwidth,
+			TotalResidualBandwidth:   service.TotalResidualBandwidth,
+			StandardQoS:              service.StandardQoS,
+			ReducedQoS:               service.ReducedQoS,
 		}
 		return allocated, newSvc, nil
 
 	case cloudLoc:
-		allocatedCores, err := node.NodeAllocate(r.cpusCloud, r.bandwidthCloud, r.service, eventID)
+		allocatedCores, err := node.NodeAllocate(r.cpusCloud, r.bandwidthCloud, service, eventID)
 		if err != nil {
-			return false, r.service, err
+			return false, service, err
 		}
-		r.service.AllocatedNodeCloud = node.NodeName
-		r.service.AllocatedCoresCloud = allocatedCores
+		service.AllocatedNodeCloud = node.NodeName
+		service.AllocatedCoresCloud = allocatedCores
 		allocated = true
-		r.service.TotalResidualBandwidth = r.bandwidthEdge*float64(r.cpusEdge) + r.bandwidthCloud*float64(r.cpusCloud)
-		r.service.AverageResidualBandwidth = r.service.TotalResidualBandwidth / float64(r.cpusEdge+r.cpusCloud)
+		service.TotalResidualBandwidth = r.bandwidthEdge*float64(r.cpusEdge) + r.bandwidthCloud*float64(r.cpusCloud)
+		service.AverageResidualBandwidth = service.TotalResidualBandwidth / float64(r.cpusEdge+r.cpusCloud)
 		newSvc := &Service{
-			ImportanceFactor:         r.service.ImportanceFactor,
-			serviceID:                r.service.serviceID,
-			ReducedMode:              r.service.ReducedMode,
-			StandardMode:             r.service.StandardMode,
+			ImportanceFactor:         service.ImportanceFactor,
+			serviceID:                service.serviceID,
+			ReducedMode:              service.ReducedMode,
+			StandardMode:             service.StandardMode,
 			AllocatedCoresCloud:      allocatedCores,
 			AllocatedNodeCloud:       node.NodeName,
-			AllocatedDomain:          r.service.AllocatedDomain,
+			AllocatedDomain:          service.AllocatedDomain,
 			AllocationMode:           ReducedMode,
-			AverageResidualBandwidth: r.service.AverageResidualBandwidth,
-			TotalResidualBandwidth:   r.service.TotalResidualBandwidth,
-			StandardQoS:              r.service.StandardQoS,
-			ReducedQoS:               r.service.ReducedQoS,
+			AverageResidualBandwidth: service.AverageResidualBandwidth,
+			TotalResidualBandwidth:   service.TotalResidualBandwidth,
+			StandardQoS:              service.StandardQoS,
+			ReducedQoS:               service.ReducedQoS,
 		}
 		node.AllocatedServices[eventID] = &Service{
-			ImportanceFactor:         r.service.ImportanceFactor,
-			serviceID:                r.service.serviceID,
-			ReducedMode:              r.service.ReducedMode,
-			StandardMode:             r.service.StandardMode,
+			ImportanceFactor:         service.ImportanceFactor,
+			serviceID:                service.serviceID,
+			ReducedMode:              service.ReducedMode,
+			StandardMode:             service.StandardMode,
 			AllocatedCoresCloud:      allocatedCores,
 			AllocatedNodeCloud:       node.NodeName,
-			AllocatedDomain:          r.service.AllocatedDomain,
+			AllocatedDomain:          service.AllocatedDomain,
 			AllocationMode:           ReducedMode,
-			AverageResidualBandwidth: r.service.AverageResidualBandwidth,
-			TotalResidualBandwidth:   r.service.TotalResidualBandwidth,
-			StandardQoS:              r.service.StandardQoS,
-			ReducedQoS:               r.service.ReducedQoS,
+			AverageResidualBandwidth: service.AverageResidualBandwidth,
+			TotalResidualBandwidth:   service.TotalResidualBandwidth,
+			StandardQoS:              service.StandardQoS,
+			ReducedQoS:               service.ReducedQoS,
 		}
 		return allocated, newSvc, nil
 	}
@@ -233,14 +232,10 @@ func NewService(importanceFactor float64, serviceID ServiceID, standardBandwidth
 		serviceID:        serviceID,
 		ReducedMode:      reduced,
 		StandardMode:     standard,
-		// serviceModel:        serviceModel,
+		StandardQoS:      QoS(standard.bandwidthEdge * float64(standard.cpusEdge) * importanceFactor),
+		ReducedQoS:       QoS((reduced.bandwidthEdge*float64(reduced.cpusEdge) + reduced.bandwidthCloud*float64(reduced.cpusCloud)) * importanceFactor),
 	}
-	standardQoS := standard.bandwidthEdge * float64(standard.cpusEdge)
-	reducedQoS := reduced.bandwidthEdge*float64(reduced.cpusEdge) + reduced.bandwidthCloud*float64(reduced.cpusCloud)
-	service.StandardQoS = QoS(standardQoS)
-	service.ReducedQoS = QoS(reducedQoS)
-	service.ReducedMode.service = service
-	service.StandardMode.service = service
+
 	return service
 }
 
@@ -254,5 +249,7 @@ func NewRunningService(service *Service, eventID ServiceID) *Service {
 		serviceID:        service.serviceID,
 		ReducedMode:      service.ReducedMode,
 		StandardMode:     service.StandardMode,
+		StandardQoS:      service.StandardQoS,
+		ReducedQoS:       service.ReducedQoS,
 	}
 }

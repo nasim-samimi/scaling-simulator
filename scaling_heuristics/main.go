@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"os"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -12,6 +13,19 @@ import (
 	util "github.com/nasim-samimi/scaling-simulator/pkg/util"
 )
 
+func addition() string {
+	if len(os.Args) < 2 {
+		fmt.Println("No arguments provided to show randomness!")
+		fmt.Println("Usage: go run main.go <addition>")
+		return "0"
+	}
+	fmt.Println("Received arguments:")
+	// for i, arg := range os.Args[1:] {
+	// 	fmt.Printf("Arg %d: %s\n", i+1, arg)
+	// }
+	addition := os.Args[1]
+	return addition
+}
 func initialise() *src.Orchestrator {
 	CloudNodes, reservedCloudNodes := util.LoadCloudFromCSV("../data/cloud.csv")
 	cloud := src.NewCloud(CloudNodes, reservedCloudNodes)
@@ -44,7 +58,8 @@ func initialise() *src.Orchestrator {
 }
 
 func processEvents(orchestrator *src.Orchestrator) error {
-	events := util.LoadEventsFromCSV("../data/events_1.csv")
+	addition := addition()
+	events := util.LoadEventsFromCSV("../data/events_" + addition + ".csv")
 	qosPerCost := make([]float64, 0)
 	durations := make([]float64, 0)
 	test := 0
@@ -86,7 +101,7 @@ func processEvents(orchestrator *src.Orchestrator) error {
 	}
 	fmt.Println("QoS per Cost: ", qosPerCost)
 	// save to csv file
-	name := string(orchestrator.NodeSelectionHeuristic) + "_" + string(orchestrator.PartitionHeuristic) + "_" + string(orchestrator.ReallocationHeuristic) + "_"
+	name := string(orchestrator.NodeSelectionHeuristic) + "_" + string(orchestrator.PartitionHeuristic) + "_" + string(orchestrator.ReallocationHeuristic) + "_" + addition
 	util.WriteToCsv("../experiments/results/heuristics/qosPerCost_"+name+".csv", qosPerCost)
 	util.WriteToCsv("../experiments/results/heuristics/runtimes_"+name+".csv", durations)
 	fmt.Println("Durations: ", durations)

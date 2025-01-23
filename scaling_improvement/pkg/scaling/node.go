@@ -39,8 +39,8 @@ func NewNode(cores Cores, heuristic Heuristic, nodeName NodeName) *Node {
 	}
 }
 
-func (n *Node) NodeAllocate(reqCpus uint64, reqBandwidth float64, service *Service, eventID ServiceID) ([]CoreID, error) {
-	selectedCpus, err := n.NodeAdmission.Admission(reqCpus, reqBandwidth, n.Cores)
+func (n *Node) NodeAllocate(reqCpus uint64, reqBandwidth float64, service *Service, eventID ServiceID, cpuThreshold float64) ([]CoreID, error) {
+	selectedCpus, err := n.NodeAdmission.Admission(reqCpus, reqBandwidth, n.Cores, cpuThreshold)
 	fmt.Println("Selected CPUs: ", selectedCpus)
 	if err != nil {
 		return selectedCpus, err
@@ -71,14 +71,19 @@ func ReallocateTest(newService *Service, oldServiceID ServiceID, n Node) (bool, 
 			ID:                v.ID,
 		}
 	}
-	// n.Cores = NewCores
+	fmt.Println("Reallocate Test")
 	oldServiceCores := n.AllocatedServices[oldServiceID].AllocatedCoresEdge
 	bandwidth := n.AllocatedServices[oldServiceID].StandardMode.bandwidthEdge
 	newBandwidth := newService.StandardMode.bandwidthEdge
+	fmt.Println("bandwidth:", bandwidth)
+	fmt.Println("old cores:", oldServiceCores)
 	for _, coreID := range oldServiceCores {
 		NewCores[coreID].ConsumedBandwidth -= bandwidth
+		fmt.Println("new cores:", NewCores[coreID])
+
 	}
-	possibleCores, err := n.NodeAdmission.Admission(newService.StandardMode.cpusEdge, newService.StandardMode.bandwidthEdge, NewCores)
+	fmt.Println("new service bandwidth:", newBandwidth)
+	possibleCores, err := n.NodeAdmission.Admission(newService.StandardMode.cpusEdge, newService.StandardMode.bandwidthEdge, NewCores, 100.0)
 
 	if err == nil {
 		for _, coreID := range possibleCores {
@@ -104,7 +109,7 @@ func IntraDomainReallocateTest(newService *Service, oldServiceID ServiceID, n *N
 	for _, coreID := range oldServiceCores {
 		NewCores[coreID].ConsumedBandwidth -= bandwidth
 	}
-	_, err := n.NodeAdmission.Admission(newService.StandardMode.cpusEdge, newService.StandardMode.bandwidthEdge, NewCores)
+	_, err := n.NodeAdmission.Admission(newService.StandardMode.cpusEdge, newService.StandardMode.bandwidthEdge, NewCores, 100.0)
 	for _, core := range NewCores {
 		fmt.Println("cores after intra domain realocate test newcores:", core)
 	}

@@ -157,7 +157,7 @@ def EventGenerator():
     EventsAbstract=EventsAbstract[EventsAbstract['EventType']=='allocate']
     # print(eventDomain)
     Events=Events.sort_values(by=['EventTime'])
-    Events.to_csv('data/events.csv', index=False)
+    Events.to_csv('data/events_0.csv', index=False)
     Users.to_csv('data/users.csv', index=False)
     totalUtil=sum(util)
     return totalUpTime, EventsAbstract,totalUtil

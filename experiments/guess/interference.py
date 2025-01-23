@@ -161,11 +161,11 @@ def generateRandService(addedUtil,addition,events:pd.DataFrame,Services:pd.DataF
 
 if __name__=='__main__':
     Users=pd.read_csv('data/users.csv')
-    addition=1
+    addition=0.5
     Users["Services"] = Users["Services"].apply(ast.literal_eval)
     Users["Domains"] = Users["Domains"].apply(ast.literal_eval)
     Services=pd.read_csv('data/services/services0.csv')
-    events=pd.read_csv('data/events.csv')
+    events=pd.read_csv('data/events_0.csv')
     totalUtil=events['TotalUtil'].sum()
     addedUtil=totalUtil*addition
 

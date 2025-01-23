@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"os"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -12,9 +13,22 @@ import (
 	util "github.com/nasim-samimi/scaling-simulator/pkg/util"
 )
 
+func addition() string {
+	if len(os.Args) < 2 {
+		fmt.Println("No arguments provided to show randomness!")
+		fmt.Println("Usage: go run main.go <addition>")
+		return "0.5"
+	}
+	fmt.Println("Received arguments:")
+	// for i, arg := range os.Args[1:] {
+	// 	fmt.Printf("Arg %d: %s\n", i+1, arg)
+	// }
+	addition := os.Args[1]
+	return addition
+}
 func initialise() *src.Orchestrator {
-	CloudNodes := util.LoadCloudFromCSV("../data/cloud.csv")
-	cloud := src.NewCloud(CloudNodes)
+	CloudNodes, reservedCloudNodes := util.LoadCloudFromCSV("../data/cloud.csv")
+	cloud := src.NewCloud(CloudNodes, reservedCloudNodes)
 	// read domain csv files in domain folder
 	svcs := util.LoadSVCFromCSV("../data/services/services0.csv")
 	nodeHeuristic, reallocHeuristic, partitionHeuristic := util.LoadHeuristicFromCSV("../data/heuristics.csv")
@@ -32,8 +46,10 @@ func initialise() *src.Orchestrator {
 	for _, fileName := range domainFilesNames {
 		id := strconv.Itoa(i)
 		i++
-		domainNodes := util.LoadDomainFromCSV(fileName)
-		domains[src.DomainID(id)] = src.NewDomain(domainNodes, src.DomainID(id))
+		domainNodes, reservedNodes := util.LoadDomainFromCSV(fileName)
+		// fmt.Println("domain ID:", id)
+		// fmt.Println("name of the file:", fileName)
+		domains[src.DomainID(id)] = src.NewDomain(domainNodes, reservedNodes, src.DomainID(id))
 	}
 
 	// initialise the orchestrator
@@ -42,7 +58,8 @@ func initialise() *src.Orchestrator {
 }
 
 func processEvents(orchestrator *src.Orchestrator) error {
-	events := util.LoadEventsFromCSV("../data/events_0.5.csv")
+	addition := addition()
+	events := util.LoadEventsFromCSV("../data/events_" + addition + ".csv")
 	qosPerCost := make([]float64, 0)
 	durations := make([]float64, 0)
 	test := 0
@@ -84,9 +101,9 @@ func processEvents(orchestrator *src.Orchestrator) error {
 	}
 	fmt.Println("QoS per Cost: ", qosPerCost)
 	// save to csv file
-	name := string(orchestrator.NodeSelectionHeuristic) + "_" + string(orchestrator.PartitionHeuristic) + "_" + string(orchestrator.ReallocationHeuristic) + "_"
-	util.WriteToCsv("../experiments/results/heuristics/qosPerCost_"+name+".csv", qosPerCost)
-	util.WriteToCsv("../experiments/results/heuristics/runtimes_"+name+".csv", durations)
+	name := string(orchestrator.NodeSelectionHeuristic) + "_" + string(orchestrator.PartitionHeuristic) + "_" + string(orchestrator.ReallocationHeuristic) + "_" + addition
+	util.WriteToCsv("../experiments/results/improvement/qosPerCost_"+name+".csv", qosPerCost)
+	util.WriteToCsv("../experiments/results/improvement/runtimes_"+name+".csv", durations)
 	fmt.Println("Durations: ", durations)
 	return nil
 }

@@ -7,7 +7,7 @@ import random
 # we shouldn't be limited by the number of nodes in the cloud or the domain
 # so we choose high numbers
 
-NUM_CORES_PER_NODE=8
+NUM_CORES_PER_NODE=16
 
 main_dir='data/'
 PARTITIONING_H=['bestfit','worstfit']
