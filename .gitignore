@@ -1,3 +1,6 @@
 scaling_baseline/log.txt
 scaling_improvement/log.txt
 *.log
+scaling_baseline/log.txt
+scaling_improvement/log.txt
+*.log
