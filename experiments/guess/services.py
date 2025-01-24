@@ -27,7 +27,7 @@ def reduced(bandwidth:list,cores:list) -> tuple :
 
 def ServiceGenerator(numServices,importance,sBandwidth,sCores,number): # it returns random values for the services for now
     seed=0
-    serviceImportance=random.sample(importance,numServices)
+    serviceImportance=(random.sample(importance,numServices))
     weights = [1.5 if x < 40 else 0.5 for x in sBandwidth]  # Higher weight for numbers below 40
     weights = [w / sum(weights) for w in weights]
     serviceBandwidth=random.choices(sBandwidth,k=numServices,weights=weights)

@@ -7,7 +7,7 @@ import random
 # we shouldn't be limited by the number of nodes in the cloud or the domain
 # so we choose high numbers
 
-NUM_CORES_PER_NODE=16
+NUM_CORES_PER_NODE=8
 
 main_dir='data/'
 PARTITIONING_H=['bestfit','worstfit']
@@ -15,7 +15,8 @@ PARTITIONING_H=['bestfit','worstfit']
 REALLOCATION_H=["HBI","HCI","HBCI","HBIcC"]
 NODE_SELECTION_H=["MinMin","MaxMax"]
 
-MAX_BANDWIDTH_PER_CORE=95
+MAX_BANDWIDTH_PER_CORE=100
+EVENTS_LENGTH=500
 
 
 def Heuristics(reallocationH,nodeSelectionH):
@@ -319,7 +320,7 @@ if __name__ == '__main__':
     ServiceGenerator(TOTAL_SERVICES,importanceRange,sBandwidthRange,sCoresRange,0)
     UserTiming()
     print("users are generated")
-    EventGenerator()
+    EventGenerator(EVENTS_LENGTH)
     print("events are generated")
     for opt0 in PARTITIONING_H:
         if not os.path.exists(main_dir+f'domainNodes/{opt0}'):

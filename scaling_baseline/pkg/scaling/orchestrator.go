@@ -210,6 +210,11 @@ func (o *Orchestrator) SplitSched(service *Service, domainID DomainID, eventID S
 }
 
 func (o *Orchestrator) edgePowerOffNode(domainID DomainID, nodeName NodeName) bool {
+	for _, noden := range o.Domains[domainID].AlwaysActiveNodes {
+		if noden == nodeName {
+			return false
+		}
+	}
 	cores := CreateNodeCores(len(o.Domains[domainID].ActiveNodes[nodeName].Cores))
 	o.Domains[domainID].InactiveNodes[nodeName] = NewNode(cores, o.Domains[domainID].ActiveNodes[nodeName].ReallocHeuristic, nodeName)
 	o.Cost = o.Cost - EdgeNodeCost
@@ -367,6 +372,9 @@ func (o *Orchestrator) Deallocate(domainID DomainID, serviceID ServiceID, eventI
 		}
 	}
 	for nodeName, node := range o.Cloud.ActiveNodes {
+		if len(o.Cloud.ActiveNodes) == 1 {
+			break
+		}
 		if node.AverageResidualBandwidth == 0 && node.TotalResidualBandwidth == 0 {
 			o.cloudPowerOffNode(nodeName)
 		}

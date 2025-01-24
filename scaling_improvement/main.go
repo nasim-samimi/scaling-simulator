@@ -19,15 +19,13 @@ func addition() string {
 		fmt.Println("Usage: go run main.go <addition>")
 		return "0.5"
 	}
-	fmt.Println("Received arguments:")
-	// for i, arg := range os.Args[1:] {
-	// 	fmt.Printf("Arg %d: %s\n", i+1, arg)
-	// }
+	fmt.Println("Received arguments:", os.Args[1])
+
 	addition := os.Args[1]
 	return addition
 }
 func initialise() *src.Orchestrator {
-	CloudNodes, reservedCloudNodes := util.LoadCloudFromCSV("../data/cloud.csv")
+	CloudNodes, reservedCloudNodes := util.LoadCloudFromCSV("../data/cloud.csv", "cloud")
 	cloud := src.NewCloud(CloudNodes, reservedCloudNodes)
 	// read domain csv files in domain folder
 	svcs := util.LoadSVCFromCSV("../data/services/services0.csv")
@@ -46,7 +44,7 @@ func initialise() *src.Orchestrator {
 	for _, fileName := range domainFilesNames {
 		id := strconv.Itoa(i)
 		i++
-		domainNodes, reservedNodes := util.LoadDomainFromCSV(fileName)
+		domainNodes, reservedNodes := util.LoadDomainFromCSV(fileName, "domain", src.DomainID(id))
 		// fmt.Println("domain ID:", id)
 		// fmt.Println("name of the file:", fileName)
 		domains[src.DomainID(id)] = src.NewDomain(domainNodes, reservedNodes, src.DomainID(id))
@@ -61,6 +59,8 @@ func processEvents(orchestrator *src.Orchestrator) error {
 	addition := addition()
 	events := util.LoadEventsFromCSV("../data/events_" + addition + ".csv")
 	qosPerCost := make([]float64, 0)
+	qos := make([]float64, 0)
+	cost := make([]float64, 0)
 	durations := make([]float64, 0)
 	test := 0
 	for _, event := range events {
@@ -78,6 +78,8 @@ func processEvents(orchestrator *src.Orchestrator) error {
 			}
 			if allocated {
 				qosPerCost = append(qosPerCost, math.Round(float64(orchestrator.QoS)*1000/float64(orchestrator.Cost))/1000)
+				qos = append(qos, float64(orchestrator.QoS))
+				cost = append(cost, float64(orchestrator.Cost))
 				durations = append(durations, float64(duration.Microseconds())/1000)
 				fmt.Println("/////////////////////")
 				fmt.Println("service is allocated ")
@@ -96,14 +98,18 @@ func processEvents(orchestrator *src.Orchestrator) error {
 			fmt.Println("/////////////////////")
 			fmt.Println("Deallocate")
 			orchestrator.Deallocate(event.TargetDomainID, event.TargetServiceID, eventID)
+			orchestrator.UpgradeService()
+			orchestrator.NodeReclaim(event.TargetDomainID)
 			fmt.Println("/////////////////////")
 		}
 	}
 	fmt.Println("QoS per Cost: ", qosPerCost)
 	// save to csv file
 	name := string(orchestrator.NodeSelectionHeuristic) + "_" + string(orchestrator.PartitionHeuristic) + "_" + string(orchestrator.ReallocationHeuristic) + "_" + addition
-	util.WriteToCsv("../experiments/results/improvement/qosPerCost_"+name+".csv", qosPerCost)
-	util.WriteToCsv("../experiments/results/improvement/runtimes_"+name+".csv", durations)
+	util.WriteToCsv("../experiments/results/improved/qosPerCost_"+name+".csv", qosPerCost)
+	util.WriteToCsv("../experiments/results/improved/runtimes_"+name+".csv", durations)
+	util.WriteToCsv("../experiments/results/improved/qos_"+name+".csv", qos)
+	util.WriteToCsv("../experiments/results/improved/cost_"+name+".csv", cost)
 	fmt.Println("Durations: ", durations)
 	return nil
 }

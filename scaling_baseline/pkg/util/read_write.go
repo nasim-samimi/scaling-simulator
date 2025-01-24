@@ -4,7 +4,6 @@ import (
 	"encoding/csv"
 	"fmt"
 	"log"
-	"math"
 	"os"
 	"strconv"
 
@@ -32,7 +31,8 @@ func loadNodesFromCSV(filePath string) (src.Nodes, src.Nodes) {
 
 	nodes := make(src.Nodes)
 	reservedNodes := make(src.Nodes)
-	l := int(math.Ceil(float64(len(records)/10))) + 3
+	// l := int(math.Ceil(float64(len(records)/10))) + 1
+	l := 1
 	fmt.Println("l:", l)
 	i := 0
 	// lr := len(records) - l

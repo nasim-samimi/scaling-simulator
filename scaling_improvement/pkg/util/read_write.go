@@ -4,14 +4,13 @@ import (
 	"encoding/csv"
 	"fmt"
 	"log"
-	"math"
 	"os"
 	"strconv"
 
 	src "github.com/nasim-samimi/scaling-simulator/pkg/scaling"
 )
 
-func loadNodesFromCSV(filePath string) (src.Nodes, src.Nodes) {
+func loadNodesFromCSV(filePath string, loc string, domainID src.DomainID) (src.Nodes, src.Nodes) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		log.Fatalf("Unable to read input file %s, %v", filePath, err)
@@ -32,7 +31,8 @@ func loadNodesFromCSV(filePath string) (src.Nodes, src.Nodes) {
 
 	nodes := make(src.Nodes)
 	reservedNodes := make(src.Nodes)
-	l := int(math.Ceil(float64(len(records)/10))) + 1
+	// l := int(math.Ceil(float64(len(records)/10))) + 1
+	l := 1
 	fmt.Println("l:", l)
 	i := 0
 	// lr := len(records) - l
@@ -44,7 +44,7 @@ func loadNodesFromCSV(filePath string) (src.Nodes, src.Nodes) {
 			cores := src.CreateNodeCores(numCores)
 			partitioningHeuristic := record[2]
 
-			newNode := src.NewNode(cores, src.Heuristic(partitioningHeuristic), src.NodeName(nodeName))
+			newNode := src.NewNode(cores, src.Heuristic(partitioningHeuristic), src.NodeName(nodeName), domainID)
 			nodes[src.NodeName(nodeName)] = newNode
 
 		} else {
@@ -53,7 +53,7 @@ func loadNodesFromCSV(filePath string) (src.Nodes, src.Nodes) {
 			cores := src.CreateNodeCores(numCores)
 			partitioningHeuristic := record[2]
 
-			newNode := src.NewNode(cores, src.Heuristic(partitioningHeuristic), src.NodeName(nodeName))
+			newNode := src.NewNode(cores, src.Heuristic(partitioningHeuristic), src.NodeName(nodeName), domainID)
 			reservedNodes[src.NodeName(nodeName)] = newNode
 		}
 		i++
@@ -62,12 +62,12 @@ func loadNodesFromCSV(filePath string) (src.Nodes, src.Nodes) {
 	return nodes, reservedNodes
 }
 
-func LoadCloudFromCSV(filePath string) (src.Nodes, src.Nodes) {
-	return loadNodesFromCSV(filePath)
+func LoadCloudFromCSV(filePath string, loc string) (src.Nodes, src.Nodes) {
+	return loadNodesFromCSV(filePath, loc, "")
 }
 
-func LoadDomainFromCSV(filename string) (src.Nodes, src.Nodes) {
-	return loadNodesFromCSV(filename)
+func LoadDomainFromCSV(filename string, loc string, domainID src.DomainID) (src.Nodes, src.Nodes) {
+	return loadNodesFromCSV(filename, loc, domainID)
 
 }
 

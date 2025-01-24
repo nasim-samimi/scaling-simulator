@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	src "github.com/nasim-samimi/scaling-simulator/pkg/scaling"
@@ -24,7 +25,8 @@ func addition() string {
 	// 	fmt.Printf("Arg %d: %s\n", i+1, arg)
 	// }
 	addition := os.Args[1]
-	return addition
+	trimmedAddition := strings.TrimSpace(addition)
+	return trimmedAddition
 }
 
 func initialise() *src.Orchestrator {
@@ -60,6 +62,8 @@ func processEvents(orchestrator *src.Orchestrator) error {
 	addition := addition()
 	events := util.LoadEventsFromCSV("../data/events_" + addition + ".csv")
 	qosPerCost := make([]float64, 0)
+	qos := make([]float64, 0)
+	cost := make([]float64, 0)
 	durations := make([]float64, 0)
 	test := 0
 	for _, event := range events {
@@ -77,6 +81,8 @@ func processEvents(orchestrator *src.Orchestrator) error {
 			}
 			if allocated {
 				qosPerCost = append(qosPerCost, math.Round(float64(orchestrator.QoS)*1000/float64(orchestrator.Cost))/1000)
+				qos = append(qos, float64(orchestrator.QoS))
+				cost = append(cost, float64(orchestrator.Cost))
 				durations = append(durations, float64(duration.Microseconds())/1000)
 				fmt.Println("/////////////////////")
 				fmt.Println("service is allocated ")
@@ -100,6 +106,8 @@ func processEvents(orchestrator *src.Orchestrator) error {
 	name := string(orchestrator.NodeSelectionHeuristic) + "_" + string(orchestrator.PartitionHeuristic) + "_" + "baseline" + "_" + addition
 	util.WriteToCsv("../experiments/results/baseline/qosPerCost_"+name+".csv", qosPerCost)
 	util.WriteToCsv("../experiments/results/baseline/runtimes_"+name+".csv", durations)
+	util.WriteToCsv("../experiments/results/baseline/qos_"+name+".csv", qos)
+	util.WriteToCsv("../experiments/results/baseline/cost_"+name+".csv", cost)
 	fmt.Println("Durations: ", durations)
 	return nil
 }

@@ -24,7 +24,7 @@ type Node struct {
 	Status                   NodeStatus
 }
 
-func NewNode(cores Cores, heuristic Heuristic, nodeName NodeName) *Node {
+func NewNode(cores Cores, heuristic Heuristic, nodeName NodeName, domainID DomainID) *Node {
 	admissionTest := NewAdmissionTest(cores, heuristic)
 	// fmt.Println("Node Admission Test Cores: ", admissionTest.Cores[CoreID("core-0")])
 	return &Node{
@@ -36,6 +36,7 @@ func NewNode(cores Cores, heuristic Heuristic, nodeName NodeName) *Node {
 		AverageResidualBandwidth: 0,
 		TotalResidualBandwidth:   0,
 		AllocatedServices:        make(AllocatedServices),
+		DomainID:                 domainID,
 	}
 }
 
@@ -172,4 +173,20 @@ func (n *Node) NodeDeallocate(eventID ServiceID) bool {
 
 	delete(n.AllocatedServices, eventID)
 	return true
+}
+
+func (n *Node) Upgraded(event *Service) {
+	cores := event.AllocatedCoresEdge
+	bandwidth := event.ReducedMode.bandwidthEdge
+
+	totalResidualBandwidth := n.TotalResidualBandwidth
+	for _, core := range cores {
+		fmt.Println("core:", n.Cores[core].ConsumedBandwidth)
+		fmt.Println("coreID:", core)
+		n.Cores[core].ConsumedBandwidth -= bandwidth
+		fmt.Println("consumed bandwidth after deallocation: ", n.Cores[core].ConsumedBandwidth)
+		totalResidualBandwidth -= bandwidth
+	}
+	n.TotalResidualBandwidth = totalResidualBandwidth
+	n.AverageResidualBandwidth = totalResidualBandwidth / float64(len(n.Cores))
 }

@@ -91,7 +91,7 @@ def UserTiming():
         Users.loc[userID, 'MaxArrivalTime'] = max_arrival_time
         Users.loc[userID,'TotalUtil']=Services.loc[Users.loc[userID,'Services'],'sTotalUtil'].sum()*MIN_UP_TIME
 
-def EventGenerator():
+def EventGenerator(eventsLength=EVENTS_LENGTH):
     Events=pd.DataFrame(columns=['EventTime', 'EventType', 'ServiceID','DomainID','EventID','TotalUtil'])
     EventsAbstract=pd.DataFrame(columns=['EventTime', 'EventType', 'ServiceID','DomainID','EventID','UpTime','TotalUtil'])
     eventType = []
@@ -99,7 +99,6 @@ def EventGenerator():
     eventDomain=[]
     eventServiceID=[]
     eventID=[]
-    eventsLength=EVENTS_LENGTH
     arrival=0
     upTime=[]
     util=[]
@@ -166,7 +165,7 @@ if __name__ == '__main__':
     ServiceGenerator(TOTAL_SERVICES,importanceRange,sBandwidthRange,sCoresRange,0)
     UserTiming()
     print("users are generated")
-    totalUpTime,abstract,util=EventGenerator()
+    totalUpTime,abstract,util=EventGenerator(eventsLength=EVENTS_LENGTH)
     print("events are generated")
     print('total up time:',totalUpTime)
     print('head of events',Events.head())

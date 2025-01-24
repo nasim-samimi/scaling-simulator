@@ -1,11 +1,14 @@
 import pandas as pd
 import os
+import sys
 
 PARTITIONING_H=['bestfit','worstfit']
 
 REALLOCATION_H=[]
 NODE_SELECTION_H=["MinMin","MaxMax"]
 addition=0
+if len(sys.argv)>1:
+    addition=sys.argv[1]
 
 def run():
     for p in PARTITIONING_H:
