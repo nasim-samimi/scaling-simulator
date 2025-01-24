@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sys
 
+figsize=(15, 10)
 if len(sys.argv) < 4:
     print('Usage: python3 results.py <nodeHeu> <partitionHeu> <addition>')
     sys.exit(1)
@@ -20,7 +21,7 @@ def runtimes(dir1='improved/',dir2='baseline/'):
     dirs.append( main_dir+dir2)
     leg=[]
     avg=[]
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=figsize)
     for dir in dirs:
         for files in os.listdir(dir):
             if nodeHeu in files and partitionHeu in files and f"{addition}.csv" in files:
@@ -57,7 +58,7 @@ def qosPerCost(dir1='improved/',dir2='baseline/'):
     dirs.append( main_dir+dir2)
     leg=[]
     avg=[]
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=figsize)
     for dir in dirs:
         for files in os.listdir(dir):
             if nodeHeu in files and partitionHeu in files and f"{addition}.csv" in files:
@@ -102,7 +103,7 @@ def qos(dir1='improved/',dir2='baseline/'):
     dirs.append( main_dir+dir2)
     leg=[]
     avg=[]
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=figsize)
     for dir in dirs:
         for files in os.listdir(dir):
             if nodeHeu in files and partitionHeu in files and f"{addition}.csv" in files:
@@ -146,7 +147,7 @@ def cost(dir1='improved/',dir2='baseline/'):
     dirs.append( main_dir+dir2)
     leg=[]
     avg=[]
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=figsize)
     for dir in dirs:
         for files in os.listdir(dir):
             if nodeHeu in files and partitionHeu in files and f"{addition}.csv" in files:

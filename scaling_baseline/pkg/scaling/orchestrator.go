@@ -131,35 +131,6 @@ func (o *Orchestrator) sortNodes(nodes Nodes, serviceCpus uint64, serviceBandwid
 	return sortedNodeNames, nil
 }
 
-func (o *Orchestrator) sortNodesNoFilter(nodes Nodes) ([]NodeName, error) {
-	// sort nodes according to the heuristic
-	sortedNodes := []Node{}
-	for _, node := range nodes {
-		// must filter out the nodes that do not pass admission test
-		sortedNodes = append(sortedNodes, *node)
-		fmt.Println("Node: ", node.NodeName, " Average Residual Bandwidth: ", node.AverageResidualBandwidth, "total residual bandwidth: ", node.TotalResidualBandwidth)
-	}
-
-	switch o.NodeSelectionHeuristic {
-
-	case MinMin:
-
-		sort.Slice(sortedNodes, func(i, j int) bool {
-			return sortedNodes[i].AverageResidualBandwidth < sortedNodes[j].AverageResidualBandwidth
-		})
-	case MaxMax:
-		sort.Slice(sortedNodes, func(i, j int) bool {
-			return sortedNodes[i].AverageResidualBandwidth > sortedNodes[j].AverageResidualBandwidth
-		})
-	}
-	// Extract sorted NodeNames
-	sortedNodeNames := make([]NodeName, len(sortedNodes))
-	// for i, node := range sortedNodes {
-	// 	sortedNodeNames[i] = node.NodeName
-	// }
-	return sortedNodeNames, nil
-}
-
 func (o *Orchestrator) SplitSched(service *Service, domainID DomainID, eventID ServiceID) (bool, bool, *Service, error) {
 	// edge-cloud split (has qos degradation) -- there is no cloud only apparently
 	fmt.Println("inside split scheduling")
@@ -264,22 +235,12 @@ func (o *Orchestrator) Allocate(domainID DomainID, serviceID ServiceID, eventID 
 	allocated := false
 	domain := o.Domains[domainID]
 	service := o.AllServices[serviceID]
-	fmt.Println("added running service: ", o.RunningServices[eventID])
 
 	sortedNodes, _ := o.sortNodes(domain.ActiveNodes, service.StandardMode.cpusEdge, service.StandardMode.bandwidthEdge)
 	for _, nodeName := range sortedNodes {
-		fmt.Println("node name after allocation", nodeName)
 		allocated, _ := o.allocateEdge(service, o.Domains[domainID].ActiveNodes[nodeName], eventID)
 		if allocated {
-			fmt.Println("qos before allocation", o.QoS)
-			fmt.Println("qos of the service", service.StandardQoS)
 			o.QoS = o.QoS + service.StandardQoS
-			// o.RunningServices[eventID] = svc
-			fmt.Println("running services after allocation for eventID:", o.RunningServices[eventID], eventID)
-			fmt.Println("node after allocation", o.Domains[domainID].ActiveNodes[nodeName])
-			fmt.Println("node name after allocation", nodeName)
-			fmt.Println("allocated node:", o.Domains[domainID].ActiveNodes[o.RunningServices[eventID].AllocatedNodeEdge])
-			fmt.Println("allocated cores:", o.RunningServices[eventID].AllocatedCoresEdge)
 			return allocated, nil
 		}
 	}
@@ -287,6 +248,7 @@ func (o *Orchestrator) Allocate(domainID DomainID, serviceID ServiceID, eventID 
 	edgeAllocated, cloudAllocated, svc, _ := o.SplitSched(service, domainID, eventID)
 	if edgeAllocated && cloudAllocated {
 		fmt.Println("show svc in split scheduling", svc)
+		o.QoS = o.QoS + service.ReducedQoS
 		return true, nil
 	} else {
 		fmt.Println("the split scheduling didn't work. powering on some nodes")
@@ -336,16 +298,8 @@ func (o *Orchestrator) Deallocate(domainID DomainID, serviceID ServiceID, eventI
 
 	if allocatedMode == StandardMode {
 		serviceQoS = service.StandardQoS
-		fmt.Println("qos before deallocation", o.QoS)
-		fmt.Println("service standard qos", service.StandardQoS)
 		nodeN := service.AllocatedNodeEdge
-		fmt.Println("node name:", nodeN)
-		fmt.Println("node before deallocation", domain.ActiveNodes)
 		node := domain.ActiveNodes[nodeN]
-		cores := service.AllocatedCoresEdge
-		fmt.Println("node after deallocation", node)
-		fmt.Println("node", node)
-		fmt.Println("cores", cores)
 		_, err := service.StandardMode.ServiceDeallocate(eventID, node)
 		if err != nil {
 			fmt.Println("Error in deallocation: ", err)
@@ -354,8 +308,6 @@ func (o *Orchestrator) Deallocate(domainID DomainID, serviceID ServiceID, eventI
 	}
 	if allocatedMode == ReducedMode {
 		serviceQoS = service.ReducedQoS
-		fmt.Println("qos before deallocation", o.QoS)
-		fmt.Println("service standard qos", service.ReducedQoS)
 		edgeNode := domain.ActiveNodes[service.AllocatedNodeEdge]
 		cloudNode := o.Cloud.ActiveNodes[service.AllocatedNodeCloud]
 		_, err := service.ReducedMode.ServiceDeallocate(eventID, edgeNode, edgeLoc)

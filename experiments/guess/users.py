@@ -7,7 +7,7 @@ from services import *
 ## Constants
 ############################################
 # TOTAL_DURATION = 10000
-NUM_USERS = 100
+NUM_USERS = 70
 USER_IDS = range( NUM_USERS )
 NUM_SERVICES = 10
 SERVICE_IDS = range(NUM_SERVICES )

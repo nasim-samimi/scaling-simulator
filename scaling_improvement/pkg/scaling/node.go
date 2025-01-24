@@ -158,6 +158,8 @@ func (n *Node) NodeDeallocate(eventID ServiceID) bool {
 		bandwidth = n.AllocatedServices[eventID].StandardMode.bandwidthEdge
 	case ReducedMode:
 		bandwidth = n.AllocatedServices[eventID].ReducedMode.bandwidthEdge
+	case EdgeReducedMode:
+		bandwidth = n.AllocatedServices[eventID].ReducedMode.bandwidthCloud
 
 	}
 	totalResidualBandwidth := n.TotalResidualBandwidth
@@ -170,7 +172,35 @@ func (n *Node) NodeDeallocate(eventID ServiceID) bool {
 	}
 	n.TotalResidualBandwidth = totalResidualBandwidth
 	n.AverageResidualBandwidth = totalResidualBandwidth / float64(len(n.Cores))
+	if n.TotalResidualBandwidth < 0 {
+		return false
+	}
+	delete(n.AllocatedServices, eventID)
+	return true
+}
 
+func (n *Node) CloudNodeDeallocate(eventID ServiceID) bool {
+	fmt.Println("going to Node Deallocate", n)
+	fmt.Println("allocated services:", n.AllocatedServices)
+	fmt.Println("eventID:", eventID)
+	cores := n.AllocatedServices[eventID].AllocatedCoresCloud
+	fmt.Println("cores for deallocating in node deallocate:", cores)
+
+	bandwidth := n.AllocatedServices[eventID].ReducedMode.bandwidthCloud
+
+	totalResidualBandwidth := n.TotalResidualBandwidth
+	for _, core := range cores {
+		fmt.Println("core:", n.Cores[core].ConsumedBandwidth)
+		fmt.Println("coreID:", core)
+		n.Cores[core].ConsumedBandwidth -= bandwidth
+		fmt.Println("consumed bandwidth after deallocation: ", n.Cores[core].ConsumedBandwidth)
+		totalResidualBandwidth -= bandwidth
+	}
+	n.TotalResidualBandwidth = totalResidualBandwidth
+	n.AverageResidualBandwidth = totalResidualBandwidth / float64(len(n.Cores))
+	if n.TotalResidualBandwidth < 0 {
+		return false
+	}
 	delete(n.AllocatedServices, eventID)
 	return true
 }

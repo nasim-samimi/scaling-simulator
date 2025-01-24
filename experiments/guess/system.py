@@ -16,7 +16,7 @@ REALLOCATION_H=["HBI","HCI","HBCI","HBIcC"]
 NODE_SELECTION_H=["MinMin","MaxMax"]
 
 MAX_BANDWIDTH_PER_CORE=100
-EVENTS_LENGTH=500
+EVENTS_LENGTH=1000
 
 
 def Heuristics(reallocationH,nodeSelectionH):

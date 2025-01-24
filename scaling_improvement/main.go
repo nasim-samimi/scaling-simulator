@@ -99,7 +99,7 @@ func processEvents(orchestrator *src.Orchestrator) error {
 			fmt.Println("Deallocate")
 			orchestrator.Deallocate(event.TargetDomainID, event.TargetServiceID, eventID)
 			orchestrator.UpgradeService()
-			orchestrator.NodeReclaim(event.TargetDomainID)
+			// orchestrator.NodeReclaim(event.TargetDomainID)
 			fmt.Println("/////////////////////")
 		}
 	}

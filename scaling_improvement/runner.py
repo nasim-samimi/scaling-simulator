@@ -5,9 +5,10 @@ import sys
 
 PARTITIONING_H=['bestfit','worstfit']
 
-REALLOCATION_H=["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC","HBLI","HCLI"]
+REALLOCATION_H=["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC"]
+# REALLOCATION_H=["HBCI"]
 NODE_SELECTION_H=["MinMin","MaxMax"]
-addition=0.5
+addition=0
 if len(sys.argv) > 1:
     addition = sys.argv[1]
 

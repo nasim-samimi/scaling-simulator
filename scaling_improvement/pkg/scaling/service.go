@@ -117,11 +117,8 @@ func (r *reducedSched) ServiceAllocate(service *Service, node *Node, loc Locatio
 		if err != nil {
 			return false, service, err
 		}
-		service.AllocatedNodeCloud = node.NodeName
-		service.AllocatedCoresCloud = allocatedCores
 		allocated = true
-		service.TotalResidualBandwidth = r.bandwidthEdge*float64(r.cpusEdge) + r.bandwidthCloud*float64(r.cpusCloud)
-		service.AverageResidualBandwidth = service.TotalResidualBandwidth / float64(r.cpusEdge+r.cpusCloud)
+
 		newSvc := &Service{
 			ImportanceFactor:         service.ImportanceFactor,
 			serviceID:                service.serviceID,
@@ -152,35 +149,21 @@ func (r *reducedSched) ServiceAllocate(service *Service, node *Node, loc Locatio
 		}
 		return allocated, newSvc, nil
 	}
-	// r.service.TotalResidualBandwidth = r.bandwidthEdge*float64(r.cpusEdge) + r.bandwidthCloud*float64(r.cpusCloud)
-	// r.service.AverageResidualBandwidth = r.service.TotalResidualBandwidth / float64(r.cpusEdge+r.cpusCloud)
-
-	// newSvc := &Service{
-	// 	StandardMode:             r.service.StandardMode,
-	// 	ReducedMode:              r.service.ReducedMode,
-	// 	ImportanceFactor:         r.service.ImportanceFactor,
-	// 	serviceID:                r.service.serviceID,
-	// 	AllocatedCoresEdge:       r.service.AllocatedCoresEdge,
-	// 	AllocatedCoresCloud:      r.service.AllocatedCoresCloud,
-	// 	AllocatedNodeEdge:        r.service.AllocatedNodeEdge,
-	// 	AllocatedNodeCloud:       r.service.AllocatedNodeCloud,
-	// 	AllocatedDomain:          r.service.AllocatedDomain,
-	// 	AllocationMode:           r.service.AllocationMode,
-	// 	AverageResidualBandwidth: r.service.AverageResidualBandwidth,
-	// 	TotalResidualBandwidth:   r.service.TotalResidualBandwidth,
-	// 	StandardQoS:              r.service.StandardQoS,
-	// }
 
 	return true, &Service{}, nil
 
 }
 
 func (r *reducedSched) ServiceDeallocate(eventID ServiceID, node *Node, location Location) (ServiceID, error) {
+	var deallocated bool
 	switch location {
 	case edgeLoc:
-		node.NodeDeallocate(eventID)
+		deallocated = node.NodeDeallocate(eventID)
 	case cloudLoc:
-		node.NodeDeallocate(eventID)
+		deallocated = node.CloudNodeDeallocate(eventID)
+	}
+	if !deallocated {
+		return eventID, fmt.Errorf("Service not deallocated")
 	}
 	return eventID, nil
 }
@@ -190,8 +173,9 @@ type ServiceMode string
 type Services map[ServiceID]*Service
 
 const (
-	ReducedMode  ServiceMode = "Reduced"
-	StandardMode ServiceMode = "Standard"
+	ReducedMode     ServiceMode = "Reduced"
+	StandardMode    ServiceMode = "Standard"
+	EdgeReducedMode ServiceMode = "EdgeReduced"
 )
 
 type Service struct {
@@ -209,6 +193,7 @@ type Service struct {
 	TotalResidualBandwidth   float64
 	StandardQoS              QoS
 	ReducedQoS               QoS
+	EdgeReducedQoS           QoS
 	// serviceModel           serviceModel
 }
 
@@ -230,6 +215,7 @@ func NewService(importanceFactor float64, serviceID ServiceID, standardBandwidth
 		StandardMode:     standard,
 		StandardQoS:      QoS(standard.bandwidthEdge * float64(standard.cpusEdge) * importanceFactor),
 		ReducedQoS:       QoS((reduced.bandwidthEdge*float64(reduced.cpusEdge) + reduced.bandwidthCloud*float64(reduced.cpusCloud)) * importanceFactor),
+		EdgeReducedQoS:   QoS(reduced.bandwidthCloud * float64(reduced.cpusCloud) * importanceFactor),
 	}
 
 	return service
@@ -261,4 +247,56 @@ func NewRunningService(service *Service, eventID ServiceID) *Service {
 		StandardQoS:      service.StandardQoS,
 		ReducedQoS:       service.ReducedQoS,
 	}
+}
+
+func (r *reducedSched) EdgeServiceAllocate(service *Service, node *Node, eventID ServiceID, cpuThreshold float64) (bool, *Service, error) {
+	allocated := false
+
+	allocatedCores, err := node.NodeAllocate(r.cpusCloud, r.bandwidthCloud, service, eventID, cpuThreshold)
+
+	if err != nil {
+		return allocated, service, err
+	}
+
+	allocated = true
+
+	newSvc := &Service{
+		ImportanceFactor:         service.ImportanceFactor,
+		serviceID:                service.serviceID,
+		ReducedMode:              service.ReducedMode,
+		StandardMode:             service.StandardMode,
+		AllocatedCoresEdge:       allocatedCores,
+		AllocatedNodeEdge:        node.NodeName,
+		AllocatedDomain:          node.DomainID,
+		AllocationMode:           EdgeReducedMode,
+		AverageResidualBandwidth: (r.bandwidthCloud * float64(r.cpusCloud)) / float64(r.cpusCloud),
+		TotalResidualBandwidth:   r.bandwidthCloud * float64(r.cpusCloud),
+		StandardQoS:              service.StandardQoS,
+		ReducedQoS:               service.ReducedQoS,
+		EdgeReducedQoS:           service.EdgeReducedQoS,
+	}
+	node.AllocatedServices[eventID] = &Service{
+		ImportanceFactor:         service.ImportanceFactor,
+		serviceID:                service.serviceID,
+		ReducedMode:              service.ReducedMode,
+		StandardMode:             service.StandardMode,
+		AllocatedCoresEdge:       allocatedCores,
+		AllocatedNodeEdge:        node.NodeName,
+		AllocatedDomain:          node.DomainID,
+		AllocationMode:           EdgeReducedMode,
+		AverageResidualBandwidth: (r.bandwidthCloud * float64(r.cpusCloud)) / float64(r.cpusCloud),
+		TotalResidualBandwidth:   r.bandwidthCloud * float64(r.cpusCloud),
+		StandardQoS:              service.StandardQoS,
+		ReducedQoS:               service.ReducedQoS,
+		EdgeReducedQoS:           service.EdgeReducedQoS,
+	}
+	return allocated, newSvc, nil
+
+}
+
+func (r *reducedSched) EdgeServiceDeallocate(eventID ServiceID, node *Node) (ServiceID, error) {
+
+	node.CloudNodeDeallocate(eventID)
+
+	return eventID, nil
 }

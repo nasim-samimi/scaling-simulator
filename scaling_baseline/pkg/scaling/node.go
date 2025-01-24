@@ -63,6 +63,23 @@ func (n *Node) NodeAllocate(reqCpus uint64, reqBandwidth float64, service *Servi
 	return selectedCpus, nil
 }
 
+func (n *Node) CloudNodeDeallocate(eventID ServiceID) bool {
+	cores := n.AllocatedServices[eventID].AllocatedCoresCloud
+
+	bandwidth := n.AllocatedServices[eventID].ReducedMode.bandwidthCloud
+
+	totalResidualBandwidth := n.TotalResidualBandwidth
+	for _, core := range cores {
+		n.Cores[core].ConsumedBandwidth -= bandwidth
+		totalResidualBandwidth -= bandwidth
+	}
+	n.TotalResidualBandwidth = totalResidualBandwidth
+	n.AverageResidualBandwidth = totalResidualBandwidth / float64(len(n.Cores))
+
+	delete(n.AllocatedServices, eventID)
+	return true
+}
+
 func IntraDomainReallocateTest(newService *Service, oldServiceID ServiceID, n Node) (bool, error) {
 	fmt.Println("Intra Domain Reallocate Test")
 	NewCores := make(Cores, len(n.Cores))
