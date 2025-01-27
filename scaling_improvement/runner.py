@@ -5,8 +5,8 @@ import sys
 
 PARTITIONING_H=['bestfit','worstfit']
 
-REALLOCATION_H=["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC"]
-# REALLOCATION_H=["HBCI"]
+# REALLOCATION_H=["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC"]
+REALLOCATION_H=["HBCI"]
 NODE_SELECTION_H=["MinMin","MaxMax"]
 addition=0
 if len(sys.argv) > 1:
@@ -29,9 +29,6 @@ def run():
                 except:
                     print('Error:',"",n,p)
                     return
-            os.chdir('..')
-            os.system(f'python3 experiments/results.py {n} {p} {addition}')
-            os.chdir('scaling_improvement')
             # sleep(5)
 
 if __name__=='__main__':

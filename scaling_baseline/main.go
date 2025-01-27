@@ -103,11 +103,29 @@ func processEvents(orchestrator *src.Orchestrator) error {
 	}
 	fmt.Println("QoS per Cost: ", qosPerCost)
 	// save to csv file
-	name := string(orchestrator.NodeSelectionHeuristic) + "_" + string(orchestrator.PartitionHeuristic) + "_" + "baseline" + "_" + addition
-	util.WriteToCsv("../experiments/results/baseline/qosPerCost_"+name+".csv", qosPerCost)
-	util.WriteToCsv("../experiments/results/baseline/runtimes_"+name+".csv", durations)
-	util.WriteToCsv("../experiments/results/baseline/qos_"+name+".csv", qos)
-	util.WriteToCsv("../experiments/results/baseline/cost_"+name+".csv", cost)
+	name := "addition=" + addition + "/" + string(orchestrator.NodeSelectionHeuristic) + "/" + string(orchestrator.PartitionHeuristic) + "/"
+	name2 := "baseline"
+	//first check if directory exists
+	if _, err := os.Stat("../experiments/results/baseline/runtimes/" + name); os.IsNotExist(err) {
+		// create directory
+		os.MkdirAll("../experiments/results/baseline/runtimes/"+name, os.ModePerm)
+	}
+	if _, err := os.Stat("../experiments/results/baseline/qosPerCost/" + name); os.IsNotExist(err) {
+		// create directory
+		os.MkdirAll("../experiments/results/baseline/qosPerCost/"+name, os.ModePerm)
+	}
+	if _, err := os.Stat("../experiments/results/baseline/qos/" + name); os.IsNotExist(err) {
+		// create directory
+		os.MkdirAll("../experiments/results/baseline/qos/"+name, os.ModePerm)
+	}
+	if _, err := os.Stat("../experiments/results/baseline/cost/" + name); os.IsNotExist(err) {
+		// create directory
+		os.MkdirAll("../experiments/results/baseline/cost/"+name, os.ModePerm)
+	}
+	util.WriteToCsv("../experiments/results/baseline/qosPerCost/"+name+name2+".csv", qosPerCost)
+	util.WriteToCsv("../experiments/results/baseline/runtimes/"+name+name2+".csv", durations)
+	util.WriteToCsv("../experiments/results/baseline/qos/"+name+name2+".csv", qos)
+	util.WriteToCsv("../experiments/results/baseline/cost/"+name+name2+".csv", cost)
 	fmt.Println("Durations: ", durations)
 	return nil
 }

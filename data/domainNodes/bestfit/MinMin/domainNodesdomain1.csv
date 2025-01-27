@@ -1,5 +1,5 @@
 NodeName,NumCores,PartitioningHeuristic,NodeSelectionHeuristic
-domain1_worker0,8,bestfit,MinMin
+domain1_worker0,16,bestfit,MinMin
 domain1_worker1,8,bestfit,MinMin
 domain1_worker2,8,bestfit,MinMin
 domain1_worker3,8,bestfit,MinMin

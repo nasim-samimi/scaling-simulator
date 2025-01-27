@@ -23,10 +23,7 @@ def run():
 
             try: 
                 os.system(f'go run main.go {addition} > log.txt')
-                # os.system('cd ..')
-                os.chdir('..')
-                os.system(f'python3 experiments/results.py {n} {p} {addition}')
-                os.chdir('scaling_baseline')
+
             except:
                 print('Error:',"",n,p)
                 return

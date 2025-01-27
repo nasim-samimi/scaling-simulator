@@ -24,9 +24,7 @@ def run():
                 except:
                     print('Error:',"",n,p)
                     return
-            os.chdir('..')
-            os.system(f'python3 experiments/results.py {n} {p} {addition}')
-            os.chdir('scaling_heuristics')
+
 
 if __name__=='__main__':
     run()                

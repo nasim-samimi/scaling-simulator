@@ -34,7 +34,7 @@ type EventID string
 
 const (
 	CloudNodeCost Cost = 3
-	EdgeNodeCost  Cost = 1
+	EdgeNodeCost  Cost = 2
 )
 
 type Orchestrator struct {

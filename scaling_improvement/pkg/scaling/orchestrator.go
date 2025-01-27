@@ -62,7 +62,7 @@ type Orchestrator struct {
 func NewOrchestrator(nodeSelectionHeuristic NodeSelectionHeuristic, reallocationHeuristic ReallocationHeuristic, partitionHeuristic Heuristic, cloud *Cloud, domains Domains, services Services) *Orchestrator {
 	domainCost := Cost(0)
 	for _, d := range domains {
-		domainCost += Cost(len(d.ActiveNodes)) * EdgeNodeCost
+		domainCost += Cost(len(d.ActiveNodes)) * EdgeNodeCost * 2
 	}
 	fmt.Println("Domain cost:", domainCost)
 	cloudCost := Cost(len(cloud.ActiveNodes)) * CloudNodeCost
