@@ -1,6 +1,7 @@
 import pandas as pd
 import os
 import sys
+from results import *
 # import sleep
 
 PARTITIONING_H=['bestfit','worstfit']
@@ -24,6 +25,9 @@ def run():
                     return
 
 if __name__=='__main__':
-    run()                
+    # run()    
+    robustness(metric='cost')            
+    robustness(metric='qos')
+    robustness(metric='qosPerCost')
             
             

@@ -29,9 +29,7 @@ def unexpectedServices():
 
 def generateRandomUser(addedUtil,addition,events:pd.DataFrame):
     u=0
-    print('added util:',addedUtil)
     potentialUsers=Users[Users['TotalUtil']<=addedUtil]
-    print('potential users:',potentialUsers)
     extraEvents=pd.DataFrame(columns=events.columns)
     ind=0
     eventCount=len(events)+1
@@ -41,7 +39,6 @@ def generateRandomUser(addedUtil,addition,events:pd.DataFrame):
         numAppearance=random.choice(range(1,5))
         randFirstAppearance=random.choice(range(0,int(events['EventTime'].max())))
         arrival=randFirstAppearance
-        print('randUser:',randUser)
         for n in range(numAppearance):
             eT=arrival
             u=u+randUser['TotalUtil']
@@ -83,9 +80,6 @@ def generateRandomUser(addedUtil,addition,events:pd.DataFrame):
             if arrival<eT:
                 print('error in arrival time, arrival time is invalid')
             eventCount=eventCount+1
-    print('total util by extra users:',u) 
-    print(extraEvents['TotalUtil'].sum())
-    print('added util:',addedUtil)
     return extraEvents.sort_values(by='EventTime')
 
 def generateRandomUpTime(addedUpTime,maxTime):
@@ -108,18 +102,12 @@ def generateRandService(addedUtil,addition,events:pd.DataFrame,Services:pd.DataF
     ind=0
     i=len(events)+1
     while u<addedUtil:
-        print(SERVICE_IDS)
         randServiceID=random.choice(SERVICE_IDS)
         randService=Services.loc[randServiceID]
         randFirstAppearance=random.choice(range(1,int(events['EventTime'].max())))
         randDomain=random.choice(DOMAIN_IDS)
         randUpTime=random.choice(range(math.ceil(MIN_UP_TIME/NUM_DOMAINS),math.ceil(MAX_UP_TIME/NUM_DOMAINS)))
-        print('randupTime:',randUpTime)
         util=randService['sTotalUtil']*randUpTime
-        print('service util:',randService['sTotalUtil'])
-        print('util:',util)
-        print('added util:',addedUtil)
-        print('u',u)
         while util>addedUtil-u:
             randUpTime=randUpTime-1
             if randUpTime<=0:
@@ -153,7 +141,6 @@ def generateRandService(addedUtil,addition,events:pd.DataFrame,Services:pd.DataF
         ind=ind+1
                 
         # randServiceID=random.sample(SERVICE_IDS,4)[0]
-    print('total util by extra users:',u)
     print(extraEvents['TotalUtil'].sum())
     print('added util:',addedUtil)
     return extraEvents.sort_values(by='EventTime')

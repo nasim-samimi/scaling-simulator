@@ -1,5 +1,5 @@
 NodeName,NumCores,PartitioningHeuristic,NodeSelectionHeuristic
-domain9_worker0,16,worstfit,MaxMax
+domain9_worker0,8,worstfit,MaxMax
 domain9_worker1,8,worstfit,MaxMax
 domain9_worker2,8,worstfit,MaxMax
 domain9_worker3,8,worstfit,MaxMax
@@ -22,11 +22,3 @@ domain9_worker19,8,worstfit,MaxMax
 domain9_worker20,8,worstfit,MaxMax
 domain9_worker21,8,worstfit,MaxMax
 domain9_worker22,8,worstfit,MaxMax
-domain9_worker23,8,worstfit,MaxMax
-domain9_worker24,8,worstfit,MaxMax
-domain9_worker25,8,worstfit,MaxMax
-domain9_worker26,8,worstfit,MaxMax
-domain9_worker27,8,worstfit,MaxMax
-domain9_worker28,8,worstfit,MaxMax
-domain9_worker29,8,worstfit,MaxMax
-domain9_worker30,8,worstfit,MaxMax

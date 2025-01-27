@@ -1,2 +1,2 @@
 ReallocationHeuristic,NodeSelectionHeuristic,PartitioningHeuristic
-HBCI,MaxMax,worstfit
+LBC,MaxMax,worstfit

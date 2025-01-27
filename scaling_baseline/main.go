@@ -60,7 +60,7 @@ func initialise() *src.Orchestrator {
 
 func processEvents(orchestrator *src.Orchestrator) error {
 	addition := addition()
-	events := util.LoadEventsFromCSV("../data/events_" + addition + ".csv")
+	events := util.LoadEventsFromCSV("../data/events/events_" + addition + ".csv")
 	qosPerCost := make([]float64, 0)
 	qos := make([]float64, 0)
 	cost := make([]float64, 0)

@@ -105,9 +105,6 @@ def EventGenerator(eventsLength=EVENTS_LENGTH):
     i=0
     totalUpTime=0
     for _,u in Users.iterrows():
-        # print('user:',u)
-        # print(Users.head())
-        print('user:',u)
         arrival=random.choice(range(0,int(u['MaxArrivalTime']*10)))/10
         while arrival<eventsLength:
             eT=arrival
@@ -156,13 +153,13 @@ def EventGenerator(eventsLength=EVENTS_LENGTH):
     EventsAbstract=EventsAbstract[EventsAbstract['EventType']=='allocate']
     # print(eventDomain)
     Events=Events.sort_values(by=['EventTime'])
-    Events.to_csv('data/events_0.csv', index=False)
+    Events.to_csv('data/events/events_0.csv', index=False)
     Users.to_csv('data/users.csv', index=False)
     totalUtil=sum(util)
     return totalUpTime, EventsAbstract,totalUtil
 
 if __name__ == '__main__':
-    ServiceGenerator(TOTAL_SERVICES,importanceRange,sBandwidthRange,sCoresRange,0)
+    ServiceGenerator(NUM_SERVICES,importanceRange,sBandwidthRange,sCoresRange,0)
     UserTiming()
     print("users are generated")
     totalUpTime,abstract,util=EventGenerator(eventsLength=EVENTS_LENGTH)

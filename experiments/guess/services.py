@@ -4,12 +4,12 @@ import random
 
 #accept a range of values for services
 # variables: total number of services, importance, bandwidth, cores
-TOTAL_SERVICES = 100
-importanceRange=range(1,TOTAL_SERVICES+1)
+NUM_SERVICES = 100
+importanceRange=range(1,NUM_SERVICES+1)
 sBandwidthRange=range(5,81,1)
 sCoresRange=range(1,8)#range(2,11,2) # max number of cores should be matched with the number of cores in the system
 
-SERVICE_IDS=range(TOTAL_SERVICES)
+SERVICE_IDS=range(NUM_SERVICES)
 
 Services=pd.DataFrame(columns=['ServiceID', 'Importance', 'sBandwidth', 'sCores', 'rEBandwidth', 'rECores', 'rCBandwidth', 'rCCores', 'sTotalUtil'])
 Services['ServiceID']=SERVICE_IDS
@@ -43,8 +43,7 @@ def ServiceGenerator(numServices,importance,sBandwidth,sCores,number): # it retu
     Services['rCCores']=rCCores
     print('service util:',serviceUtil)
     Services['sTotalUtil']=serviceUtil.to_list()
-    print('total util:',Services['sTotalUtil'])
-    print(Services)
+
     if not os.path.exists('data/services/'):
         os.mkdir('data/services/')
     Services.to_csv(f'data/services/services{number}.csv', index=False)

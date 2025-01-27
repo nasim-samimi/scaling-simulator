@@ -36,8 +36,6 @@ def computeNodeCores(d,opt):
     sIDs=[]
     for _, u in Users.iterrows():
         if d in u['Domains']:
-            # print(d)
-            # print(userIDs)
             userIDs.append(u['UserID'])
     
     for IDs in userIDs:
@@ -49,15 +47,10 @@ def computeNodeCores(d,opt):
         schedule.loc[i,'sBandwidth']=Services.loc[s,'sBandwidth']
         schedule.loc[i,'ServiceID']=s
         i=i+1
-    # print(schedule.to_string())
-    # schedule=schedule.groupby('ServiceID', as_index=False).agg({'sCores': 'sum', 'sBandwidth': 'first'})
-    # print(schedule)
+
     if opt[0]=='worstfit' and opt[1]=='MaxMax':
         nodes,_=WorstFitMaxMax(schedule)
-        # print(nodes)
-    # elif opt[0]=='firstfit' and opt[1]=='maxmax':
-    #     nodes,_=FirstFitMaxMax(schedule)
-    #     print(nodes)
+
     elif opt[0]=='bestfit' and opt[1]=='MaxMax':
         nodes,_=BestFitMaxMax(schedule)
         # print(nodes)
@@ -301,7 +294,6 @@ def domainNodes(opt):
     print(opt)
     for d in DOMAIN_IDS: 
         nodes=computeNodeCores(d,opt)
-        print(nodes)
         nodeNames=[]
         for i in range(nodes):
             nodeNames.append(f'domain{d}_worker{i}')
@@ -317,7 +309,7 @@ def domainNodes(opt):
 
 if __name__ == '__main__':
     Heuristics(REALLOCATION_H,NODE_SELECTION_H)
-    ServiceGenerator(TOTAL_SERVICES,importanceRange,sBandwidthRange,sCoresRange,0)
+    ServiceGenerator(NUM_SERVICES,importanceRange,sBandwidthRange,sCoresRange,0)
     UserTiming()
     print("users are generated")
     EventGenerator(EVENTS_LENGTH)
