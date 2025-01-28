@@ -7,7 +7,7 @@ import (
 	"os"
 	"strconv"
 
-	src "github.com/nasim-samimi/scaling-simulator/pkg/scaling"
+	src "github.com/nasim-samimi/scaling-simulator/pkg/orchestrator"
 )
 
 func loadNodesFromCSV(filePath string, loc string, domainID src.DomainID) (src.Nodes, src.Nodes) {
@@ -185,22 +185,4 @@ func LoadEventsFromCSV(filePath string) []src.Event {
 		i++
 	}
 	return events
-}
-
-func WriteToCsv(filePath string, records []float64) {
-	file, err := os.Create(filePath)
-	if err != nil {
-		log.Fatalf("Unable to create output file %s, %v", filePath, err)
-	}
-	defer file.Close()
-
-	writer := csv.NewWriter(file)
-	defer writer.Flush()
-
-	for _, record := range records {
-		err := writer.Write([]string{strconv.FormatFloat(record, 'f', -1, 64)})
-		if err != nil {
-			log.Fatalf("Unable to write to CSV file %s, %v", filePath, err)
-		}
-	}
 }

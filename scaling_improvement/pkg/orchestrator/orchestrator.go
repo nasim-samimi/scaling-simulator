@@ -3,11 +3,16 @@ package scaling
 import (
 	"fmt"
 	"sort"
+
+	cnfg "github.com/nasim-samimi/scaling-simulator/pkg/config"
 )
 
 type Heuristic string
 type NodeSelectionHeuristic Heuristic
 type ReallocationHeuristic Heuristic
+type IntraNodeReallocHeuristic Heuristic
+type IntraDomainReallocHeuristic Heuristic
+type IntraNodeReducedHeuristic Heuristic
 type Location string
 
 const (
@@ -47,37 +52,52 @@ const (
 )
 
 type Orchestrator struct {
-	NodeSelectionHeuristic NodeSelectionHeuristic
-	ReallocationHeuristic  ReallocationHeuristic
-	PartitionHeuristic     Heuristic
-	Domains                Domains
-	Cloud                  *Cloud
-	AllServices            Services
-	RunningServices        Services // change name of service to service
-	Cost                   Cost
-	QoS                    QoS
-	sortedNodes            []NodeName
+	NodeSelectionHeuristic  NodeSelectionHeuristic
+	ReallocationHeuristic   ReallocationHeuristic
+	PartitionHeuristic      Heuristic
+	IntraNodeReallocation   bool
+	IntraNodeReallocHeu     IntraNodeReallocHeuristic
+	IntraDomainReallocation bool
+	IntraDomainReallocHeu   IntraDomainReallocHeuristic
+	IntraNodeReduced        bool
+	IntraNodeReducedHeu     IntraNodeReducedHeuristic
+	CloudNodeCost           Cost
+	EdgeNodeCost            Cost
+	Domains                 Domains
+	Cloud                   *Cloud
+	AllServices             Services
+	RunningServices         Services // change name of service to service
+	Cost                    Cost
+	QoS                     QoS
+	sortedNodes             []NodeName
 }
 
-func NewOrchestrator(nodeSelectionHeuristic NodeSelectionHeuristic, reallocationHeuristic ReallocationHeuristic, partitionHeuristic Heuristic, cloud *Cloud, domains Domains, services Services) *Orchestrator {
+func NewOrchestrator(config *cnfg.Config, cloud *Cloud, domains Domains, services Services) *Orchestrator {
 	domainCost := Cost(0)
 	for _, d := range domains {
-		domainCost += Cost(len(d.ActiveNodes)) * EdgeNodeCost * 2
+		domainCost += Cost(len(d.ActiveNodes)) * Cost(config.EdgeNodeCost) * 2
 	}
 	fmt.Println("Domain cost:", domainCost)
-	cloudCost := Cost(len(cloud.ActiveNodes)) * CloudNodeCost
+	cloudCost := Cost(len(cloud.ActiveNodes)) * Cost(config.CloudNodeCost)
 
 	cost := domainCost + cloudCost
 	o := &Orchestrator{
-		NodeSelectionHeuristic: nodeSelectionHeuristic,
-		ReallocationHeuristic:  reallocationHeuristic,
-		PartitionHeuristic:     partitionHeuristic,
-		Domains:                domains,
-		Cloud:                  cloud,
-		AllServices:            services,
-		Cost:                   cost,
-		QoS:                    0,
-		RunningServices:        make(Services),
+		NodeSelectionHeuristic:  NodeSelectionHeuristic(config.NodeHeuristic),
+		IntraNodeReallocation:   config.IntraNodeRealloc,
+		IntraNodeReallocHeu:     IntraNodeReallocHeuristic(config.IntraNodeReallocHeu),
+		IntraDomainReallocation: config.IntraDomainRealloc,
+		IntraDomainReallocHeu:   IntraDomainReallocHeuristic(config.IntraDomainReallocHeu),
+		IntraNodeReduced:        config.IntraNodeReduced,
+		IntraNodeReducedHeu:     IntraNodeReducedHeuristic(config.IntraNodeReducedHeu),
+		PartitionHeuristic:      Heuristic(config.PartitionHeuristic),
+		EdgeNodeCost:            Cost(config.EdgeNodeCost),
+		CloudNodeCost:           Cost(config.CloudNodeCost),
+		Domains:                 domains,
+		Cloud:                   cloud,
+		AllServices:             services,
+		Cost:                    cost,
+		QoS:                     0,
+		RunningServices:         make(Services),
 	}
 
 	o.cloudPowerOnNode()
@@ -473,7 +493,7 @@ func (o *Orchestrator) edgePowerOffNode(domainID DomainID, nodeName NodeName) bo
 	}
 	cores := CreateNodeCores(len(o.Domains[domainID].ActiveNodes[nodeName].Cores))
 	o.Domains[domainID].InactiveNodes[nodeName] = NewNode(cores, o.Domains[domainID].ActiveNodes[nodeName].ReallocHeuristic, nodeName, domainID)
-	o.Cost = o.Cost - EdgeNodeCost
+	o.Cost = o.Cost - o.EdgeNodeCost
 	delete(o.Domains[domainID].ActiveNodes, nodeName)
 
 	return true
@@ -481,7 +501,7 @@ func (o *Orchestrator) edgePowerOffNode(domainID DomainID, nodeName NodeName) bo
 
 func (o *Orchestrator) cloudPowerOffNode(nodeName NodeName) bool {
 	o.Cloud.InactiveNodes[nodeName] = NewNode(o.Cloud.ActiveNodes[nodeName].Cores, o.Cloud.ActiveNodes[nodeName].ReallocHeuristic, nodeName, "")
-	o.Cost = o.Cost - CloudNodeCost
+	o.Cost = o.Cost - o.CloudNodeCost
 	delete(o.Cloud.ActiveNodes, nodeName)
 
 	return true
@@ -494,7 +514,7 @@ func (o *Orchestrator) edgePowerOnNode(domainID DomainID) (bool, NodeName) {
 		node.Status = Active
 		cores := CreateNodeCores(len(node.Cores))
 		o.Domains[domainID].ActiveNodes[nodeName] = NewNode(cores, node.ReallocHeuristic, nodeName, domainID)
-		o.Cost = o.Cost + EdgeNodeCost
+		o.Cost = o.Cost + o.EdgeNodeCost
 		delete(o.Domains[domainID].InactiveNodes, nodeName)
 		return true, nodeName
 	}
@@ -507,7 +527,7 @@ func (o *Orchestrator) cloudPowerOnNode() bool {
 		node.Status = Active
 		cores := CreateNodeCores(len(node.Cores))
 		o.Cloud.ActiveNodes[nodeName] = NewNode(cores, node.ReallocHeuristic, nodeName, "")
-		o.Cost = o.Cost + CloudNodeCost
+		o.Cost = o.Cost + o.CloudNodeCost
 		delete(o.Cloud.InactiveNodes, nodeName)
 		break
 	}
@@ -549,11 +569,7 @@ func (o *Orchestrator) Allocate(domainID DomainID, serviceID ServiceID, eventID 
 		if reallocationHelp {
 			allocated, err := o.intraNodeRealloc(service, node, eventID, reallocatedEventID, NewCores)
 			if allocated {
-				fmt.Println("qos before intra node reallocation", o.QoS)
-				fmt.Println("qos of the service", service.StandardQoS)
 				o.QoS = o.QoS + service.StandardQoS
-				fmt.Println("allocated with intra node reallocation")
-				fmt.Println("node average residual bandwidth after allocation:", o.Domains[domainID].ActiveNodes[nodeName].AverageResidualBandwidth, "total residual bandwidth:", o.Domains[domainID].ActiveNodes[nodeName].TotalResidualBandwidth)
 				return allocated, nil
 			}
 			if err != nil {
@@ -563,8 +579,6 @@ func (o *Orchestrator) Allocate(domainID DomainID, serviceID ServiceID, eventID 
 			if intraDomainHelp {
 				allocated, err = o.intraDomainRealloc(service, node, domain, sortedNodesNoFilter, eventID, reallocatedEventID)
 				if allocated {
-					fmt.Println("qos before intra domain reallocation", o.QoS)
-					fmt.Println("qos of the service", service.StandardQoS)
 					o.QoS = o.QoS + service.StandardQoS
 					fmt.Println("allocated with intra domain reallocation")
 					return allocated, nil

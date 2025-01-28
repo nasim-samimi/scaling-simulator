@@ -10,7 +10,7 @@ partitionHeus=['bestfit','worstfit']
 reallocationHeus=["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC"]
 main_dir = 'experiments/results/'
 plots=main_dir+'plots/'
-ADDITIONS=[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
+ADDITIONS=range(0,1,0.1)
 
 def plotfiles(main_dir,dir,addition,metric,dirs):
     leg=[]

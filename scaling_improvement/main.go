@@ -4,59 +4,16 @@ import (
 	"fmt"
 	"log"
 	"math"
-	"os"
-	"path/filepath"
-	"strconv"
+
 	"time"
 
-	src "github.com/nasim-samimi/scaling-simulator/pkg/scaling"
+	cnfg "github.com/nasim-samimi/scaling-simulator/pkg/config"
+	src "github.com/nasim-samimi/scaling-simulator/pkg/orchestrator"
 	util "github.com/nasim-samimi/scaling-simulator/pkg/util"
 )
 
-func addition() string {
-	if len(os.Args) < 2 {
-		fmt.Println("No arguments provided to show randomness!")
-		fmt.Println("Usage: go run main.go <addition>")
-		return "0.5"
-	}
-	fmt.Println("Received arguments:", os.Args[1])
+func processEvents(orchestrator *src.Orchestrator, addition string) ([]float64, []float64, []float64, []float64, error) {
 
-	addition := os.Args[1]
-	return addition
-}
-func initialise() *src.Orchestrator {
-	CloudNodes, reservedCloudNodes := util.LoadCloudFromCSV("../data/cloud.csv", "cloud")
-	cloud := src.NewCloud(CloudNodes, reservedCloudNodes)
-	// read domain csv files in domain folder
-	svcs := util.LoadSVCFromCSV("../data/services/services0.csv")
-	nodeHeuristic, reallocHeuristic, partitionHeuristic := util.LoadHeuristicFromCSV("../data/heuristics.csv")
-	fmt.Println("Node Heuristic:", nodeHeuristic)
-	fmt.Println("Realloc Heuristic:", reallocHeuristic)
-
-	domainFilesNames, err := filepath.Glob("../data/domainNodes/" + string(partitionHeuristic) + "/" + string(nodeHeuristic) + "/*.csv")
-	fmt.Println("../data/domainNodes/" + string(nodeHeuristic) + "/" + string(partitionHeuristic))
-	fmt.Println(domainFilesNames)
-	if err != nil {
-		log.Fatal(err)
-	}
-	domains := make(src.Domains)
-	i := 0
-	for _, fileName := range domainFilesNames {
-		id := strconv.Itoa(i)
-		i++
-		domainNodes, reservedNodes := util.LoadDomainFromCSV(fileName, "domain", src.DomainID(id))
-		// fmt.Println("domain ID:", id)
-		// fmt.Println("name of the file:", fileName)
-		domains[src.DomainID(id)] = src.NewDomain(domainNodes, reservedNodes, src.DomainID(id))
-	}
-
-	// initialise the orchestrator
-	orchestrator := src.NewOrchestrator(src.NodeSelectionHeuristic(nodeHeuristic), src.ReallocationHeuristic(reallocHeuristic), src.Heuristic(partitionHeuristic), cloud, domains, svcs)
-	return orchestrator
-}
-
-func processEvents(orchestrator *src.Orchestrator) error {
-	addition := addition()
 	events := util.LoadEventsFromCSV("../data/events/events_" + addition + ".csv")
 	qosPerCost := make([]float64, 0)
 	qos := make([]float64, 0)
@@ -104,35 +61,20 @@ func processEvents(orchestrator *src.Orchestrator) error {
 		}
 	}
 	fmt.Println("QoS per Cost: ", qosPerCost)
-	// save to csv file
-	name := "addition=" + addition + "/" + string(orchestrator.NodeSelectionHeuristic) + "/" + string(orchestrator.PartitionHeuristic) + "/"
-	name2 := string(orchestrator.ReallocationHeuristic)
-	//first check if directory exists
-	if _, err := os.Stat("../experiments/results/improved/runtimes/" + name); os.IsNotExist(err) {
-		// create directory
-		os.MkdirAll("../experiments/results/improved/runtimes/"+name, os.ModePerm)
-	}
-	if _, err := os.Stat("../experiments/results/improved/qosPerCost/" + name); os.IsNotExist(err) {
-		// create directory
-		os.MkdirAll("../experiments/results/improved/qosPerCost/"+name, os.ModePerm)
-	}
-	if _, err := os.Stat("../experiments/results/improved/qos/" + name); os.IsNotExist(err) {
-		// create directory
-		os.MkdirAll("../experiments/results/improved/qos/"+name, os.ModePerm)
-	}
-	if _, err := os.Stat("../experiments/results/improved/cost/" + name); os.IsNotExist(err) {
-		// create directory
-		os.MkdirAll("../experiments/results/improved/cost/"+name, os.ModePerm)
-	}
-	util.WriteToCsv("../experiments/results/improved/qosPerCost/"+name+name2+".csv", qosPerCost)
-	util.WriteToCsv("../experiments/results/improved/runtimes/"+name+name2+".csv", durations)
-	util.WriteToCsv("../experiments/results/improved/qos/"+name+name2+".csv", qos)
-	util.WriteToCsv("../experiments/results/improved/cost/"+name+name2+".csv", cost)
+
 	fmt.Println("Durations: ", durations)
-	return nil
+	return cost, qos, qosPerCost, durations, nil
 }
 
 func main() {
-	orchestrator := initialise()
-	processEvents(orchestrator)
+	config, err := cnfg.LoadConfig("config.yaml")
+	if err != nil {
+		log.Fatal(err)
+	}
+	orchestrator := util.Initialise(config)
+	cost, qos, qosPerCost, durations, err := processEvents(orchestrator, config.Addition)
+	if err != nil {
+		log.Fatal(err)
+	}
+	util.WriteResults(cost, qos, qosPerCost, durations, orchestrator, config.Addition)
 }
