@@ -1,4 +1,4 @@
-package scaling
+package orchestrator
 
 import "fmt"
 

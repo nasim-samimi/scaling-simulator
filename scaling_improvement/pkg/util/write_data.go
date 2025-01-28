@@ -30,8 +30,8 @@ func WriteToCsv(filePath string, records []float64) {
 func WriteResults(cost []float64, qos []float64, qosPerCost []float64, durations []float64, orchestrator *src.Orchestrator, addition string) error {
 	// write the results to csv files
 
-	name := "addition=" + addition + "/" + string(orchestrator.NodeSelectionHeuristic) + "/" + string(orchestrator.PartitionHeuristic) + "/"
-	name2 := string(orchestrator.ReallocationHeuristic)
+	name := "addition=" + addition + "/" + string(orchestrator.Config.NodeHeuristic) + "/" + string(orchestrator.Config.PartitionHeuristic) + "/"
+	name2 := string(orchestrator.Config.ReallocationHeuristic)
 	//first check if directory exists
 	if _, err := os.Stat("../experiments/results/improved/runtimes/" + name); os.IsNotExist(err) {
 		// create directory

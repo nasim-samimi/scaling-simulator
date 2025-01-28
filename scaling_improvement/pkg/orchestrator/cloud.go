@@ -1,4 +1,4 @@
-package scaling
+package orchestrator
 
 type Cloud struct {
 	AllNodes      Nodes

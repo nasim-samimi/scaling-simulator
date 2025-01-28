@@ -1,18 +1,20 @@
-addition: "0"
-upgrade_service: true
-node_reclaim: false
-intra_node_realloc: false
-intra_node_realloc_heu: "HB"
-intra_domain_realloc: false
-intra_domain_realloc_heu: "HB"
-intra_node_reduced: false
-intra_node_reduced_heu: "HB"
-edge_reduced: false
-domain_threshold: 100
-cloud_node_cost: 3
-edge_node_cost: 1
-init_node_size: 16
-scaled_node_size: 8
-partition_heuristic: "bestfit"
-node_heuristic: "MaxMax"
-reallocation_heuristic: "HB"
+orchestrator:
+  upgrade_service: true
+  node_reclaim: false
+  intra_node_realloc: true
+  intra_node_realloc_heu: "HB"
+  intra_domain_realloc: false
+  intra_domain_realloc_heu: "HB"
+  intra_node_reduced: false
+  intra_node_reduced_heu: "HB"
+  edge_reduced: false
+  domain_node_threshold: 100
+  cloud_node_cost: 3
+  edge_node_cost: 1
+  partition_heuristic: "bestfit"
+  node_heuristic: "MaxMax"
+  reallocation_heuristic: "HB"
+system:
+  addition: "0"
+  init_node_size: 16
+  scaled_node_size: 8

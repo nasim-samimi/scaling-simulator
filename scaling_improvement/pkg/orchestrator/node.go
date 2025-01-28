@@ -1,6 +1,10 @@
-package scaling
+package orchestrator
 
-import "fmt"
+import (
+	"fmt"
+
+	cnfg "github.com/nasim-samimi/scaling-simulator/pkg/config"
+)
 
 type NodeName string
 type AllocatedServices map[ServiceID]*Service
@@ -13,7 +17,7 @@ const (
 
 type Node struct {
 	Cores                    Cores
-	ReallocHeuristic         Heuristic
+	ReallocHeuristic         cnfg.Heuristic
 	NodeName                 NodeName
 	NodeAdmission            *AdmissionTest
 	Location                 Location
@@ -24,7 +28,7 @@ type Node struct {
 	Status                   NodeStatus
 }
 
-func NewNode(cores Cores, heuristic Heuristic, nodeName NodeName, domainID DomainID) *Node {
+func NewNode(cores Cores, heuristic cnfg.Heuristic, nodeName NodeName, domainID DomainID) *Node {
 	admissionTest := NewAdmissionTest(cores, heuristic)
 	// fmt.Println("Node Admission Test Cores: ", admissionTest.Cores[CoreID("core-0")])
 	return &Node{

@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 
+	cnfg "github.com/nasim-samimi/scaling-simulator/pkg/config"
 	src "github.com/nasim-samimi/scaling-simulator/pkg/orchestrator"
 )
 
@@ -44,7 +45,7 @@ func loadNodesFromCSV(filePath string, loc string, domainID src.DomainID) (src.N
 			cores := src.CreateNodeCores(numCores)
 			partitioningHeuristic := record[2]
 
-			newNode := src.NewNode(cores, src.Heuristic(partitioningHeuristic), src.NodeName(nodeName), domainID)
+			newNode := src.NewNode(cores, cnfg.Heuristic(partitioningHeuristic), src.NodeName(nodeName), domainID)
 			nodes[src.NodeName(nodeName)] = newNode
 
 		} else {
@@ -53,7 +54,7 @@ func loadNodesFromCSV(filePath string, loc string, domainID src.DomainID) (src.N
 			cores := src.CreateNodeCores(numCores)
 			partitioningHeuristic := record[2]
 
-			newNode := src.NewNode(cores, src.Heuristic(partitioningHeuristic), src.NodeName(nodeName), domainID)
+			newNode := src.NewNode(cores, cnfg.Heuristic(partitioningHeuristic), src.NodeName(nodeName), domainID)
 			reservedNodes[src.NodeName(nodeName)] = newNode
 		}
 		i++
@@ -112,7 +113,7 @@ func LoadSVCFromCSV(filePath string) src.Services {
 	return svcs
 }
 
-func LoadHeuristicFromCSV(filePath string) (src.Heuristic, src.Heuristic, src.Heuristic) {
+func LoadHeuristicFromCSV(filePath string) (cnfg.Heuristic, cnfg.Heuristic, cnfg.Heuristic) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		log.Fatalf("Unable to read input file %s, %v", filePath, err)
@@ -139,7 +140,7 @@ func LoadHeuristicFromCSV(filePath string) (src.Heuristic, src.Heuristic, src.He
 		partitHeu = record[2]
 		break
 	}
-	return src.Heuristic(nodeHeu), src.Heuristic(reallocHeu), src.Heuristic(partitHeu)
+	return cnfg.Heuristic(nodeHeu), cnfg.Heuristic(reallocHeu), cnfg.Heuristic(partitHeu)
 }
 
 // must define a parameter validation function specially for heuristics

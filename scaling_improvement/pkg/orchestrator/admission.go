@@ -1,16 +1,18 @@
-package scaling
+package orchestrator
 
 import (
 	"fmt"
 	"sort"
+
+	cnfg "github.com/nasim-samimi/scaling-simulator/pkg/config"
 )
 
 type AdmissionTest struct {
 	Cores     Cores
-	Heuristic Heuristic
+	Heuristic cnfg.Heuristic
 }
 
-func NewAdmissionTest(core Cores, heuristic Heuristic) *AdmissionTest {
+func NewAdmissionTest(core Cores, heuristic cnfg.Heuristic) *AdmissionTest {
 	return &AdmissionTest{
 		Cores:     core,
 		Heuristic: heuristic,

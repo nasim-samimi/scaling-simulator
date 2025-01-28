@@ -17,8 +17,12 @@ func Initialise(config *cnfg.Config) *src.Orchestrator {
 	// read domain csv files in domain folder
 	svcs := LoadSVCFromCSV("../data/services/services0.csv")
 	// nodeHeuristic, reallocHeuristic, partitionHeuristic := util.LoadHeuristicFromCSV("../data/heuristics.csv")
-	nodeHeuristic := config.NodeHeuristic
-	partitionHeuristic := config.PartitionHeuristic
+	nodeHeuristic := config.Orchestrator.NodeHeuristic
+	partitionHeuristic := config.Orchestrator.PartitionHeuristic
+	fmt.Println("configs", config)
+	fmt.Println("initialising the orchestrator")
+	fmt.Println("nodeHeuristic:", nodeHeuristic)
+	fmt.Println("partitionHeuristic:", partitionHeuristic)
 
 	domainFilesNames, err := filepath.Glob("../data/domainNodes/" + string(partitionHeuristic) + "/" + string(nodeHeuristic) + "/*.csv")
 	fmt.Println("../data/domainNodes/" + string(nodeHeuristic) + "/" + string(partitionHeuristic))
@@ -38,7 +42,7 @@ func Initialise(config *cnfg.Config) *src.Orchestrator {
 	}
 
 	// initialise the orchestrator
-	orchestrator := src.NewOrchestrator(config, cloud, domains, svcs)
-	fmt.Println("the addition from config file:", config.Addition)
+	orchestrator := src.NewOrchestrator(&config.Orchestrator, cloud, domains, svcs)
+	fmt.Println("the addition from config file:", config.System.Addition)
 	return orchestrator
 }

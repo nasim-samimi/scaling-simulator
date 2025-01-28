@@ -55,8 +55,8 @@ func processEvents(orchestrator *src.Orchestrator, addition string) ([]float64, 
 			fmt.Println("/////////////////////")
 			fmt.Println("Deallocate")
 			orchestrator.Deallocate(event.TargetDomainID, event.TargetServiceID, eventID)
-			orchestrator.UpgradeService()
-			// orchestrator.NodeReclaim(event.TargetDomainID)
+			orchestrator.UpgradeServiceIfEnabled()
+			orchestrator.NodeReclaimIfEnabled(event.TargetDomainID)
 			fmt.Println("/////////////////////")
 		}
 	}
@@ -72,9 +72,9 @@ func main() {
 		log.Fatal(err)
 	}
 	orchestrator := util.Initialise(config)
-	cost, qos, qosPerCost, durations, err := processEvents(orchestrator, config.Addition)
+	cost, qos, qosPerCost, durations, err := processEvents(orchestrator, config.System.Addition)
 	if err != nil {
 		log.Fatal(err)
 	}
-	util.WriteResults(cost, qos, qosPerCost, durations, orchestrator, config.Addition)
+	util.WriteResults(cost, qos, qosPerCost, durations, orchestrator, config.System.Addition)
 }

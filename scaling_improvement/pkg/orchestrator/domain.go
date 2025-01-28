@@ -1,4 +1,4 @@
-package scaling
+package orchestrator
 
 type DomainID string
 type Nodes map[NodeName]*Node

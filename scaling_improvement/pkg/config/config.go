@@ -4,28 +4,36 @@ import (
 	"fmt"
 	"os"
 
-	"sigs.k8s.io/yaml"
+	"gopkg.in/yaml.v3"
 )
 
+type OrchestratorConfig struct {
+	UpgradeService        bool      `yaml:"upgrade_service"`
+	NodeReclaim           bool      `yaml:"node_reclaim"`
+	IntraNodeRealloc      bool      `yaml:"intra_node_realloc"`
+	IntraNodeReallocHeu   Heuristic `yaml:"intra_node_realloc_heu"`
+	IntraDomainRealloc    bool      `yaml:"intra_domain_realloc"`
+	IntraDomainReallocHeu Heuristic `yaml:"intra_domain_realloc_heu"`
+	IntraNodeReduced      bool      `yaml:"intra_node_reduced"`
+	IntraNodeReducedHeu   Heuristic `yaml:"intra_node_reduced_heu"`
+	DomainNodeThreshold   float64   `yaml:"domain_node_threshold"`
+	EdgeReduced           bool      `yaml:"edge_reduced"`
+	CloudNodeCost         float64   `yaml:"cloud_node_cost"`
+	EdgeNodeCost          float64   `yaml:"edge_node_cost"`
+
+	PartitionHeuristic    Heuristic `yaml:"partition_heuristic"`
+	NodeHeuristic         Heuristic `yaml:"node_heuristic"`
+	ReallocationHeuristic Heuristic `yaml:"reallocation_heuristic"`
+}
+type SystemConfig struct {
+	InitNodeSize   uint64 `yaml:"init_node_size"`
+	ScaledNodeSize uint64 `yaml:"scaled_node_size"`
+	Addition       string `yaml:"addition"`
+}
+
 type Config struct {
-	Addition              string  `yaml:"addition"`
-	UpgradeService        bool    `yaml:"upgrade_service"`
-	NodeReclaim           bool    `yaml:"node_reclaim"`
-	IntraNodeRealloc      bool    `yaml:"intra_node_realloc"`
-	IntraNodeReallocHeu   string  `yaml:"intra_node_realloc_heu"`
-	IntraDomainRealloc    bool    `yaml:"intra_domain_realloc"`
-	IntraDomainReallocHeu string  `yaml:"intra_domain_realloc_heu"`
-	IntraNodeReduced      bool    `yaml:"intra_node_reduced"`
-	IntraNodeReducedHeu   string  `yaml:"intra_node_reduced_heu"`
-	DomainNodeThreshold   float64 `yaml:"domain_node_threshold"`
-	EdgeReduced           bool    `yaml:"edge_reduced"`
-	CloudNodeCost         float64 `yaml:"cloud_node_cost"`
-	EdgeNodeCost          float64 `yaml:"edge_node_cost"`
-	InitNodeSize          uint64  `yaml:"init_node_size"`
-	ScaledNodeSize        uint64  `yaml:"scaled_node_size"`
-	PartitionHeuristic    string  `yaml:"partition_heuristic"`
-	NodeHeuristic         string  `yaml:"node_selection_heuristic"`
-	ReallocationHeuristic string  `yaml:"reallocation_heuristic"`
+	Orchestrator OrchestratorConfig `yaml:"orchestrator"`
+	System       SystemConfig       `yaml:"system"`
 }
 
 func LoadConfig(filePath string) (*Config, error) {
@@ -34,12 +42,13 @@ func LoadConfig(filePath string) (*Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error reading YAML file: %v", err)
 	}
-
 	// Parse the YAML into the Config struct
 	var config Config
-	if err := yaml.Unmarshal(data, &config); err != nil {
-		return nil, fmt.Errorf("error unmarshaling YAML: %v", err)
+	if err := yaml.Unmarshal([]byte(data), &config); err != nil {
+		fmt.Printf("Error unmarshaling YAML: %v\n", err)
+		return nil, err
 	}
+	fmt.Println("raw data:", config)
 
 	return &config, nil
 }
