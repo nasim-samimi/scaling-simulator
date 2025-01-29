@@ -232,7 +232,7 @@ def compareBaselines(dir='baseline/'):
     fulldir=f'{main_dir}{dir}cost/addition={addition}/'
     plotfiles(main_dir,fulldir,addition,'cost',dirs)
 
-def robustness(dir1='improved/',dir2='baseline/',metric='cost'):
+def robustness(dir1='improved/allOpts',dir2='baseline/',metric='cost'):
 
     avg=[]
     columns=[]
@@ -283,14 +283,60 @@ def robustness(dir1='improved/',dir2='baseline/',metric='cost'):
                 os.makedirs(savingDir)
             plt.savefig(f'{savingDir}robustness_{metric}.png')
             plt.close()
-                    
-
-    #qos
-
-
-    #qosPerCost
 
     return
+
+def robustness_withflags(dir1='improved/',dir2='baseline/',metric='cost'):
+
+    avg=[]
+    columns=[]
+    averages=pd.DataFrame(columns=['averages','heuristics','addition'])
+    dirs=[main_dir+dir1,main_dir+dir2]
+    leg=[]
+    #cost
+    
+    for n in nodeHeus:
+        for p in partitionHeus:
+            avg=[]
+            
+            i=0
+            averages=pd.DataFrame(columns=['averages','heuristics','addition'])
+            for a in ADDITIONS:
+                leg=[]
+                for dir in dirs:
+                    fulldir=f'{dir}{metric}/addition={a}/{n}/{p}/'
+                    print(fulldir)
+                    for files in os.listdir(fulldir):
+                        qosPerCost = pd.read_csv(f'{fulldir}{files}', header=None)
+                        qosPerCost.columns = [metric]
+
+                        sorted_data = np.sort(qosPerCost[metric])
+                        max_index = np.argmax(sorted_data)
+                        avg_value = np.average(sorted_data)
+                        max_value = sorted_data[max_index]
+                        avg.append(avg_value)
+                        averages.loc[i]=[avg_value,files[:-4],a]
+                        leg.append(files[:-4])
+                        i+=1
+ 
+            print(leg)
+            plt.figure(figsize=figsize)
+            for l in leg:
+                
+                avgs = averages[averages['heuristics'] == l]
+                avgs = avgs.sort_values(by='addition')
+                plt.plot(avgs['addition'], avgs['averages'], marker='o')
+            plt.grid(True)
+            plt.xlabel('Additions')
+            # plt.xticks(range(len(ADDITIONS)), ADDITIONS)
+            plt.ylabel(metric)
+            plt.title(f'Robustness comparison for {metric} - {n}-{p}')    
+            plt.legend(leg)
+            savingDir=f'{plots}robustness_with_flags/{n}/{p}/'
+            if not os.path.exists(savingDir):
+                os.makedirs(savingDir)
+            plt.savefig(f'{savingDir}robustness_{metric}.png')
+            plt.close()
 
 
 if __name__ == '__main__':

@@ -35,8 +35,23 @@ func WriteToCsv(filePath string, records []float64) error {
 func WriteResults(cost []float64, qos []float64, qosPerCost []float64, durations []float64, orchestrator *src.Orchestrator, addition string, baseFolder string) error {
 	// Construct the base directory paths
 	name := "addition=" + addition + "/" + string(orchestrator.Config.NodeHeuristic) + "/" + string(orchestrator.Config.PartitionHeuristic) + "/"
-	name2 := string(orchestrator.Config.ReallocationHeuristic)
+	reallocName := ""
+	// if orchestrator.Config.IntraDomainRealloc {
+	// 	reallocName = string(orchestrator.Config.IntraDomainReallocHeu)
+	// }
+	// if orchestrator.Config.IntraNodeRealloc {
+	// 	reallocName = string(orchestrator.Config.IntraNodeReallocHeu)
+	// }
+	// if orchestrator.Config.IntraNodeReduced {
+	// 	reallocName = string(orchestrator.Config.IntraNodeReducedHeu)
+	// }
+	if orchestrator.Config.IntraDomainRealloc || orchestrator.Config.IntraNodeRealloc || orchestrator.Config.IntraNodeReduced {
+		reallocName = string(orchestrator.Config.ReallocationHeuristic)
+	}
 
+	if reallocName == "" {
+		reallocName = "improved"
+	}
 	// Define output subdirectories
 	subDirs := []string{"runtimes", "qosPerCost", "qos", "cost"}
 
@@ -50,10 +65,10 @@ func WriteResults(cost []float64, qos []float64, qosPerCost []float64, durations
 
 	// Define file paths for each result type
 	filePaths := map[string][]float64{
-		filepath.Join("../experiments/results", baseFolder, "qosPerCost", name, name2+".csv"): qosPerCost,
-		filepath.Join("../experiments/results", baseFolder, "runtimes", name, name2+".csv"):   durations,
-		filepath.Join("../experiments/results", baseFolder, "qos", name, name2+".csv"):        qos,
-		filepath.Join("../experiments/results", baseFolder, "cost", name, name2+".csv"):       cost,
+		filepath.Join("../experiments/results", baseFolder, "qosPerCost", name, reallocName+".csv"): qosPerCost,
+		filepath.Join("../experiments/results", baseFolder, "runtimes", name, reallocName+".csv"):   durations,
+		filepath.Join("../experiments/results", baseFolder, "qos", name, reallocName+".csv"):        qos,
+		filepath.Join("../experiments/results", baseFolder, "cost", name, reallocName+".csv"):       cost,
 	}
 
 	// Write results to CSV files
