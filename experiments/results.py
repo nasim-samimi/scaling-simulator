@@ -273,7 +273,7 @@ def robustness(dir1='improved/allOpts',dir2='baseline/',metric='cost',flags='all
                 avgs = avgs.sort_values(by='addition')
                 plt.plot(avgs['addition'], avgs['averages'], marker='o')
             plt.grid(True)
-            plt.xlabel('Additions')
+            plt.xlabel('randomness')
             # plt.xticks(range(len(ADDITIONS)), ADDITIONS)
             plt.ylabel(metric)
             plt.title(f'Robustness comparison for {metric} - {n}-{p}')    
