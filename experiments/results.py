@@ -232,7 +232,7 @@ def compareBaselines(dir='baseline/'):
     fulldir=f'{main_dir}{dir}cost/addition={addition}/'
     plotfiles(main_dir,fulldir,addition,'cost',dirs)
 
-def robustness(dir1='improved/allOpts',dir2='baseline/',metric='cost'):
+def robustness(dir1='improved/allOpts',dir2='baseline/',metric='cost',flags='allOpts'):
 
     avg=[]
     columns=[]
@@ -278,7 +278,7 @@ def robustness(dir1='improved/allOpts',dir2='baseline/',metric='cost'):
             plt.ylabel(metric)
             plt.title(f'Robustness comparison for {metric} - {n}-{p}')    
             plt.legend(leg)
-            savingDir=f'{plots}robustness/{n}/{p}/'
+            savingDir=f'{plots}robustness/with_{flags}/{n}/{p}/'
             if not os.path.exists(savingDir):
                 os.makedirs(savingDir)
             plt.savefig(f'{savingDir}robustness_{metric}.png')

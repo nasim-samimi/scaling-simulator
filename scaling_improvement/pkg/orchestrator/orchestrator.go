@@ -44,7 +44,7 @@ type Orchestrator struct {
 func NewOrchestrator(config *cnfg.OrchestratorConfig, cloud *Cloud, domains Domains, services Services) *Orchestrator {
 	domainCost := Cost(0)
 	for _, d := range domains {
-		domainCost += Cost(len(d.ActiveNodes)) * Cost(config.EdgeNodeCost) * 2
+		domainCost += Cost(len(d.ActiveNodes)) * Cost(config.EdgeNodeCost)
 	}
 	fmt.Println("Domain cost:", domainCost)
 	cloudCost := Cost(len(cloud.ActiveNodes)) * Cost(config.CloudNodeCost)
@@ -71,7 +71,7 @@ func NewOrchestrator(config *cnfg.OrchestratorConfig, cloud *Cloud, domains Doma
 }
 
 func (o *Orchestrator) allocateEdge(service *Service, node *Node, eventID ServiceID) (bool, error) {
-	const cpuThreshold = 100.0 //80.0
+	cpuThreshold := o.Config.DomainNodeThreshold
 	fmt.Println("Allocating standard service: ", service.serviceID, " to node: ", node.NodeName)
 	allocated, svc, err := service.StandardMode.ServiceAllocate(service, node, eventID, cpuThreshold)
 	if allocated {
