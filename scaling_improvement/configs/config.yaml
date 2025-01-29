@@ -18,3 +18,4 @@ system:
   addition: "0"
   init_node_size: 16
   scaled_node_size: 8
+  results_dir: "improved"

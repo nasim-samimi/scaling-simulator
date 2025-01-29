@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"math"
@@ -67,7 +68,9 @@ func processEvents(orchestrator *src.Orchestrator, addition string) ([]float64, 
 }
 
 func main() {
-	config, err := cnfg.LoadConfig("config.yaml")
+	configPath := flag.String("config", "config.yaml", "Path to the configuration YAML file")
+	flag.Parse()
+	config, err := cnfg.LoadConfig(*configPath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -76,5 +79,5 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	util.WriteResults(cost, qos, qosPerCost, durations, orchestrator, config.System.Addition)
+	util.WriteResults(cost, qos, qosPerCost, durations, orchestrator, config.System.Addition, config.System.ResultsDir)
 }

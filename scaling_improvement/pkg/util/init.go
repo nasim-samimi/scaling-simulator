@@ -36,8 +36,6 @@ func Initialise(config *cnfg.Config) *src.Orchestrator {
 		id := strconv.Itoa(i)
 		i++
 		domainNodes, reservedNodes := LoadDomainFromCSV(fileName, "domain", src.DomainID(id))
-		// fmt.Println("domain ID:", id)
-		// fmt.Println("name of the file:", fileName)
 		domains[src.DomainID(id)] = src.NewDomain(domainNodes, reservedNodes, src.DomainID(id))
 	}
 
