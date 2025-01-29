@@ -18,13 +18,13 @@ if __name__=='__main__':
         if 'intra' in f:
             for t in node_thresholds:
                 dir=f'improved/with_{f}_threshold_{t}/'
-                robustness(dir1=dir,metric='cost',flags=f)            
-                robustness(dir1=dir,metric='qos',flags=f)
-                robustness(dir1=dir,metric='qosPerCost',flags=f)
+                robustness(dir1=dir,metric='cost',flags=f'with_{f}_threshold_{t}')            
+                robustness(dir1=dir,metric='qos',flags=f'with_{f}_threshold_{t}')
+                robustness(dir1=dir,metric='qosPerCost',flags=f'with_{f}_threshold_{t}')
         else:
             dir=f'improved/with_{f}/'   
-            robustness(dir1=dir,metric='cost',flags=f)            
-            robustness(dir1=dir,metric='qos',flags=f)
-            robustness(dir1=dir,metric='qosPerCost',flags=f)
+            robustness(dir1=dir,metric='cost',flags=f'with_{f}')            
+            robustness(dir1=dir,metric='qos',flags=f'with_{f}')
+            robustness(dir1=dir,metric='qosPerCost',flags=f'with_{f}')
 
             

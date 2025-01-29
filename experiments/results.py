@@ -278,7 +278,7 @@ def robustness(dir1='improved/allOpts',dir2='baseline/',metric='cost',flags='all
             plt.ylabel(metric)
             plt.title(f'Robustness comparison for {metric} - {n}-{p}')    
             plt.legend(leg)
-            savingDir=f'{plots}robustness/with_{flags}/{n}/{p}/'
+            savingDir=f'{plots}robustness/{flags}/{n}/{p}/'
             if not os.path.exists(savingDir):
                 os.makedirs(savingDir)
             plt.savefig(f'{savingDir}robustness_{metric}.png')
