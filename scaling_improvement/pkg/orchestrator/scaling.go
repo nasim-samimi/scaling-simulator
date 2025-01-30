@@ -1,5 +1,7 @@
 package orchestrator
 
+import cnfg "github.com/nasim-samimi/scaling-simulator/pkg/config"
+
 func (o *Orchestrator) edgePowerOffNode(domainID DomainID, nodeName NodeName) bool {
 	for _, noden := range o.Domains[domainID].AlwaysActiveNodes {
 		if noden == nodeName {
@@ -8,7 +10,7 @@ func (o *Orchestrator) edgePowerOffNode(domainID DomainID, nodeName NodeName) bo
 	}
 	cores := CreateNodeCores(len(o.Domains[domainID].ActiveNodes[nodeName].Cores))
 	o.Domains[domainID].InactiveNodes[nodeName] = NewNode(cores, o.Domains[domainID].ActiveNodes[nodeName].ReallocHeuristic, nodeName, domainID)
-	o.Cost = o.Cost - o.EdgeNodeCost
+	o.Cost = o.Cost - o.Config.EdgeNodeCost*cnfg.Cost(len(cores))
 	delete(o.Domains[domainID].ActiveNodes, nodeName)
 
 	return true
@@ -16,7 +18,7 @@ func (o *Orchestrator) edgePowerOffNode(domainID DomainID, nodeName NodeName) bo
 
 func (o *Orchestrator) cloudPowerOffNode(nodeName NodeName) bool {
 	o.Cloud.InactiveNodes[nodeName] = NewNode(o.Cloud.ActiveNodes[nodeName].Cores, o.Cloud.ActiveNodes[nodeName].ReallocHeuristic, nodeName, "")
-	o.Cost = o.Cost - o.CloudNodeCost
+	o.Cost = o.Cost - o.Config.CloudNodeCost*cnfg.Cost(len(o.Cloud.ActiveNodes[nodeName].Cores))
 	delete(o.Cloud.ActiveNodes, nodeName)
 
 	return true
@@ -29,7 +31,7 @@ func (o *Orchestrator) edgePowerOnNode(domainID DomainID) (bool, NodeName) {
 		node.Status = Active
 		cores := CreateNodeCores(len(node.Cores))
 		o.Domains[domainID].ActiveNodes[nodeName] = NewNode(cores, node.ReallocHeuristic, nodeName, domainID)
-		o.Cost = o.Cost + o.EdgeNodeCost
+		o.Cost = o.Cost + o.Config.EdgeNodeCost*cnfg.Cost(len(cores))
 		delete(o.Domains[domainID].InactiveNodes, nodeName)
 		return true, nodeName
 	}
@@ -42,7 +44,7 @@ func (o *Orchestrator) cloudPowerOnNode() bool {
 		node.Status = Active
 		cores := CreateNodeCores(len(node.Cores))
 		o.Cloud.ActiveNodes[nodeName] = NewNode(cores, node.ReallocHeuristic, nodeName, "")
-		o.Cost = o.Cost + o.CloudNodeCost
+		o.Cost = o.Cost + o.Config.CloudNodeCost*cnfg.Cost(len(cores))
 		delete(o.Cloud.InactiveNodes, nodeName)
 		break
 	}

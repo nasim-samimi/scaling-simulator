@@ -50,7 +50,7 @@ def alwaysUpUsers():
     Users.loc[Users['UserID'].isin(alwaysUPUserIDs), 'UpTime'] = 100
     return alwaysUPUserIDs
 
-def UserTiming():
+def UserTiming(Services):
     alwaysUpUserIDs = alwaysUpUsers()
     print(alwaysUpUserIDs)
     otherUserIDs = set(USER_IDS) - set(alwaysUpUserIDs)
@@ -74,7 +74,7 @@ def UserTiming():
         Users.loc[userID, 'MinArrivalTime'] = min_arrival_time
         max_arrival_time = random.choice(range(int(min_arrival_time*3*10),int(min_arrival_time*5*10)))/10
         Users.loc[userID, 'MaxArrivalTime'] = max_arrival_time
-        Users.loc[userID,'TotalUtil']=Services.loc[Users.loc[userID,'Services'],'sTotalUtil'].sum()*upTime
+        Users.loc[userID,'TotalUtil']=Services.loc[Users.loc[userID,'Services'],'sTotalUtil'].sum()
         # print('max arrival time',max_arrival_time)
 
 
@@ -159,8 +159,8 @@ def EventGenerator(eventsLength=EVENTS_LENGTH):
     return totalUpTime, EventsAbstract,totalUtil
 
 if __name__ == '__main__':
-    ServiceGenerator(NUM_SERVICES,importanceRange,sBandwidthRange,sCoresRange,0)
-    UserTiming()
+    Services=ServiceGenerator(NUM_SERVICES,importanceRange,sBandwidthRange,sCoresRange,0)
+    UserTiming(Services)
     print("users are generated")
     totalUpTime,abstract,util=EventGenerator(eventsLength=EVENTS_LENGTH)
     print("events are generated")

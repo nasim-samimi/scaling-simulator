@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	cnfg "github.com/nasim-samimi/scaling-simulator/pkg/config"
 	src "github.com/nasim-samimi/scaling-simulator/pkg/orchestrator"
 )
 
-func loadNodesFromCSV(filePath string, loc string, domainID src.DomainID) (src.Nodes, src.Nodes) {
+func loadNodesFromCSV(filePath string, domainID src.DomainID) src.Nodes {
 	file, err := os.Open(filePath)
 	if err != nil {
 		log.Fatalf("Unable to read input file %s, %v", filePath, err)
@@ -31,44 +32,32 @@ func loadNodesFromCSV(filePath string, loc string, domainID src.DomainID) (src.N
 	}
 
 	nodes := make(src.Nodes)
-	reservedNodes := make(src.Nodes)
-	// l := int(math.Ceil(float64(len(records)/10))) + 1
-	l := 1
-	fmt.Println("l:", l)
+
 	i := 0
 	// lr := len(records) - l
 	for _, record := range records {
 		// Assuming CSV has columns: NodeID, ResidualBandwidth, Capacity
-		if i < l {
-			nodeName := record[0]
-			numCores, _ := strconv.Atoi(record[1])
-			cores := src.CreateNodeCores(numCores)
-			partitioningHeuristic := record[2]
 
-			newNode := src.NewNode(cores, cnfg.Heuristic(partitioningHeuristic), src.NodeName(nodeName), domainID)
-			nodes[src.NodeName(nodeName)] = newNode
+		nodeName := record[0]
+		numCores, _ := strconv.Atoi(record[1])
+		cores := src.CreateNodeCores(numCores)
+		partitioningHeuristic := record[2]
 
-		} else {
-			nodeName := record[0]
-			numCores, _ := strconv.Atoi(record[1])
-			cores := src.CreateNodeCores(numCores)
-			partitioningHeuristic := record[2]
+		newNode := src.NewNode(cores, cnfg.Heuristic(partitioningHeuristic), src.NodeName(nodeName), domainID)
+		nodes[src.NodeName(nodeName)] = newNode
 
-			newNode := src.NewNode(cores, cnfg.Heuristic(partitioningHeuristic), src.NodeName(nodeName), domainID)
-			reservedNodes[src.NodeName(nodeName)] = newNode
-		}
 		i++
 		// 	nodes = append(nodes, newNode)
 	}
-	return nodes, reservedNodes
+	return nodes
 }
 
-func LoadCloudFromCSV(filePath string, loc string) (src.Nodes, src.Nodes) {
-	return loadNodesFromCSV(filePath, loc, "")
+func LoadCloudFromCSV(filePath string) (src.Nodes, src.Nodes) {
+	return nil, loadNodesFromCSV(filePath, "")
 }
 
-func LoadDomainFromCSV(filename string, loc string, domainID src.DomainID) (src.Nodes, src.Nodes) {
-	return loadNodesFromCSV(filename, loc, domainID)
+func LoadDomainFromCSV(filename string, domainID src.DomainID) (src.Nodes, src.Nodes) {
+	return loadNodesFromCSV(filepath.Join(filename, "Active"), domainID), loadNodesFromCSV(filepath.Join(filename, "Reserved"), domainID)
 
 }
 

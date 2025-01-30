@@ -10,6 +10,7 @@ type Domain struct {
 	DomainID          DomainID
 	AllocatedServices Services
 	AlwaysActiveNodes []NodeName
+	SortedNodes       []NodeName
 }
 
 type Domains map[DomainID]*Domain

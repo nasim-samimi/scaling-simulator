@@ -17,6 +17,7 @@ const (
 
 type Node struct {
 	Cores                    Cores
+	numCores                 uint64
 	ReallocHeuristic         cnfg.Heuristic
 	NodeName                 NodeName
 	NodeAdmission            *AdmissionTest
@@ -41,6 +42,7 @@ func NewNode(cores Cores, heuristic cnfg.Heuristic, nodeName NodeName, domainID 
 		TotalResidualBandwidth:   0,
 		AllocatedServices:        make(AllocatedServices),
 		DomainID:                 domainID,
+		numCores:                 uint64(len(cores)),
 	}
 }
 

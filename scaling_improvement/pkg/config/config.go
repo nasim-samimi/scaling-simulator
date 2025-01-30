@@ -18,8 +18,8 @@ type OrchestratorConfig struct {
 	IntraNodeReducedHeu   Heuristic `yaml:"intra_node_reduced_heu"`
 	DomainNodeThreshold   float64   `yaml:"domain_node_threshold"`
 	EdgeReduced           bool      `yaml:"edge_reduced"`
-	CloudNodeCost         float64   `yaml:"cloud_node_cost"`
-	EdgeNodeCost          float64   `yaml:"edge_node_cost"`
+	CloudNodeCost         Cost      `yaml:"cloud_node_cost"`
+	EdgeNodeCost          Cost      `yaml:"edge_node_cost"`
 
 	PartitionHeuristic    Heuristic `yaml:"partition_heuristic"`
 	NodeHeuristic         Heuristic `yaml:"node_heuristic"`

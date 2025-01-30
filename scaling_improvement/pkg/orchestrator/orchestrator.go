@@ -20,39 +20,32 @@ const (
 )
 
 type QoS int
-type Cost int
+
 type EventID string
 
-const (
-	CloudNodeCost Cost = 3
-	EdgeNodeCost  Cost = 1
-)
-
 type Orchestrator struct {
-	CloudNodeCost   Cost
-	EdgeNodeCost    Cost
 	Domains         Domains
 	Cloud           *Cloud
 	AllServices     Services
 	RunningServices Services // change name of service to service
-	Cost            Cost
+	Cost            cnfg.Cost
 	QoS             QoS
-	sortedNodes     []NodeName
 	Config          *cnfg.OrchestratorConfig
 }
 
 func NewOrchestrator(config *cnfg.OrchestratorConfig, cloud *Cloud, domains Domains, services Services) *Orchestrator {
-	domainCost := Cost(0)
+	domainCost := cnfg.Cost(0)
 	for _, d := range domains {
-		domainCost += Cost(len(d.ActiveNodes)) * Cost(config.EdgeNodeCost)
+		for _, n := range d.ActiveNodes {
+			domainCost += cnfg.Cost(n.numCores) * config.EdgeNodeCost
+		}
 	}
 	fmt.Println("Domain cost:", domainCost)
-	cloudCost := Cost(len(cloud.ActiveNodes)) * Cost(config.CloudNodeCost)
+	cloudCost := cnfg.Cost(len(cloud.ActiveNodes)) * cnfg.Cost(config.CloudNodeCost)
 
 	cost := domainCost + cloudCost
 	o := &Orchestrator{
-		EdgeNodeCost:    Cost(config.EdgeNodeCost),
-		CloudNodeCost:   Cost(config.CloudNodeCost),
+
 		Domains:         domains,
 		Cloud:           cloud,
 		AllServices:     services,

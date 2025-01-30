@@ -12,7 +12,7 @@ import (
 
 func Initialise(config *cnfg.Config) *src.Orchestrator {
 
-	CloudNodes, reservedCloudNodes := LoadCloudFromCSV("../data/cloud.csv", "cloud")
+	CloudNodes, reservedCloudNodes := LoadCloudFromCSV("../data/cloud.csv")
 	cloud := src.NewCloud(CloudNodes, reservedCloudNodes)
 	// read domain csv files in domain folder
 	svcs := LoadSVCFromCSV("../data/services/services0.csv")
@@ -35,8 +35,8 @@ func Initialise(config *cnfg.Config) *src.Orchestrator {
 	for _, fileName := range domainFilesNames {
 		id := strconv.Itoa(i)
 		i++
-		domainNodes, reservedNodes := LoadDomainFromCSV(fileName, "domain", src.DomainID(id))
-		domains[src.DomainID(id)] = src.NewDomain(domainNodes, reservedNodes, src.DomainID(id))
+		activeNodes, reservedNodes := LoadDomainFromCSV(fileName, src.DomainID(id))
+		domains[src.DomainID(id)] = src.NewDomain(activeNodes, reservedNodes, src.DomainID(id))
 	}
 
 	// initialise the orchestrator

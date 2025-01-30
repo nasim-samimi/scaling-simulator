@@ -47,5 +47,5 @@ def ServiceGenerator(numServices,importance,sBandwidth,sCores,number): # it retu
     if not os.path.exists('data/services/'):
         os.mkdir('data/services/')
     Services.to_csv(f'data/services/services{number}.csv', index=False)
-    return
+    return Services
 
