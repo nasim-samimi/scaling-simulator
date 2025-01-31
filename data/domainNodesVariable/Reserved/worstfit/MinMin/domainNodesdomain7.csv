@@ -1,0 +1,11 @@
+NodeName,NumCores,PartitioningHeuristic,NodeSelectionHeuristic
+domain7_worker0_a,8,worstfit,MinMin
+domain7_worker1_a,8,worstfit,MinMin
+domain7_worker2_a,8,worstfit,MinMin
+domain7_worker3_a,8,worstfit,MinMin
+domain7_worker4_a,8,worstfit,MinMin
+domain7_worker5_a,8,worstfit,MinMin
+domain7_worker6_a,8,worstfit,MinMin
+domain7_worker7_a,8,worstfit,MinMin
+domain7_worker8_a,8,worstfit,MinMin
+domain7_worker9_a,8,worstfit,MinMin

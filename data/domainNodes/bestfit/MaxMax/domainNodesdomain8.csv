@@ -1,3 +1,0 @@
-NodeName,NumCores,PartitioningHeuristic,NodeSelectionHeuristic
-domain8_worker0,32,bestfit,MaxMax
-domain8_worker1,32,bestfit,MaxMax

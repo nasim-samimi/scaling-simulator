@@ -13,7 +13,6 @@ NUM_CORES_PER_INIT_NODE=32
 main_dir='data/'
 PARTITIONING_H=['bestfit','worstfit']
 
-REALLOCATION_H=["HBI","HCI","HBCI","HBIcC"]
 NODE_SELECTION_H=["MinMin","MaxMax"]
 
 MAX_BANDWIDTH_PER_CORE=100
@@ -21,7 +20,7 @@ EVENTS_LENGTH=1000
 
 
 # deriving the lower bound.
-def computeNodeCoresLowerbound(d,opt):
+def computeNodeCoresLowerbound(d,opt,num_cores):
     userIDs=[]
     sIDs=[]
     domainUsers=Users[Users['Domains'].apply(lambda x: d in x)] # what does this do?
@@ -51,16 +50,16 @@ def computeNodeCoresLowerbound(d,opt):
         i=i+1
 
     if opt[0]=='worstfit' and opt[1]=='MaxMax':
-        nodes,_=WorstFitMaxMax(schedule,max_cores_per_node=NUM_CORES_PER_INIT_NODE)
+        nodes,_=WorstFitMaxMax(schedule,max_cores_per_node=num_cores)
 
     elif opt[0]=='bestfit' and opt[1]=='MaxMax':
-        nodes,_=BestFitMaxMax(schedule,max_cores_per_node=NUM_CORES_PER_INIT_NODE)
+        nodes,_=BestFitMaxMax(schedule,max_cores_per_node=num_cores)
         # print(nodes)
     elif opt[0]=='worstfit' and opt[1]=='MinMin':
-        nodes,_=WorstFitMinMin(schedule,max_cores_per_node=NUM_CORES_PER_INIT_NODE)
+        nodes,_=WorstFitMinMin(schedule,max_cores_per_node=num_cores)
         # print(nodes)
     elif opt[0]=='bestfit' and opt[1]=='MinMin':
-        nodes,_=BestFitMinMin(schedule,max_cores_per_node=NUM_CORES_PER_INIT_NODE)
+        nodes,_=BestFitMinMin(schedule,max_cores_per_node=num_cores)
         # print(nodes)
     else:
         print('invalid heuristic')
@@ -70,19 +69,7 @@ def computeNodeCoresLowerbound(d,opt):
     return nodes
 
 
-def Heuristics(reallocationH,nodeSelectionH):
-    if not os.path.exists(main_dir+'heuristics/'):
-        os.mkdir(main_dir+'heuristics/')
-    for nH in nodeSelectionH:
-        for rH in reallocationH:
-            for pH in PARTITIONING_H:
-                df=pd.DataFrame(columns=['ReallocationHeuristic','NodeSelectionHeuristic','PartitioningHeuristic'])
-                df['ReallocationHeuristic']=[rH]
-                df['NodeSelectionHeuristic']=[nH]
-                df['PartitioningHeuristic']=[pH]
-                df.to_csv(main_dir+f'heuristics/{rH}_{nH}_{pH}.csv', index=False)
-
-def computeNodeCores(d,opt):
+def computeNodeCores(d,opt,num_cores):
     userIDs=[]
     sIDs=[]
     for _, u in Users.iterrows():
@@ -100,16 +87,16 @@ def computeNodeCores(d,opt):
         i=i+1
 
     if opt[0]=='worstfit' and opt[1]=='MaxMax':
-        nodes,_=WorstFitMaxMax(schedule,max_cores_per_node=NUM_CORES_PER_SCALED_NODE)
+        nodes,_=WorstFitMaxMax(schedule,max_cores_per_node=num_cores)
 
     elif opt[0]=='bestfit' and opt[1]=='MaxMax':
-        nodes,_=BestFitMaxMax(schedule,max_cores_per_node=NUM_CORES_PER_SCALED_NODE)
+        nodes,_=BestFitMaxMax(schedule,max_cores_per_node=num_cores)
         # print(nodes)
     elif opt[0]=='worstfit' and opt[1]=='MinMin':
-        nodes,_=WorstFitMinMin(schedule,max_cores_per_node=NUM_CORES_PER_SCALED_NODE)
+        nodes,_=WorstFitMinMin(schedule,max_cores_per_node=num_cores)
         # print(nodes)
     elif opt[0]=='bestfit' and opt[1]=='MinMin':
-        nodes,_=BestFitMinMin(schedule,max_cores_per_node=NUM_CORES_PER_SCALED_NODE)
+        nodes,_=BestFitMinMin(schedule,max_cores_per_node=num_cores)
         # print(nodes)
     else:
         print('invalid heuristic')
@@ -341,10 +328,11 @@ def FirstFitMaxMax():
 
 # the number of cores can be devided into separate nodes where each node has 3 to 16 cores.
             
-def domainNodes(opt):
+def domainNodesUpperbound(opt,dir,num_cores=NUM_CORES_PER_SCALED_NODE,num_domains=NUM_DOMAINS):
     print(opt)
-    for d in DOMAIN_IDS: 
-        nodes=computeNodeCores(d,opt)
+    domain_ids=range(num_domains)
+    for d in domain_ids: 
+        nodes=computeNodeCores(d,opt,num_cores)
         nodeNames=[]
         for i in range(nodes):
             nodeNames.append(f'domain{d}_worker{i}_r')
@@ -353,15 +341,16 @@ def domainNodes(opt):
         df['NodeName']= nodeNames
         df['PartitioningHeuristic']=[opt[0]]*nodes
         df['NodeSelectionHeuristic']=[opt[1]]*nodes
-        df['NumCores']=[NUM_CORES_PER_INIT_NODE]*nodes
-        if not os.path.exists(main_dir+'domainNodes/'):
-            os.mkdir(main_dir+'domainNodes/')
-        df.to_csv(main_dir+f'domainNodes/{opt[0]}/{opt[1]}/domainNodes{domainID}.csv', index=False)
+        df['NumCores']=[num_cores]*nodes
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+        df.to_csv(f'{dir}domainNodes{domainID}.csv', index=False)
 
-def domainNodesLowerBound(opt):
+def domainNodesLowerBound(opt,dir,num_cores=NUM_CORES_PER_INIT_NODE,num_domains=NUM_DOMAINS):
     print(opt)
-    for d in DOMAIN_IDS: 
-        nodes=computeNodeCoresLowerbound(d,opt)
+    domain_ids=range(num_domains)
+    for d in domain_ids: 
+        nodes=computeNodeCoresLowerbound(d,opt,num_cores)
         nodeNames=[]
         for i in range(nodes):
             nodeNames.append(f'domain{d}_worker{i}_a')
@@ -370,13 +359,12 @@ def domainNodesLowerBound(opt):
         df['NodeName']= nodeNames
         df['PartitioningHeuristic']=[opt[0]]*nodes
         df['NodeSelectionHeuristic']=[opt[1]]*nodes
-        df['NumCores']=[NUM_CORES_PER_INIT_NODE]*nodes
-        if not os.path.exists(main_dir+'domainNodes/'):
-            os.mkdir(main_dir+'domainNodes/')
-        df.to_csv(main_dir+f'domainNodes/{opt[0]}/{opt[1]}/domainNodes{domainID}.csv', index=False)
+        df['NumCores']=[num_cores]*nodes
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+        df.to_csv(f'{dir}domainNodes{domainID}.csv', index=False)
 
 if __name__ == '__main__':
-    # Heuristics(REALLOCATION_H,NODE_SELECTION_H)
     Services=ServiceGenerator(NUM_SERVICES,importanceRange,sBandwidthRange,sCoresRange,0)
     UserTiming(Services)
     print("check if the users have a total utilisation")
@@ -385,18 +373,12 @@ if __name__ == '__main__':
     EventGenerator(EVENTS_LENGTH)
     print("events are generated")
     for opt0 in PARTITIONING_H:
-        if not os.path.exists(main_dir+f'domainNodes/{opt0}'):
-            os.mkdir(main_dir+f'domainNodes/{opt0}')
         for opt1 in NODE_SELECTION_H:
-            if not os.path.exists(main_dir+f'domainNodes/{opt0}/{opt1}'):
-                os.mkdir(main_dir+f'domainNodes/{opt0}/{opt1}')
-            domainNodes([opt0,opt1])
+            domainNodes([opt0,opt1],main_dir+f'domainNodes/{opt0}/{opt1}/')
     print('done')
     for opt0 in PARTITIONING_H:
         for opt1 in NODE_SELECTION_H:
-            if not os.path.exists(main_dir+f'domainNodes/Active/{opt0}/{opt1}'): # or Reserved
-                os.mkdir(main_dir+f'domainNodes/Active/{opt0}/{opt1}')
-            domainNodesLowerBound([opt0,opt1])
+            domainNodesLowerBound([opt0,opt1],main_dir+f'domainNodes/Active/{opt0}/{opt1}/')
     print('done')
 
 

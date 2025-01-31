@@ -27,12 +27,13 @@ def unexpectedServices():
 #     newEvents['EventTime']=newEventsTime
 #     newEvents['EventType']='allocate'
 
-def generateRandomUser(addedUtil,addition,events:pd.DataFrame):
+def generateRandomUser(Users,Services,addedUtil,addition,events:pd.DataFrame):
     u=0
     potentialUsers=Users[Users['TotalUtil']<=addedUtil]
     extraEvents=pd.DataFrame(columns=events.columns)
     ind=0
     eventCount=len(events)+1
+    print("in generate random user")
     while u<addedUtil:
         randUsersID=random.choice(potentialUsers.index)
         randUser=Users.loc[randUsersID]
@@ -144,27 +145,4 @@ def generateRandService(addedUtil,addition,events:pd.DataFrame,Services:pd.DataF
     print(extraEvents['TotalUtil'].sum())
     print('added util:',addedUtil)
     return extraEvents.sort_values(by='EventTime')
-
-
-if __name__=='__main__':
-    Users=pd.read_csv('data/users.csv')
-    addition=1
-    Users["Services"] = Users["Services"].apply(ast.literal_eval)
-    Users["Domains"] = Users["Domains"].apply(ast.literal_eval)
-    Services=pd.read_csv('data/services/services0.csv')
-    events=pd.read_csv('data/events_0.csv')
-    totalUtil=events['TotalUtil'].sum()
-    addedUtil=totalUtil*addition
-
-    newUsersEvents=generateRandomUser(addedUtil,addition,events)
-    print(newUsersEvents)
-    print(events)
-    # newEvents=generateRandService(addedUtil,0.5,events,Services)
-    # print(newEvents)
-    newEvents=pd.concat([events,newUsersEvents])
-    newEvents.sort_values(by='EventTime',inplace=True)
-    newEvents.to_csv(f'data/events_{addition}.csv',index=False)
-
-    # newEvents.to_csv('data/events/events.csv',index=False)
-    print('done')
 

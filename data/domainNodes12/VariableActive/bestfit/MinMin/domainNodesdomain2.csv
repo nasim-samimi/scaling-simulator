@@ -1,0 +1,4 @@
+NodeName,NumCores,PartitioningHeuristic,NodeSelectionHeuristic
+domain2_worker0_a,32,bestfit,MinMin
+domain2_worker1_a,32,bestfit,MinMin
+domain2_worker2_a,32,bestfit,MinMin

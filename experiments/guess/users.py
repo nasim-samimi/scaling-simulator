@@ -7,26 +7,17 @@ from services import *
 ## Constants
 ############################################
 # TOTAL_DURATION = 10000
-NUM_USERS = 70
-USER_IDS = range( NUM_USERS )
-NUM_SERVICES = 10
-SERVICE_IDS = range(NUM_SERVICES )
 NUM_DOMAINS = 10
-DOMAIN_IDS = range(NUM_DOMAINS )
-EVENTS_LENGTH=300
 
-# MAX_ARRIVAL_TIME = TOTAL_DURATION/NUM_USERS
-# MIN_ARRIVAL_TIME = MAX_ARRIVAL_TIME/10
+
+
+
 
 ALWAYS_UP_USER = range(1, 5)  # this is number of users that have 100% up time
 
 NUM_STATIONARY_USERS_PER_DOMAIN = range(1, 4)  # stationary to a domain
 
-MAX_UP_TIME=100#int(TOTAL_DURATION/2)
-MIN_UP_TIME=NUM_DOMAINS
-UP_TIME_RANGE = range(NUM_DOMAINS, MAX_UP_TIME + 1, NUM_DOMAINS)
-NUM_SERVICE_PER_USER = range(1, 10)
-MOBILITY_RANGE = range(1, NUM_DOMAINS+1 )  # number of domains a user can move to
+ # number of domains a user can move to
 
 # INTER_ARRIVAL_TIME_RANGE = range(MIN_ARRIVAL_TIME, MAX_ARRIVAL_TIME+1, 1)  # no exact arrival time information
 
@@ -35,7 +26,7 @@ MOBILITY_RANGE = range(1, NUM_DOMAINS+1 )  # number of domains a user can move t
 ############################################
 
 Users=pd.DataFrame(columns=['UserID', 'UpTime','Services', 'Domains','UpTimePerDomain','Mobility','MinArrivalTime','MaxArrivalTime','TotalUtil']) # total util is the sum of all utilizations of the services times the up time
-Users['UserID']=USER_IDS
+
 Users.index = Users['UserID']
 
 Events=pd.DataFrame(columns=['EventTime', 'EventType', 'ServiceID','DomainID'])
@@ -46,29 +37,41 @@ Events=pd.DataFrame(columns=['EventTime', 'EventType', 'ServiceID','DomainID'])
 
 def alwaysUpUsers():
     upUsers = random.choice(ALWAYS_UP_USER)
-    alwaysUPUserIDs = random.sample(USER_IDS, upUsers)
+    alwaysUPUserIDs = range(0, upUsers)
     Users.loc[Users['UserID'].isin(alwaysUPUserIDs), 'UpTime'] = 100
     return alwaysUPUserIDs
 
-def UserTiming(Services):
+def UserTiming(Services,num_users,num_domains=NUM_DOMAINS):
+    Users['UserID']=range(num_users)
+    MAX_UP_TIME=100#int(TOTAL_DURATION/2)
+    MIN_UP_TIME=num_domains
+    UP_TIME_RANGE = range(num_domains, MAX_UP_TIME + 1, num_domains)
+    NUM_SERVICE_PER_USER = range(1, 10)
+    MOBILITY_RANGE = range(1, num_domains+1 ) 
+
+
+    num_services=len(Services)
     alwaysUpUserIDs = alwaysUpUsers()
     print(alwaysUpUserIDs)
-    otherUserIDs = set(USER_IDS) - set(alwaysUpUserIDs)
+    otherUserIDs = range(len(alwaysUpUserIDs), num_users)
+    # print('other user ids',otherUserIDs)
+    # print('always up user ids',alwaysUpUserIDs)
     print(otherUserIDs)
     for userID in otherUserIDs:
-        numServices = random.choice(NUM_SERVICE_PER_USER)
-        sIDs = random.sample(range(NUM_SERVICES ), numServices)
-
+        numServicesPerUser = random.choice(NUM_SERVICE_PER_USER)
+        sIDs = random.sample(range(num_services ), numServicesPerUser)
+        # print('sids',sIDs)
+        # print('userID',userID)
         Users.at[userID, 'Services'] = sIDs
         numDomains = random.choice(MOBILITY_RANGE)
-        dID = random.sample(range( NUM_DOMAINS ), numDomains)
+        dID = random.sample(range( num_domains ), numDomains)
         Users.at[userID, 'Domains'] = dID
 
         upTime=random.choice(UP_TIME_RANGE)
         Users.loc[userID, 'UpTime'] = upTime
 
         Users.loc[userID, 'UpTimePerDomain'] = upTime / numDomains
-        Users.loc[userID, 'Mobility'] = numDomains * 100 / NUM_DOMAINS
+        Users.loc[userID, 'Mobility'] = numDomains * 100 / num_domains
         min_arrival_time = random.choice(range(int(upTime*1.25*100),int(upTime*9*100),10))/100
         # print('min arrival time',min_arrival_time)
         Users.loc[userID, 'MinArrivalTime'] = min_arrival_time
@@ -80,7 +83,7 @@ def UserTiming(Services):
 
 
     for userID in alwaysUpUserIDs:
-        Users.at[userID, 'Services'] = random.sample(range( NUM_SERVICES ), random.choice(NUM_SERVICE_PER_USER))
+        Users.at[userID, 'Services'] = random.sample(range( num_services ), random.choice(NUM_SERVICE_PER_USER))
         numDomains = random.choice(MOBILITY_RANGE)
         Users.at[userID, 'Domains'] = random.sample(range(NUM_DOMAINS ), numDomains)
         Users.loc[userID, 'UpTimePerDomain'] = MIN_UP_TIME
@@ -91,7 +94,7 @@ def UserTiming(Services):
         Users.loc[userID, 'MaxArrivalTime'] = max_arrival_time
         Users.loc[userID,'TotalUtil']=Services.loc[Users.loc[userID,'Services'],'sTotalUtil'].sum()*MIN_UP_TIME
 
-def EventGenerator(eventsLength=EVENTS_LENGTH):
+def EventGenerator(eventsLength):
     Events=pd.DataFrame(columns=['EventTime', 'EventType', 'ServiceID','DomainID','EventID','TotalUtil'])
     EventsAbstract=pd.DataFrame(columns=['EventTime', 'EventType', 'ServiceID','DomainID','EventID','UpTime','TotalUtil'])
     eventType = []
@@ -157,20 +160,6 @@ def EventGenerator(eventsLength=EVENTS_LENGTH):
     Users.to_csv('data/users.csv', index=False)
     totalUtil=sum(util)
     return totalUpTime, EventsAbstract,totalUtil
-
-if __name__ == '__main__':
-    Services=ServiceGenerator(NUM_SERVICES,importanceRange,sBandwidthRange,sCoresRange,0)
-    UserTiming(Services)
-    print("users are generated")
-    totalUpTime,abstract,util=EventGenerator(eventsLength=EVENTS_LENGTH)
-    print("events are generated")
-    print('total up time:',totalUpTime)
-    print('head of events',Events.head())
-    print('tail of events',Events.tail())
-    print('abstract events',abstract)
-    print('abstract events',abstract.tail())
-    print('total util:',util)
-    print('done')
 
 
     
