@@ -13,6 +13,7 @@ import (
 )
 
 func loadNodesFromCSV(filePath string, domainID src.DomainID) src.Nodes {
+	fmt.Println("loading nodes from csv file: ", filePath)
 	file, err := os.Open(filePath)
 	if err != nil {
 		log.Fatalf("Unable to read input file %s, %v", filePath, err)
@@ -59,6 +60,42 @@ func LoadCloudFromCSV(filePath string) (src.Nodes, src.Nodes) {
 func LoadDomainFromCSV(filename string, domainID src.DomainID) (src.Nodes, src.Nodes) {
 	return loadNodesFromCSV(filepath.Join(filename, "Active"), domainID), loadNodesFromCSV(filepath.Join(filename, "Reserved"), domainID)
 
+}
+
+func LoadDomains(baseFolder string) src.Domains {
+	fmt.Println("loading domains from csv file: ", baseFolder)
+	activeFolder := filepath.Join(baseFolder, "active")
+	reservedFolder := filepath.Join(baseFolder, "reserved")
+
+	// Get all active node files
+	activeFiles, err := filepath.Glob(filepath.Join(activeFolder, "*.csv"))
+	if err != nil {
+		log.Fatal("Error reading active files:", err)
+	}
+
+	// Create Domains
+	domains := make(src.Domains)
+	i := 0
+
+	for _, activeFile := range activeFiles {
+		// Get the file name (without path)
+		fileName := filepath.Base(activeFile)
+
+		// Construct the corresponding reserved file path
+		reservedFile := filepath.Join(reservedFolder, fileName)
+
+		// Check if the reserved file exists
+		if _, err := filepath.Glob(reservedFile); err != nil {
+			fmt.Printf("Warning: No reserved file found for %s. Skipping...\n", fileName)
+			continue
+		}
+		id := strconv.Itoa(i)
+		i++
+		activeNodes := loadNodesFromCSV(activeFile, src.DomainID(id))
+		reservedNodes := loadNodesFromCSV(reservedFile, src.DomainID(id))
+		domains[src.DomainID(id)] = src.NewDomain(activeNodes, reservedNodes, src.DomainID(id))
+	}
+	return domains
 }
 
 func LoadSVCFromCSV(filePath string) src.Services {

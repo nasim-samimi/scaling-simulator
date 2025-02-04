@@ -13,13 +13,14 @@ import (
 	util "github.com/nasim-samimi/scaling-simulator/pkg/util"
 )
 
-func processEvents(orchestrator *src.Orchestrator, addition string) ([]float64, []float64, []float64, []float64, error) {
+func processEvents(orchestrator *src.Orchestrator, addition string) (*cnfg.ResultContext, error) {
 
 	events := util.LoadEventsFromCSV("../data/events/events_" + addition + ".csv")
 	qosPerCost := make([]float64, 0)
 	qos := make([]float64, 0)
 	cost := make([]float64, 0)
 	durations := make([]float64, 0)
+	eventTime := make([]float64, 0)
 	test := 0
 	for _, event := range events {
 		eventID := event.EventID
@@ -39,6 +40,7 @@ func processEvents(orchestrator *src.Orchestrator, addition string) ([]float64, 
 				qos = append(qos, float64(orchestrator.QoS))
 				cost = append(cost, float64(orchestrator.Cost))
 				durations = append(durations, float64(duration.Microseconds())/1000)
+				eventTime = append(eventTime, float64(event.EventTime))
 				fmt.Println("/////////////////////")
 				fmt.Println("service is allocated ")
 				fmt.Println("/////////////////////")
@@ -58,13 +60,23 @@ func processEvents(orchestrator *src.Orchestrator, addition string) ([]float64, 
 			orchestrator.Deallocate(event.TargetDomainID, event.TargetServiceID, eventID)
 			orchestrator.UpgradeServiceIfEnabled()
 			orchestrator.NodeReclaimIfEnabled(event.TargetDomainID)
+			qosPerCost = append(qosPerCost, math.Round(float64(orchestrator.QoS)*1000/float64(orchestrator.Cost))/1000)
+			qos = append(qos, float64(orchestrator.QoS))
+			cost = append(cost, float64(orchestrator.Cost))
+			eventTime = append(eventTime, float64(event.EventTime))
 			fmt.Println("/////////////////////")
 		}
 	}
 	fmt.Println("QoS per Cost: ", qosPerCost)
 
 	fmt.Println("Durations: ", durations)
-	return cost, qos, qosPerCost, durations, nil
+	return &cnfg.ResultContext{
+		QosPerCost: qosPerCost,
+		Qos:        qos,
+		Cost:       cost,
+		Durations:  durations,
+		EventTime:  eventTime,
+	}, nil
 }
 
 func main() {
@@ -75,9 +87,9 @@ func main() {
 		log.Fatal(err)
 	}
 	orchestrator := util.Initialise(config)
-	cost, qos, qosPerCost, durations, err := processEvents(orchestrator, config.System.Addition)
+	results, err := processEvents(orchestrator, config.System.Addition)
 	if err != nil {
 		log.Fatal(err)
 	}
-	util.WriteResults(cost, qos, qosPerCost, durations, orchestrator, config.System.Addition, config.System.ResultsDir)
+	util.WriteResults(results, config)
 }

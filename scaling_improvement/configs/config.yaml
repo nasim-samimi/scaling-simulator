@@ -19,3 +19,5 @@ system:
   init_node_size: 16
   scaled_node_size: 8
   results_dir: "improved"
+  fixed_node_size: true
+  node_size: "8"

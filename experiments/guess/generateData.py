@@ -50,27 +50,28 @@ NODE_SELECTION_H=["MinMin","MaxMax"]
 ############################################
 ## Constants for events
 ############################################
-EVENTS_LENGTH=1000
+EVENTS_LENGTH=100
 ADDITION=[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
+# ADDITION=[0.8,0.9,1]
 node_sizes=[8,12,16,20,24,28,32]
 
 main_dir='data/'
 ############################################
 
 if __name__=='__main__':
-    # services=ServiceGenerator(NUM_SERVICES,importanceRange,sBandwidthRange,sCoresRange,0)
-    # UserTiming(services,num_users=100,num_domains=NUM_DOMAINS)
-    # print("users are generated")
-    # EventGenerator(EVENTS_LENGTH)
-    # print("events are generated")
+    services=ServiceGenerator(NUM_SERVICES,importanceRange,sBandwidthRange,sCoresRange,0)
+    UserTiming(services,num_users=100,num_domains=NUM_DOMAINS)
+    print("users are generated")
+    EventGenerator(EVENTS_LENGTH)
+    print("events are generated")
     # for opt0 in PARTITIONING_H:
     #     for opt1 in NODE_SELECTION_H:
     #         for s in node_sizes:
-    #             domainNodesUpperbound([opt0,opt1],main_dir+f'domainNodes{s}/Reserved/{opt0}/{opt1}/',num_cores=s,num_domains=NUM_DOMAINS)
-    #             domainNodesLowerBound([opt0,opt1],main_dir+f'domainNodes{s}/Active/{opt0}/{opt1}/',num_cores=s,num_domains=NUM_DOMAINS)
-    #         domainNodesLowerBound([opt0,opt1],main_dir+f'domainNodesVariable/Active/{opt0}/{opt1}/',num_cores=NUM_CORES_PER_INIT_NODE,num_domains=NUM_DOMAINS)
-    #         domainNodesLowerBound([opt0,opt1],main_dir+f'domainNodesVariable/Reserved/{opt0}/{opt1}/',num_cores=NUM_CORES_PER_SCALED_NODE,num_domains=NUM_DOMAINS)
-    # print('done')
+    #             domainNodesUpperBound([opt0,opt1],main_dir+f'domainNodes{s}/{opt0}/{opt1}/Reserved/',num_cores=s,num_domains=NUM_DOMAINS)
+    #             domainNodesLowerBound([opt0,opt1],main_dir+f'domainNodes{s}/{opt0}/{opt1}/Active/',num_cores=s,num_domains=NUM_DOMAINS)
+    #         domainNodesLowerBound([opt0,opt1],main_dir+f'domainNodesVariable/{opt0}/{opt1}/Active/',num_cores=NUM_CORES_PER_INIT_NODE,num_domains=NUM_DOMAINS)
+    #         domainNodesLowerBound([opt0,opt1],main_dir+f'domainNodesVariable/{opt0}/{opt1}/Reserved/',num_cores=NUM_CORES_PER_SCALED_NODE,num_domains=NUM_DOMAINS)
+    # print('done with generating domain nodes')
 
     for addition in ADDITION:
         Users=pd.read_csv('data/users.csv')

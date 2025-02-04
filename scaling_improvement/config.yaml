@@ -4,12 +4,15 @@ orchestrator:
   edge_node_cost: 1
   intra_domain_realloc: false
   intra_node_realloc: false
-  intra_node_reduced: true
+  intra_node_reduced: false
   node_heuristic: MaxMax
+  node_reclaim: false
   partition_heuristic: worstfit
-  reallocation_heuristic: LBC
+  reallocation_heuristic: HB
+  upgrade_service: false
 system:
-  addition: 1
+  addition: 0
   init_node_size: 16
-  results_dir: improved/with_intra_node_reduced_threshold_100
+  node_size: "8"
+  results_dir: baseline
   scaled_node_size: 8

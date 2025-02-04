@@ -11,6 +11,7 @@ reallocationHeus=["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC"]
 main_dir = 'experiments/results/'
 plots=main_dir+'plots/'
 ADDITIONS=[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
+node_sizes = [8,12,16,20,24,28,32]
 
 def plotfiles(main_dir,dir,addition,metric,dirs):
     leg=[]
@@ -52,10 +53,11 @@ def plotfiles(main_dir,dir,addition,metric,dirs):
     
     return
 
-def processfiles(dir,addition,metric,averages,leg):
+def processfile(dir,addition,metric,averages,leg,times):
     avg=[]
     print("current dir:",dir)
     fulldir=f'{dir}'
+    times.columns=['eventTime'] 
     for files in os.listdir(fulldir):
                 # Read the CSV file
         if files=="":
@@ -74,7 +76,7 @@ def processfiles(dir,addition,metric,averages,leg):
         avg.append(avg_value)
 
         # Plot the data as a line plot
-        plt.plot(qosPerCost[metric], label=f'{files}', linestyle='-')
+        plt.plot(times['eventTime'],qosPerCost[metric], label=f'{files}', linestyle='-')
         leg.append(files[:-4])
         averages.loc[len(averages)]=[avg_value,files[:-4]]
     plt.legend(leg)
@@ -85,7 +87,25 @@ def processfiles(dir,addition,metric,averages,leg):
     
     return
 
+def processfiles(dir1='improved/',dir2='baseline/',metric='cost'):
 
+    dirs=[]
+    leg=[]
+    dirs.append( main_dir+dir1)
+    dirs.append( main_dir+dir2)
+    plt.figure(figsize=figsize)
+    averages=pd.DataFrame(columns=['averages','heuristics'])
+    for dir in dirs:
+        fulldir=f'{dir}{metric}/addition={addition}/{nodeHeu}/{partitionHeu}/'
+        times=pd.read_csv(f'{dir}eventTime/addition={addition}/{nodeHeu}/{partitionHeu}/')
+        processfile(fulldir,addition,metric,averages,leg,times)
+        savingDir=f'{plots}addition={addition}/{metric}/'
+    if not os.path.exists(savingDir):
+        os.makedirs(savingDir)
+    plt.savefig(f'{savingDir}{nodeHeu}_{partitionHeu}.png')
+    averages.to_csv(f'{savingDir}{nodeHeu}_{partitionHeu}_averages.csv',index=False)
+    plt.close()
+    return averages
 
 def runtimes(dir1='improved/',dir2='baseline/'):
     dirs=[]
@@ -130,61 +150,64 @@ def runtimes(dir1='improved/',dir2='baseline/'):
     plt.close()
     return
 
-def qosPerCost(dir1='improved/',dir2='baseline/'):
-    dirs=[]
-    leg=[]
-    dirs.append( main_dir+dir1)
-    dirs.append( main_dir+dir2)
+# def qosPerCost(dir1='improved/',dir2='baseline/'):
+#     dirs=[]
+#     leg=[]
+#     dirs.append( main_dir+dir1)
+#     dirs.append( main_dir+dir2)
 
-    plt.figure(figsize=figsize)
-    averages=pd.DataFrame(columns=['averages','heuristics'])
-    for dir in dirs:
-        fulldir=f'{dir}qosPerCost/addition={addition}/{nodeHeu}/{partitionHeu}/'
-        processfiles(fulldir,addition,'qosPerCost',averages,leg)
-    savingDir=f'{plots}addition={addition}/QpC/'
-    if not os.path.exists(savingDir):
-        os.makedirs(savingDir)
-    plt.savefig(f'{savingDir}{nodeHeu}_{partitionHeu}.png')
-    averages.to_csv(f'{savingDir}{nodeHeu}_{partitionHeu}_averages.csv',index=False)
-    plt.close()
-    return averages
+#     plt.figure(figsize=figsize)
+#     averages=pd.DataFrame(columns=['averages','heuristics'])
+#     for dir in dirs:
+#         fulldir=f'{dir}qosPerCost/addition={addition}/{nodeHeu}/{partitionHeu}/'
+#         times=pd.read_csv(f'{dir}eventTime/addition={addition}/{nodeHeu}/{partitionHeu}/')
+#         processfile(fulldir,addition,'qosPerCost',averages,leg,times)
+#     savingDir=f'{plots}addition={addition}/QpC/'
+#     if not os.path.exists(savingDir):
+#         os.makedirs(savingDir)
+#     plt.savefig(f'{savingDir}{nodeHeu}_{partitionHeu}.png')
+#     averages.to_csv(f'{savingDir}{nodeHeu}_{partitionHeu}_averages.csv',index=False)
+#     plt.close()
+#     return averages
 
-def qos(dir1='improved/',dir2='baseline/'):
+# def qos(dir1='improved/',dir2='baseline/'):
     
-    dirs=[]
-    leg=[]
-    dirs.append( main_dir+dir1)
-    dirs.append( main_dir+dir2)
-    plt.figure(figsize=figsize)
-    averages=pd.DataFrame(columns=['averages','heuristics'])
-    for dir in dirs:
-        fulldir=f'{dir}qos/addition={addition}/{nodeHeu}/{partitionHeu}/'
-        processfiles(fulldir,addition,'qos',averages,leg)
-    savingDir=f'{plots}addition={addition}/QoS/'
-    if not os.path.exists(savingDir):
-        os.makedirs(savingDir)
-    plt.savefig(f'{savingDir}{nodeHeu}_{partitionHeu}.png')
-    averages.to_csv(f'{savingDir}{nodeHeu}_{partitionHeu}_averages.csv',index=False)
-    plt.close()
-    return averages
-def cost(dir1='improved/',dir2='baseline/'):
+#     dirs=[]
+#     leg=[]
+#     dirs.append( main_dir+dir1)
+#     dirs.append( main_dir+dir2)
+#     plt.figure(figsize=figsize)
+#     averages=pd.DataFrame(columns=['averages','heuristics'])
+#     for dir in dirs:
+#         fulldir=f'{dir}qos/addition={addition}/{nodeHeu}/{partitionHeu}/'
+#         times=pd.read_csv(f'{dir}eventTime/addition={addition}/{nodeHeu}/{partitionHeu}/')
+#         processfile(fulldir,addition,'qos',averages,leg,times)
+#     savingDir=f'{plots}addition={addition}/QoS/'
+#     if not os.path.exists(savingDir):
+#         os.makedirs(savingDir)
+#     plt.savefig(f'{savingDir}{nodeHeu}_{partitionHeu}.png')
+#     averages.to_csv(f'{savingDir}{nodeHeu}_{partitionHeu}_averages.csv',index=False)
+#     plt.close()
+#     return averages
+# def cost(dir1='improved/',dir2='baseline/'):
 
-    dirs=[]
-    leg=[]
-    dirs.append( main_dir+dir1)
-    dirs.append( main_dir+dir2)
-    plt.figure(figsize=figsize)
-    averages=pd.DataFrame(columns=['averages','heuristics'])
-    for dir in dirs:
-        fulldir=f'{dir}cost/addition={addition}/{nodeHeu}/{partitionHeu}/'
-        processfiles(fulldir,addition,'cost',averages,leg)
-        savingDir=f'{plots}addition={addition}/Cost/'
-    if not os.path.exists(savingDir):
-        os.makedirs(savingDir)
-    plt.savefig(f'{savingDir}{nodeHeu}_{partitionHeu}.png')
-    averages.to_csv(f'{savingDir}{nodeHeu}_{partitionHeu}_averages.csv',index=False)
-    plt.close()
-    return averages
+#     dirs=[]
+#     leg=[]
+#     dirs.append( main_dir+dir1)
+#     dirs.append( main_dir+dir2)
+#     plt.figure(figsize=figsize)
+#     averages=pd.DataFrame(columns=['averages','heuristics'])
+#     for dir in dirs:
+#         fulldir=f'{dir}cost/addition={addition}/{nodeHeu}/{partitionHeu}/'
+#         times=pd.read_csv(f'{dir}eventTime/addition={addition}/{nodeHeu}/{partitionHeu}/')
+#         processfile(fulldir,addition,'cost',averages,leg,times)
+#         savingDir=f'{plots}addition={addition}/Cost/'
+#     if not os.path.exists(savingDir):
+#         os.makedirs(savingDir)
+#     plt.savefig(f'{savingDir}{nodeHeu}_{partitionHeu}.png')
+#     averages.to_csv(f'{savingDir}{nodeHeu}_{partitionHeu}_averages.csv',index=False)
+#     plt.close()
+#     return averages
 
 
 
@@ -340,7 +363,7 @@ def robustness_withflags(dir1='improved/',dir2='baseline/',metric='cost'):
 
 
 if __name__ == '__main__':
-    dir1='improved/'
+    dir1='improved/allOpts/'
     dir2='baseline/'
     if len(sys.argv) != 4:    
         print('Usage: python3 results.py  <addition> <nodeHeu> <partitionHeu> ')
@@ -356,11 +379,12 @@ if __name__ == '__main__':
     print(f"{addition}.csv")
     avgr=runtimes(dir1=dir1,dir2=dir2)
     print(avgr)
-    avgqpc=qosPerCost(dir1=dir1,dir2=dir2)
+    avgqpc=processfiles(dir1=dir1,dir2=dir2,metric='qosPerCost')
     print(avgqpc)
-    avgqos=qos(dir1=dir1,dir2=dir2)
+    avgqos=processfiles(dir1=dir1,dir2=dir2,metric='qos')
     print(avgqos)
-    avgcost=cost(dir1=dir1,dir2=dir2)
+    # avgcost=cost(dir1=dir1,dir2=dir2)
+    avgcost=processfiles(dir1=dir1,dir2=dir2,metric='cost')
     print(avgcost)  
 
     compareBaselines(dir=dir2)

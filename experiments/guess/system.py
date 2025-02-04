@@ -4,6 +4,7 @@ from users import *
 from services import *
 import math
 import random
+import ast
 # we shouldn't be limited by the number of nodes in the cloud or the domain
 # so we choose high numbers
 
@@ -23,7 +24,10 @@ EVENTS_LENGTH=1000
 def computeNodeCoresLowerbound(d,opt,num_cores):
     userIDs=[]
     sIDs=[]
-    domainUsers=Users[Users['Domains'].apply(lambda x: d in x)] # what does this do?
+    print(Users.head())
+    # domainUsers=Users[Users['Domains'].apply(lambda x: d in x)] # what does this do?
+    domainUsers = Users[Users['Domains'].apply(lambda x: isinstance(x, (list, str)) and d in x)]
+
     # compute the prtion of up time per max arrival time per user
     totalUtil = 0
     for _, user in domainUsers.iterrows():
@@ -50,16 +54,16 @@ def computeNodeCoresLowerbound(d,opt,num_cores):
         i=i+1
 
     if opt[0]=='worstfit' and opt[1]=='MaxMax':
-        nodes,_=WorstFitMaxMax(schedule,max_cores_per_node=num_cores)
+        nodes,_=WorstFitMaxMax(schedule,num_cores_per_scaled_node=num_cores,num_init_nodes=0, num_cores_per_init_node=0)
 
     elif opt[0]=='bestfit' and opt[1]=='MaxMax':
-        nodes,_=BestFitMaxMax(schedule,max_cores_per_node=num_cores)
+        nodes,_=BestFitMaxMax(schedule,num_cores_per_scaled_node=num_cores,num_init_nodes=0, num_cores_per_init_node=0)
         # print(nodes)
     elif opt[0]=='worstfit' and opt[1]=='MinMin':
-        nodes,_=WorstFitMinMin(schedule,max_cores_per_node=num_cores)
+        nodes,_=WorstFitMinMin(schedule,num_cores_per_scaled_node=num_cores,num_init_nodes=0, num_cores_per_init_node=0)
         # print(nodes)
     elif opt[0]=='bestfit' and opt[1]=='MinMin':
-        nodes,_=BestFitMinMin(schedule,max_cores_per_node=num_cores)
+        nodes,_=BestFitMinMin(schedule,num_cores_per_scaled_node=num_cores,num_init_nodes=0, num_cores_per_init_node=0)
         # print(nodes)
     else:
         print('invalid heuristic')
@@ -69,7 +73,7 @@ def computeNodeCoresLowerbound(d,opt,num_cores):
     return nodes
 
 
-def computeNodeCores(d,opt,num_cores):
+def computeNodeCoresUpperbound(d,opt,num_cores_scaled,num_init_nodes,num_cores_init):
     userIDs=[]
     sIDs=[]
     for _, u in Users.iterrows():
@@ -87,16 +91,16 @@ def computeNodeCores(d,opt,num_cores):
         i=i+1
 
     if opt[0]=='worstfit' and opt[1]=='MaxMax':
-        nodes,_=WorstFitMaxMax(schedule,max_cores_per_node=num_cores)
+        nodes,_=WorstFitMaxMax(schedule,num_cores_per_scaled_node=num_cores_scaled,num_init_nodes=num_init_nodes, num_cores_per_init_node=num_cores_init)
 
     elif opt[0]=='bestfit' and opt[1]=='MaxMax':
-        nodes,_=BestFitMaxMax(schedule,max_cores_per_node=num_cores)
+        nodes,_=BestFitMaxMax(schedule,num_cores_per_scaled_node=num_cores_scaled,num_init_nodes=num_init_nodes, num_cores_per_init_node=num_cores_init)
         # print(nodes)
     elif opt[0]=='worstfit' and opt[1]=='MinMin':
-        nodes,_=WorstFitMinMin(schedule,max_cores_per_node=num_cores)
+        nodes,_=WorstFitMinMin(schedule,num_cores_per_scaled_node=num_cores_scaled,num_init_nodes=num_init_nodes, num_cores_per_init_node=num_cores_init)
         # print(nodes)
     elif opt[0]=='bestfit' and opt[1]=='MinMin':
-        nodes,_=BestFitMinMin(schedule,max_cores_per_node=num_cores)
+        nodes,_=BestFitMinMin(schedule,num_cores_per_scaled_node=num_cores_scaled,num_init_nodes=num_init_nodes, num_cores_per_init_node=num_cores_init)
         # print(nodes)
     else:
         print('invalid heuristic')
@@ -105,19 +109,66 @@ def computeNodeCores(d,opt,num_cores):
         # nodes,_=WorstFitMaxMax(schedule)
     return nodes
 
+def domainNodesUpperBound(opt,dir,num_init_nodes,num_cores=NUM_CORES_PER_SCALED_NODE,num_domains=NUM_DOMAINS,num_cores_init=NUM_CORES_PER_INIT_NODE):
+    print(opt)
+    domain_ids=range(num_domains)
+    j=0
+    for d in domain_ids: 
+        nodes=computeNodeCoresUpperbound(d,opt,num_cores,num_init_nodes=num_init_nodes[j],num_cores_init=num_cores_init)
+        nodeNames=[]
+        for i in range(nodes):
+            nodeNames.append(f'domain{d}_worker{i}_r')
+        domainID=f'domain{d}'
+        df=pd.DataFrame(columns=['NodeName', 'NumCores', 'PartitioningHeuristic','NodeSelectionHeuristic'])
+        df['NodeName']= nodeNames
+        df['PartitioningHeuristic']=[opt[0]]*nodes
+        df['NodeSelectionHeuristic']=[opt[1]]*nodes
+        df['NumCores']=[num_cores]*nodes
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+        df.to_csv(f'{dir}domainNodes{domainID}.csv', index=False)
+        j=j+1
 
-def WorstFitMaxMax(df: pd.DataFrame, max_bandwidth_per_core=MAX_BANDWIDTH_PER_CORE, max_cores_per_node=NUM_CORES_PER_SCALED_NODE):
+def domainNodesLowerBound(opt,dir,num_cores=NUM_CORES_PER_INIT_NODE,num_domains=NUM_DOMAINS):
+    print(opt)
+    domain_ids=range(num_domains)
+    print("num cores:",num_cores)
+    nodes_cores=[]
+    for d in domain_ids: 
+        nodes=computeNodeCoresLowerbound(d,opt,num_cores)
+        nodes_cores.append(nodes)
+        nodeNames=[]
+        for i in range(nodes):
+            nodeNames.append(f'domain{d}_worker{i}_a')
+        domainID=f'domain{d}'
+        df=pd.DataFrame(columns=['NodeName', 'NumCores', 'PartitioningHeuristic','NodeSelectionHeuristic'])
+        df['NodeName']= nodeNames
+        df['PartitioningHeuristic']=[opt[0]]*nodes
+        df['NodeSelectionHeuristic']=[opt[1]]*nodes
+        df['NumCores']=[num_cores]*nodes
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+        df.to_csv(f'{dir}domainNodes{domainID}.csv', index=False)
+    return nodes_cores
+
+def WorstFitMaxMax(df: pd.DataFrame, max_bandwidth_per_core=MAX_BANDWIDTH_PER_CORE, num_cores_per_scaled_node=NUM_CORES_PER_SCALED_NODE,num_cores_per_init_node=NUM_CORES_PER_INIT_NODE, num_init_nodes=1):
 
     df = df.sort_values(by='sBandwidth', ascending=False).reset_index(drop=True)
     total_cores = math.ceil((df['sCores'] * df['sBandwidth']).sum() / max_bandwidth_per_core)
-    initial_nodes = math.ceil(total_cores / max_cores_per_node)
+    initial_nodes = math.ceil((total_cores-(num_cores_per_init_node*num_init_nodes) )/ num_cores_per_scaled_node)
+    if initial_nodes <= 0:
+        return 0, pd.DataFrame(columns=['cores','totalBandwidth'])
     
     while True:
         # Initialize nodes and cores
         nodes = pd.DataFrame(columns=['cores','totalBandwidth'])
-        for n in range(initial_nodes):
-            nodes.loc[n,'cores']=[max_bandwidth_per_core] * max_cores_per_node
-            nodes.loc[n,'totalBandwidth']=max_bandwidth_per_core*max_cores_per_node
+        for n in range(num_init_nodes):
+            nodes.loc[n,'cores']=[max_bandwidth_per_core] * num_cores_per_init_node
+            nodes.loc[n,'totalBandwidth']=max_bandwidth_per_core*num_cores_per_init_node
+
+        for n in range(num_init_nodes,num_init_nodes+initial_nodes):
+            nodes.loc[n,'cores']=[max_bandwidth_per_core] * num_cores_per_scaled_node
+            nodes.loc[n,'totalBandwidth']=max_bandwidth_per_core*num_cores_per_scaled_node
 
         success = True  # Flag to indicate if allocation succeeds
 
@@ -156,22 +207,28 @@ def WorstFitMaxMax(df: pd.DataFrame, max_bandwidth_per_core=MAX_BANDWIDTH_PER_CO
 
         if success:
             # print('number of nodes nodes:', initial_nodes)
-            return len(nodes), nodes
+            return initial_nodes, nodes
         else:
             initial_nodes += 1
 
 
-def BestFitMaxMax(df: pd.DataFrame, max_bandwidth_per_core=MAX_BANDWIDTH_PER_CORE, max_cores_per_node=NUM_CORES_PER_SCALED_NODE):
+def BestFitMaxMax(df: pd.DataFrame, max_bandwidth_per_core=MAX_BANDWIDTH_PER_CORE, num_cores_per_scaled_node=NUM_CORES_PER_SCALED_NODE,num_cores_per_init_node=NUM_CORES_PER_INIT_NODE, num_init_nodes=1):
     df = df.sort_values(by='sBandwidth', ascending=False).reset_index(drop=True)
     total_cores = math.ceil((df['sCores'] * df['sBandwidth']).sum() / max_bandwidth_per_core)
-    initial_nodes = math.ceil(total_cores / max_cores_per_node)
+    initial_nodes = math.ceil((total_cores-(num_cores_per_init_node*num_init_nodes) )/ num_cores_per_scaled_node)
+    if initial_nodes <= 0:
+        return 0, pd.DataFrame(columns=['cores','totalBandwidth'])
     
     while True:
         # Initialize nodes and cores
         nodes = pd.DataFrame(columns=['cores','totalBandwidth'])
-        for n in range(initial_nodes):
-            nodes.loc[n,'cores']=[max_bandwidth_per_core] * max_cores_per_node
-            nodes.loc[n,'totalBandwidth']=max_bandwidth_per_core*max_cores_per_node
+        for n in range(num_init_nodes):
+            nodes.loc[n,'cores']=[max_bandwidth_per_core] * num_cores_per_init_node
+            nodes.loc[n,'totalBandwidth']=max_bandwidth_per_core*num_cores_per_init_node
+
+        for n in range(num_init_nodes,num_init_nodes+initial_nodes):
+            nodes.loc[n,'cores']=[max_bandwidth_per_core] * num_cores_per_scaled_node
+            nodes.loc[n,'totalBandwidth']=max_bandwidth_per_core*num_cores_per_scaled_node
 
         success = True  # Flag to indicate if allocation succeeds
 
@@ -210,22 +267,29 @@ def BestFitMaxMax(df: pd.DataFrame, max_bandwidth_per_core=MAX_BANDWIDTH_PER_COR
 
         if success:
             # print('number of nodes nodes:', initial_nodes)
-            return len(nodes), nodes
+            return initial_nodes, nodes
         else:
             initial_nodes += 1
     return
 
-def WorstFitMinMin(df: pd.DataFrame, max_bandwidth_per_core=MAX_BANDWIDTH_PER_CORE, max_cores_per_node=NUM_CORES_PER_SCALED_NODE):
+def WorstFitMinMin(df: pd.DataFrame, max_bandwidth_per_core=MAX_BANDWIDTH_PER_CORE, num_cores_per_scaled_node=NUM_CORES_PER_SCALED_NODE,num_cores_per_init_node=NUM_CORES_PER_INIT_NODE, num_init_nodes=1):
 
     df = df.sort_values(by='sBandwidth', ascending=False).reset_index(drop=True)
     total_cores = math.ceil((df['sCores'] * df['sBandwidth']).sum() / max_bandwidth_per_core)
-    initial_nodes = math.ceil(total_cores / max_cores_per_node)
+    initial_nodes = math.ceil((total_cores-(num_cores_per_init_node*num_init_nodes)) / num_cores_per_scaled_node)
+    if initial_nodes <= 0:
+        return 0, pd.DataFrame(columns=['cores','totalBandwidth'])
     
     while True:
+        # Initialize nodes and cores
         nodes = pd.DataFrame(columns=['cores','totalBandwidth'])
-        for n in range(initial_nodes):
-            nodes.loc[n,'cores']=[max_bandwidth_per_core] * max_cores_per_node
-            nodes.loc[n,'totalBandwidth']=max_bandwidth_per_core*max_cores_per_node
+        for n in range(num_init_nodes):
+            nodes.loc[n,'cores']=[max_bandwidth_per_core] * num_cores_per_init_node
+            nodes.loc[n,'totalBandwidth']=max_bandwidth_per_core*num_cores_per_init_node
+
+        for n in range(num_init_nodes,num_init_nodes+initial_nodes):
+            nodes.loc[n,'cores']=[max_bandwidth_per_core] * num_cores_per_scaled_node
+            nodes.loc[n,'totalBandwidth']=max_bandwidth_per_core*num_cores_per_scaled_node
 
         success = True  # Flag to indicate if allocation succeeds
 
@@ -263,22 +327,31 @@ def WorstFitMinMin(df: pd.DataFrame, max_bandwidth_per_core=MAX_BANDWIDTH_PER_CO
 
         if success:
             # print('number of nodes nodes:', initial_nodes)
-            return len(nodes), nodes
+            return initial_nodes, nodes
         else:
             initial_nodes += 1
 
 
-def BestFitMinMin(df: pd.DataFrame, max_bandwidth_per_core=MAX_BANDWIDTH_PER_CORE, max_cores_per_node=NUM_CORES_PER_SCALED_NODE):
+def BestFitMinMin(df: pd.DataFrame, num_cores_per_scaled_node,num_cores_per_init_node, num_init_nodes, max_bandwidth_per_core=MAX_BANDWIDTH_PER_CORE):
     df = df.sort_values(by='sBandwidth', ascending=False).reset_index(drop=True)
     total_cores = math.ceil((df['sCores'] * df['sBandwidth']).sum() / max_bandwidth_per_core)
-    initial_nodes = math.ceil(total_cores / max_cores_per_node)
+    print("total cores:",total_cores)
+    print("num cores per scaled node:",num_cores_per_scaled_node)
+    initial_nodes = math.ceil((total_cores-(num_cores_per_init_node*num_init_nodes)) / num_cores_per_scaled_node)
+    print("initial nodes:",initial_nodes)
+    if initial_nodes <= 0:
+        return 0, pd.DataFrame(columns=['cores','totalBandwidth'])
     
     while True:
         # Initialize nodes and cores
         nodes = pd.DataFrame(columns=['cores','totalBandwidth'])
-        for n in range(initial_nodes):
-            nodes.loc[n,'cores']=[max_bandwidth_per_core] * max_cores_per_node
-            nodes.loc[n,'totalBandwidth']=max_bandwidth_per_core*max_cores_per_node
+        for n in range(num_init_nodes):
+            nodes.loc[n,'cores']=[max_bandwidth_per_core] * num_cores_per_init_node
+            nodes.loc[n,'totalBandwidth']=max_bandwidth_per_core*num_cores_per_init_node
+
+        for n in range(num_init_nodes,num_init_nodes+initial_nodes):
+            nodes.loc[n,'cores']=[max_bandwidth_per_core] * num_cores_per_scaled_node
+            nodes.loc[n,'totalBandwidth']=max_bandwidth_per_core*num_cores_per_scaled_node
         success = True  # Flag to indicate if allocation succeeds
 
         for _, row in df.iterrows():
@@ -316,7 +389,7 @@ def BestFitMinMin(df: pd.DataFrame, max_bandwidth_per_core=MAX_BANDWIDTH_PER_COR
 
         if success:
             # print('number of nodes nodes:', initial_nodes)
-            return len(nodes), nodes
+            return initial_nodes, nodes
         else:
             initial_nodes += 1
     return
@@ -328,57 +401,27 @@ def FirstFitMaxMax():
 
 # the number of cores can be devided into separate nodes where each node has 3 to 16 cores.
             
-def domainNodesUpperbound(opt,dir,num_cores=NUM_CORES_PER_SCALED_NODE,num_domains=NUM_DOMAINS):
-    print(opt)
-    domain_ids=range(num_domains)
-    for d in domain_ids: 
-        nodes=computeNodeCores(d,opt,num_cores)
-        nodeNames=[]
-        for i in range(nodes):
-            nodeNames.append(f'domain{d}_worker{i}_r')
-        domainID=f'domain{d}'
-        df=pd.DataFrame(columns=['NodeName', 'NumCores', 'PartitioningHeuristic','NodeSelectionHeuristic'])
-        df['NodeName']= nodeNames
-        df['PartitioningHeuristic']=[opt[0]]*nodes
-        df['NodeSelectionHeuristic']=[opt[1]]*nodes
-        df['NumCores']=[num_cores]*nodes
-        if not os.path.exists(dir):
-            os.makedirs(dir)
-        df.to_csv(f'{dir}domainNodes{domainID}.csv', index=False)
 
-def domainNodesLowerBound(opt,dir,num_cores=NUM_CORES_PER_INIT_NODE,num_domains=NUM_DOMAINS):
-    print(opt)
-    domain_ids=range(num_domains)
-    for d in domain_ids: 
-        nodes=computeNodeCoresLowerbound(d,opt,num_cores)
-        nodeNames=[]
-        for i in range(nodes):
-            nodeNames.append(f'domain{d}_worker{i}_a')
-        domainID=f'domain{d}'
-        df=pd.DataFrame(columns=['NodeName', 'NumCores', 'PartitioningHeuristic','NodeSelectionHeuristic'])
-        df['NodeName']= nodeNames
-        df['PartitioningHeuristic']=[opt[0]]*nodes
-        df['NodeSelectionHeuristic']=[opt[1]]*nodes
-        df['NumCores']=[num_cores]*nodes
-        if not os.path.exists(dir):
-            os.makedirs(dir)
-        df.to_csv(f'{dir}domainNodes{domainID}.csv', index=False)
 
 if __name__ == '__main__':
-    Services=ServiceGenerator(NUM_SERVICES,importanceRange,sBandwidthRange,sCoresRange,0)
-    UserTiming(Services)
-    print("check if the users have a total utilisation")
-    print(Users.head())
-    print("users are generated")
-    EventGenerator(EVENTS_LENGTH)
-    print("events are generated")
+    node_sizes=[8,12,16,20,24,28,32]
+    Services=pd.read_csv('data/services/services0.csv')
+    Users=pd.read_csv('data/users.csv')
+    Users["Services"] = Users["Services"].apply(ast.literal_eval)
+    Users["Domains"] = Users["Domains"].apply(ast.literal_eval)
+    # for opt0 in PARTITIONING_H:
+    #     for opt1 in NODE_SELECTION_H:
+    #         num_init_nodes=domainNodesLowerBound([opt0,opt1],main_dir+f'domainNodestest/{opt0}/{opt1}/Active/')
+    #         print(num_init_nodes)
+    #         domainNodesUpperBound([opt0,opt1],main_dir+f'domainNodestest/{opt0}/{opt1}/Reserved/',num_init_nodes=num_init_nodes,num_cores_init=NUM_CORES_PER_INIT_NODE)
     for opt0 in PARTITIONING_H:
         for opt1 in NODE_SELECTION_H:
-            domainNodes([opt0,opt1],main_dir+f'domainNodes/{opt0}/{opt1}/')
-    print('done')
-    for opt0 in PARTITIONING_H:
-        for opt1 in NODE_SELECTION_H:
-            domainNodesLowerBound([opt0,opt1],main_dir+f'domainNodes/Active/{opt0}/{opt1}/')
+            for s in node_sizes:
+                num_init_nodes=domainNodesLowerBound([opt0,opt1],main_dir+f'domainNodes{s}/{opt0}/{opt1}/Active/',num_cores=s,num_domains=NUM_DOMAINS)
+                domainNodesUpperBound([opt0,opt1],main_dir+f'domainNodes{s}/{opt0}/{opt1}/Reserved/',num_cores=s,num_domains=NUM_DOMAINS,num_init_nodes=num_init_nodes,num_cores_init=s)
+            num_init_nodes=domainNodesLowerBound([opt0,opt1],main_dir+f'domainNodesVariable/{opt0}/{opt1}/Active/',num_cores=NUM_CORES_PER_INIT_NODE,num_domains=NUM_DOMAINS)
+            domainNodesUpperBound([opt0,opt1],main_dir+f'domainNodesVariable/{opt0}/{opt1}/Reserved/',num_cores=NUM_CORES_PER_SCALED_NODE,num_domains=NUM_DOMAINS,num_init_nodes=num_init_nodes,num_cores_init=NUM_CORES_PER_INIT_NODE)
+    print('done with generating domain nodes')
     print('done')
 
 

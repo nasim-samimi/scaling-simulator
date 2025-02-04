@@ -30,6 +30,7 @@ type SystemConfig struct {
 	ScaledNodeSize uint64 `yaml:"scaled_node_size"`
 	Addition       string `yaml:"addition"`
 	ResultsDir     string `yaml:"results_dir"`
+	NodeSize       string `yaml:"node_size"`
 }
 
 type Config struct {

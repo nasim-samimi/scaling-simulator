@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 
-	src "github.com/nasim-samimi/scaling-simulator/pkg/orchestrator"
+	cnfg "github.com/nasim-samimi/scaling-simulator/pkg/config"
 )
 
 func WriteToCsv(filePath string, records []float64) error {
@@ -32,9 +32,11 @@ func WriteToCsv(filePath string, records []float64) error {
 	return nil
 }
 
-func WriteResults(cost []float64, qos []float64, qosPerCost []float64, durations []float64, orchestrator *src.Orchestrator, addition string, baseFolder string) error {
+func WriteResults(results *cnfg.ResultContext, config *cnfg.Config) error {
 	// Construct the base directory paths
-	name := "addition=" + addition + "/" + string(orchestrator.Config.NodeHeuristic) + "/" + string(orchestrator.Config.PartitionHeuristic) + "/"
+	// nodeSize := strconv.Itoa(int(config.System.NodeSize))
+	nodeSize := config.System.NodeSize
+	name := "/nodesize=" + nodeSize + "/addition=" + config.System.Addition + "/" + string(config.Orchestrator.NodeHeuristic) + "/" + string(config.Orchestrator.PartitionHeuristic) + "/"
 	reallocName := ""
 	// if orchestrator.Config.IntraDomainRealloc {
 	// 	reallocName = string(orchestrator.Config.IntraDomainReallocHeu)
@@ -45,8 +47,8 @@ func WriteResults(cost []float64, qos []float64, qosPerCost []float64, durations
 	// if orchestrator.Config.IntraNodeReduced {
 	// 	reallocName = string(orchestrator.Config.IntraNodeReducedHeu)
 	// }
-	if orchestrator.Config.IntraDomainRealloc || orchestrator.Config.IntraNodeRealloc || orchestrator.Config.IntraNodeReduced {
-		reallocName = string(orchestrator.Config.ReallocationHeuristic)
+	if config.Orchestrator.IntraDomainRealloc || config.Orchestrator.IntraNodeRealloc || config.Orchestrator.IntraNodeReduced {
+		reallocName = string(config.Orchestrator.ReallocationHeuristic)
 	}
 
 	if reallocName == "" {
@@ -56,6 +58,7 @@ func WriteResults(cost []float64, qos []float64, qosPerCost []float64, durations
 	subDirs := []string{"runtimes", "qosPerCost", "qos", "cost"}
 
 	// Create directories if they do not exist
+	baseFolder := config.System.ResultsDir
 	for _, subDir := range subDirs {
 		dirPath := filepath.Join("../experiments/results", baseFolder, subDir, name)
 		if err := os.MkdirAll(dirPath, os.ModePerm); err != nil {
@@ -65,10 +68,11 @@ func WriteResults(cost []float64, qos []float64, qosPerCost []float64, durations
 
 	// Define file paths for each result type
 	filePaths := map[string][]float64{
-		filepath.Join("../experiments/results", baseFolder, "qosPerCost", name, reallocName+".csv"): qosPerCost,
-		filepath.Join("../experiments/results", baseFolder, "runtimes", name, reallocName+".csv"):   durations,
-		filepath.Join("../experiments/results", baseFolder, "qos", name, reallocName+".csv"):        qos,
-		filepath.Join("../experiments/results", baseFolder, "cost", name, reallocName+".csv"):       cost,
+		filepath.Join("../experiments/results", baseFolder, "qosPerCost", name, reallocName+".csv"): results.QosPerCost,
+		filepath.Join("../experiments/results", baseFolder, "runtimes", name, reallocName+".csv"):   results.Durations,
+		filepath.Join("../experiments/results", baseFolder, "qos", name, reallocName+".csv"):        results.Qos,
+		filepath.Join("../experiments/results", baseFolder, "cost", name, reallocName+".csv"):       results.Cost,
+		filepath.Join("../experiments/results", baseFolder, "eventTime", name, reallocName+".csv"):  results.EventTime,
 	}
 
 	// Write results to CSV files

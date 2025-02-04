@@ -1,5 +1,0 @@
-NodeName,NumCores,PartitioningHeuristic,NodeSelectionHeuristic
-domain2_worker0_a,20,worstfit,MaxMax
-domain2_worker1_a,20,worstfit,MaxMax
-domain2_worker2_a,20,worstfit,MaxMax
-domain2_worker3_a,20,worstfit,MaxMax
