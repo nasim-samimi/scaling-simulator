@@ -16,9 +16,6 @@ type Domain struct {
 type Domains map[DomainID]*Domain
 
 func NewDomain(nodes Nodes, reservedNodes Nodes, domainID DomainID) *Domain {
-	// fmt.Println("Active Nodes in new domain: ", nodes)
-	// fmt.Println("Reserved Nodes in new domain: ", reservedNodes)
-	// fmt.Println("Domain ID in new domain: ", domainID)
 	AlwaysActiveNodes := make([]NodeName, 0)
 	for nodeName := range nodes {
 		AlwaysActiveNodes = append(AlwaysActiveNodes, nodeName)

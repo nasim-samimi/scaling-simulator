@@ -44,7 +44,7 @@ def alwaysUpUsers():
 def UserTiming(Services,num_users,num_domains=NUM_DOMAINS):
     Users['UserID']=range(num_users)
     MAX_UP_TIME=100#int(TOTAL_DURATION/2)
-    MIN_UP_TIME=num_domains
+    MIN_UP_TIME=num_domains*3
     UP_TIME_RANGE = range(num_domains, MAX_UP_TIME + 1, num_domains)
     NUM_SERVICE_PER_USER = range(1, 10)
     MOBILITY_RANGE = range(1, num_domains+1 ) 
@@ -92,9 +92,12 @@ def UserTiming(Services,num_users,num_domains=NUM_DOMAINS):
         max_arrival_time=min_arrival_time
         Users.loc[userID, 'MinArrivalTime'] = min_arrival_time
         Users.loc[userID, 'MaxArrivalTime'] = max_arrival_time
-        Users.loc[userID,'TotalUtil']=Services.loc[Users.loc[userID,'Services'],'sTotalUtil'].sum()*MIN_UP_TIME
+        Users.loc[userID,'TotalUtil']=Services.loc[Users.loc[userID,'Services'],'sTotalUtil'].sum()
+        Users.loc[userID, 'UpTime'] = 0
+    Users.to_csv('data/users.csv', index=False)
+    return Users
 
-def EventGenerator(eventsLength):
+def EventGenerator(eventsLength,weight,dir,Users,Services):
     Events=pd.DataFrame(columns=['EventTime', 'EventType', 'ServiceID','DomainID','EventID','TotalUtil'])
     EventsAbstract=pd.DataFrame(columns=['EventTime', 'EventType', 'ServiceID','DomainID','EventID','UpTime','TotalUtil'])
     eventType = []
@@ -108,7 +111,7 @@ def EventGenerator(eventsLength):
     i=0
     totalUpTime=0
     for _,u in Users.iterrows():
-        arrival=random.choice(range(0,int(u['MaxArrivalTime']*10)))/10
+        arrival=random.choice(range(0,int(u['MaxArrivalTime']*10*weight)))/10
         while arrival<eventsLength:
             eT=arrival
             totalUpTime=totalUpTime+u['UpTime']
@@ -122,7 +125,7 @@ def EventGenerator(eventsLength):
                     eventID.append(eventCount)
                     eventCount=eventCount+1
                     upTime.append(u['UpTimePerDomain'])
-                    util.append(Services.loc[s,'sTotalUtil']*u['UpTimePerDomain'])
+                    util.append(Services.loc[s,'sTotalUtil'])
                 eT = eT + u['UpTimePerDomain']
                 eventCount=i
                 for s in u['Services']:
@@ -133,10 +136,12 @@ def EventGenerator(eventsLength):
                     eventID.append(eventCount)
                     eventCount=eventCount+1
                     upTime.append(0)
-                    util.append(0)
+                    util.append(Services.loc[s,'sTotalUtil'])
                 i=eventCount
             if u['MinArrivalTime']!=u['MaxArrivalTime']:
-                arrival=arrival+random.choice(range(int(u['MinArrivalTime']*10),int(u['MaxArrivalTime']*10)))/10
+                # arrival=arrival+random.choice(range(int(u['MinArrivalTime']*10),int(u['MaxArrivalTime']*10)))/10
+                arrival = arrival + random.triangular(u['MinArrivalTime'], u['MaxArrivalTime'], u['MinArrivalTime'] + (u['MaxArrivalTime'] - u['MinArrivalTime']) * weight
+)
             else:
                 arrival=arrival+u['MinArrivalTime']
             if arrival<eT:
@@ -156,10 +161,11 @@ def EventGenerator(eventsLength):
     EventsAbstract=EventsAbstract[EventsAbstract['EventType']=='allocate']
     # print(eventDomain)
     Events=Events.sort_values(by=['EventTime'])
-    Events.to_csv('data/events/events_0.csv', index=False)
-    Users.to_csv('data/users.csv', index=False)
+    Events.to_csv(f'{dir}/events_0.csv', index=False)
     totalUtil=sum(util)
     return totalUpTime, EventsAbstract,totalUtil
+
+
 
 
     

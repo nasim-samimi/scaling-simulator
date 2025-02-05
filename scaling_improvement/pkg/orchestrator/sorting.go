@@ -7,17 +7,12 @@ import (
 
 func (o *Orchestrator) sortNodes(nodes Nodes, serviceCpus uint64, serviceBandwidth float64) ([]NodeName, error) {
 	// sort nodes according to the heuristic
-	fmt.Println("inside sort nodes")
-	fmt.Println("checking the active nodes for sorting:", nodes)
 	sortedNodes := []Node{}
 	for _, node := range nodes {
 		// must filter out the nodes that do not pass admission test
 		available, _ := node.NodeAdmission.QuickFilter(serviceCpus, serviceBandwidth, node.Cores)
 		if available {
 			sortedNodes = append(sortedNodes, *node)
-		}
-		for _, core := range node.Cores {
-			fmt.Println("Node cores: ", core)
 		}
 		fmt.Println("Node: ", node.NodeName, " Average Residual Bandwidth: ", node.AverageResidualBandwidth, "total residual bandwidth: ", node.TotalResidualBandwidth)
 	}

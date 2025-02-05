@@ -82,14 +82,10 @@ func ReallocateTest(newService *Service, oldServiceID ServiceID, n Node) (bool, 
 	oldServiceCores := n.AllocatedServices[oldServiceID].AllocatedCoresEdge
 	bandwidth := n.AllocatedServices[oldServiceID].StandardMode.bandwidthEdge
 	newBandwidth := newService.StandardMode.bandwidthEdge
-	fmt.Println("bandwidth:", bandwidth)
-	fmt.Println("old cores:", oldServiceCores)
 	for _, coreID := range oldServiceCores {
 		NewCores[coreID].ConsumedBandwidth -= bandwidth
-		fmt.Println("new cores:", NewCores[coreID])
 
 	}
-	fmt.Println("new service bandwidth:", newBandwidth)
 	possibleCores, err := n.NodeAdmission.Admission(newService.StandardMode.cpusEdge, newService.StandardMode.bandwidthEdge, NewCores, 100.0)
 
 	if err == nil {
@@ -170,10 +166,7 @@ func (n *Node) NodeDeallocate(eventID ServiceID) bool {
 	}
 	totalResidualBandwidth := n.TotalResidualBandwidth
 	for _, core := range cores {
-		fmt.Println("core:", n.Cores[core].ConsumedBandwidth)
-		fmt.Println("coreID:", core)
 		n.Cores[core].ConsumedBandwidth -= bandwidth
-		fmt.Println("consumed bandwidth after deallocation: ", n.Cores[core].ConsumedBandwidth)
 		totalResidualBandwidth -= bandwidth
 	}
 	n.TotalResidualBandwidth = totalResidualBandwidth
@@ -196,10 +189,7 @@ func (n *Node) CloudNodeDeallocate(eventID ServiceID) bool {
 
 	totalResidualBandwidth := n.TotalResidualBandwidth
 	for _, core := range cores {
-		fmt.Println("core:", n.Cores[core].ConsumedBandwidth)
-		fmt.Println("coreID:", core)
 		n.Cores[core].ConsumedBandwidth -= bandwidth
-		fmt.Println("consumed bandwidth after deallocation: ", n.Cores[core].ConsumedBandwidth)
 		totalResidualBandwidth -= bandwidth
 	}
 	n.TotalResidualBandwidth = totalResidualBandwidth
@@ -217,10 +207,7 @@ func (n *Node) Upgraded(event *Service) {
 
 	totalResidualBandwidth := n.TotalResidualBandwidth
 	for _, core := range cores {
-		fmt.Println("core:", n.Cores[core].ConsumedBandwidth)
-		fmt.Println("coreID:", core)
 		n.Cores[core].ConsumedBandwidth -= bandwidth
-		fmt.Println("consumed bandwidth after deallocation: ", n.Cores[core].ConsumedBandwidth)
 		totalResidualBandwidth -= bandwidth
 	}
 	n.TotalResidualBandwidth = totalResidualBandwidth

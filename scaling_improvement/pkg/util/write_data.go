@@ -55,7 +55,7 @@ func WriteResults(results *cnfg.ResultContext, config *cnfg.Config) error {
 		reallocName = "improved"
 	}
 	// Define output subdirectories
-	subDirs := []string{"runtimes", "qosPerCost", "qos", "cost"}
+	subDirs := []string{"runtimes", "qosPerCost", "qos", "cost", "eventTime"}
 
 	// Create directories if they do not exist
 	baseFolder := config.System.ResultsDir

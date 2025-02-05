@@ -15,7 +15,7 @@ import (
 
 func processEvents(orchestrator *src.Orchestrator, addition string) (*cnfg.ResultContext, error) {
 
-	events := util.LoadEventsFromCSV("../data/events/events_" + addition + ".csv")
+	events := util.LoadEventsFromCSV("../data/events/hightraffic/events_" + addition + ".csv")
 	qosPerCost := make([]float64, 0)
 	qos := make([]float64, 0)
 	cost := make([]float64, 0)
@@ -36,19 +36,20 @@ func processEvents(orchestrator *src.Orchestrator, addition string) (*cnfg.Resul
 				fmt.Println(err)
 			}
 			if allocated {
-				qosPerCost = append(qosPerCost, math.Round(float64(orchestrator.QoS)*1000/float64(orchestrator.Cost))/1000)
-				qos = append(qos, float64(orchestrator.QoS))
-				cost = append(cost, float64(orchestrator.Cost))
-				durations = append(durations, float64(duration.Microseconds())/1000)
-				eventTime = append(eventTime, float64(event.EventTime))
 				fmt.Println("/////////////////////")
 				fmt.Println("service is allocated ")
 				fmt.Println("/////////////////////")
 			} else {
 				fmt.Println("/////////////////////")
 				fmt.Println("service is rejected ")
+				// delete(orchestrator.RunningServices, eventID)
 				fmt.Println("/////////////////////")
 			}
+			qosPerCost = append(qosPerCost, math.Round(float64(orchestrator.QoS)*1000/float64(orchestrator.Cost))/1000)
+			qos = append(qos, float64(orchestrator.QoS))
+			cost = append(cost, float64(orchestrator.Cost))
+			durations = append(durations, float64(duration.Microseconds())/1000)
+			eventTime = append(eventTime, float64(event.EventTime))
 			test++
 			// if test == 50 {
 			// 	break
@@ -57,7 +58,9 @@ func processEvents(orchestrator *src.Orchestrator, addition string) (*cnfg.Resul
 		if event.EventType == "deallocate" {
 			fmt.Println("/////////////////////")
 			fmt.Println("Deallocate")
-			orchestrator.Deallocate(event.TargetDomainID, event.TargetServiceID, eventID)
+			if _, ok := orchestrator.RunningServices[eventID]; ok {
+				orchestrator.Deallocate(event.TargetDomainID, event.TargetServiceID, eventID)
+			}
 			orchestrator.UpgradeServiceIfEnabled()
 			orchestrator.NodeReclaimIfEnabled(event.TargetDomainID)
 			qosPerCost = append(qosPerCost, math.Round(float64(orchestrator.QoS)*1000/float64(orchestrator.Cost))/1000)

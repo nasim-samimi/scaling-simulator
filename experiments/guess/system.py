@@ -132,7 +132,7 @@ def domainNodesUpperBound(opt,dir,num_init_nodes,num_cores=NUM_CORES_PER_SCALED_
 def domainNodesLowerBound(opt,dir,num_cores=NUM_CORES_PER_INIT_NODE,num_domains=NUM_DOMAINS):
     print(opt)
     domain_ids=range(num_domains)
-    print("num cores:",num_cores)
+    # print("num cores:",num_cores)
     nodes_cores=[]
     for d in domain_ids: 
         nodes=computeNodeCoresLowerbound(d,opt,num_cores)
@@ -335,10 +335,10 @@ def WorstFitMinMin(df: pd.DataFrame, max_bandwidth_per_core=MAX_BANDWIDTH_PER_CO
 def BestFitMinMin(df: pd.DataFrame, num_cores_per_scaled_node,num_cores_per_init_node, num_init_nodes, max_bandwidth_per_core=MAX_BANDWIDTH_PER_CORE):
     df = df.sort_values(by='sBandwidth', ascending=False).reset_index(drop=True)
     total_cores = math.ceil((df['sCores'] * df['sBandwidth']).sum() / max_bandwidth_per_core)
-    print("total cores:",total_cores)
-    print("num cores per scaled node:",num_cores_per_scaled_node)
+    # print("total cores:",total_cores)
+    # print("num cores per scaled node:",num_cores_per_scaled_node)
     initial_nodes = math.ceil((total_cores-(num_cores_per_init_node*num_init_nodes)) / num_cores_per_scaled_node)
-    print("initial nodes:",initial_nodes)
+    # print("initial nodes:",initial_nodes)
     if initial_nodes <= 0:
         return 0, pd.DataFrame(columns=['cores','totalBandwidth'])
     

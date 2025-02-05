@@ -43,7 +43,7 @@ func (at *AdmissionTest) Admission(reqCpus uint64, reqBandwidth float64, cores C
 	var scoredCpus []scoredCpu
 	for _, cpuinfo := range cores {
 		score := cpuThreshold - cpuinfo.ConsumedBandwidth - reqBandwidth
-		if score > 0 {
+		if score >= 0 {
 			scoredCpus = append(scoredCpus, scoredCpu{
 				cpu:   cpuinfo.ID,
 				score: score,

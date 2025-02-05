@@ -26,10 +26,16 @@ def unexpectedServices():
 #     newEventsIDs=range(events['EventID'].max()+1,events['EventID'].max()+newEventsCount+1)
 #     newEvents['EventTime']=newEventsTime
 #     newEvents['EventType']='allocate'
+MAX_UP_TIME=100#int(TOTAL_DURATION/2)
+MIN_UP_TIME=NUM_DOMAINS*3
+
 
 def generateRandomUser(Users,Services,addedUtil,addition,events:pd.DataFrame):
     u=0
+    Users['TotalUtil']=Users['UpTime']*Users['TotalUtil']
     potentialUsers=Users[Users['TotalUtil']<=addedUtil]
+    potentialUsers=potentialUsers[potentialUsers['UpTime']>0]
+    potentialUsers=potentialUsers.sort_values(by='TotalUtil',ascending=True)
     extraEvents=pd.DataFrame(columns=events.columns)
     ind=0
     eventCount=len(events)+1
@@ -38,11 +44,11 @@ def generateRandomUser(Users,Services,addedUtil,addition,events:pd.DataFrame):
         randUsersID=random.choice(potentialUsers.index)
         randUser=Users.loc[randUsersID]
         numAppearance=random.choice(range(1,5))
-        randFirstAppearance=random.choice(range(0,int(events['EventTime'].max())))
+        randFirstAppearance=random.choice(range(0,int(events['EventTime'].max()*0.6)))
         arrival=randFirstAppearance
         for n in range(numAppearance):
             eT=arrival
-            u=u+randUser['TotalUtil']
+            u=u+randUser['TotalUtil']*randUser['UpTime']
             if u>addedUtil:
                 break
             for d in randUser['Domains']:
@@ -66,7 +72,7 @@ def generateRandomUser(Users,Services,addedUtil,addition,events:pd.DataFrame):
                     extraEvents.loc[ind,'DomainID']=d
                     extraEvents.loc[ind,'ServiceID']=s
                     extraEvents.loc[ind,'EventID']=i
-                    extraEvents.loc[ind,'TotalUtil']=0
+                    extraEvents.loc[ind,'TotalUtil']=Services.loc[s,'sTotalUtil']*randUser['UpTimePerDomain']
                     extraEvents.loc[ind,'UpTime']=0
                     i=i+1
                     ind=ind+1
@@ -81,6 +87,7 @@ def generateRandomUser(Users,Services,addedUtil,addition,events:pd.DataFrame):
             if arrival<eT:
                 print('error in arrival time, arrival time is invalid')
             eventCount=eventCount+1
+            
     return extraEvents.sort_values(by='EventTime')
 
 def generateRandomUpTime(addedUpTime,maxTime):
@@ -105,9 +112,9 @@ def generateRandService(addedUtil,addition,events:pd.DataFrame,Services:pd.DataF
     while u<addedUtil:
         randServiceID=random.choice(SERVICE_IDS)
         randService=Services.loc[randServiceID]
-        randFirstAppearance=random.choice(range(1,int(events['EventTime'].max())))
-        randDomain=random.choice(DOMAIN_IDS)
-        randUpTime=random.choice(range(math.ceil(MIN_UP_TIME/NUM_DOMAINS),math.ceil(MAX_UP_TIME/NUM_DOMAINS)))
+        randFirstAppearance=random.choice(range(int(events['EventTime'].max()*0.2),int(events['EventTime'].max()*0.8))) # the 0.8 is to make sure that the service is not added at the end of the events
+        randDomain=random.choice(range(NUM_DOMAINS))
+        randUpTime=random.choice(range(math.ceil(MIN_UP_TIME),math.ceil(MAX_UP_TIME/2)))
         util=randService['sTotalUtil']*randUpTime
         while util>addedUtil-u:
             randUpTime=randUpTime-1
@@ -126,7 +133,7 @@ def generateRandService(addedUtil,addition,events:pd.DataFrame,Services:pd.DataF
         extraEvents.loc[ind,'ServiceID']=randServiceID
         extraEvents.loc[ind,'EventID']=i
         extraEvents.loc[ind,'TotalUtil']=util
-        print('rand up time:',randUpTime)
+        # print('rand up time:',randUpTime)
         extraEvents.loc[ind,'UpTime']=randUpTime
         ind=ind+1
         eT = eT + randUpTime
@@ -136,7 +143,7 @@ def generateRandService(addedUtil,addition,events:pd.DataFrame,Services:pd.DataF
         extraEvents.loc[ind,'DomainID']=randDomain
         extraEvents.loc[ind,'ServiceID']=randServiceID
         extraEvents.loc[ind,'EventID']=i
-        extraEvents.loc[ind,'TotalUtil']=0
+        extraEvents.loc[ind,'TotalUtil']=util
         extraEvents.loc[ind,'UpTime']=0
         i=i+1
         ind=ind+1

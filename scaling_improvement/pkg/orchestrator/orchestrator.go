@@ -63,14 +63,11 @@ func NewOrchestrator(config *cnfg.OrchestratorConfig, cloud *Cloud, domains Doma
 
 }
 
-func (o *Orchestrator) allocateEdge(service *Service, node *Node, eventID ServiceID) (bool, error) {
-	cpuThreshold := o.Config.DomainNodeThreshold
+func (o *Orchestrator) allocateEdge(service *Service, node *Node, eventID ServiceID, cpuThreshold float64) (bool, error) {
 	fmt.Println("Allocating standard service: ", service.serviceID, " to node: ", node.NodeName)
-	allocated, svc, err := service.StandardMode.ServiceAllocate(service, node, eventID, cpuThreshold)
+	allocated, svc, err := service.StandardMode.ServiceAllocate(service, node, eventID, 100.0)
 	if allocated {
 		o.RunningServices[eventID] = svc
-		fmt.Println("service:", svc)
-		fmt.Println("Allocated? ", allocated)
 	}
 
 	return allocated, err
@@ -82,8 +79,6 @@ func (o *Orchestrator) allocateEdgeReduced(service *Service, node *Node, eventID
 	allocated, svc, err := service.ReducedMode.EdgeServiceAllocate(service, node, eventID, cpuThreshold)
 	if allocated {
 		o.RunningServices[eventID] = svc
-		fmt.Println("service:", svc)
-		fmt.Println("Allocated? ", allocated)
 	}
 
 	return allocated, err
@@ -147,10 +142,8 @@ func (o *Orchestrator) Allocate(domainID DomainID, serviceID ServiceID, eventID 
 
 	sortedNodes, _ := o.sortNodes(domain.ActiveNodes, service.StandardMode.cpusEdge, service.StandardMode.bandwidthEdge)
 	for _, nodeName := range sortedNodes {
-		allocated, _ := o.allocateEdge(service, o.Domains[domainID].ActiveNodes[nodeName], eventID)
+		allocated, _ := o.allocateEdge(service, o.Domains[domainID].ActiveNodes[nodeName], eventID, o.Config.DomainNodeThreshold)
 		if allocated {
-			fmt.Println("qos before standard allocation", o.QoS)
-			fmt.Println("qos of the service", service.StandardQoS)
 			o.QoS = o.QoS + service.StandardQoS
 			return allocated, nil
 		}
@@ -164,9 +157,6 @@ func (o *Orchestrator) Allocate(domainID DomainID, serviceID ServiceID, eventID 
 		reallocatedEventID, _ := o.getReallocatedService(node, service)
 
 		if node.AllocatedServices[reallocatedEventID] == nil {
-			fmt.Println("node name:", nodeName)
-			fmt.Println("node allocated services:", node.AllocatedServices)
-			fmt.Println("node BW:", node.TotalResidualBandwidth, node.AverageResidualBandwidth)
 			continue
 		}
 		reallocationHelp, NewCores, _ := ReallocateTest(service, reallocatedEventID, *node)
@@ -215,6 +205,16 @@ func (o *Orchestrator) Allocate(domainID DomainID, serviceID ServiceID, eventID 
 					return allocated, nil
 				}
 			}
+			if o.Config.IntraNodeRemoved {
+				fmt.Println("going to intra node cloud reallocation")
+				otherEvent := o.RunningServices[reallocatedEventID]
+				allocated, _ = o.intraNodeRemove(ctx)
+				if allocated {
+					o.QoS = o.QoS + service.StandardQoS - otherEvent.StandardQoS
+					fmt.Println("allocated with intra node cloud reallocation")
+					return allocated, nil
+				}
+			}
 		} else {
 			fmt.Println("Reallocated event not helpful")
 		}
@@ -234,6 +234,14 @@ func (o *Orchestrator) Allocate(domainID DomainID, serviceID ServiceID, eventID 
 	// 		return allocated, nil
 	// 	}
 	// }
+	// sortedNodes, _ = o.sortNodes(domain.ActiveNodes, service.StandardMode.cpusEdge, service.StandardMode.bandwidthEdge)
+	// for _, nodeName := range sortedNodes {
+	// 	allocated, _ := o.allocateEdge(service, o.Domains[domainID].ActiveNodes[nodeName], eventID, 100)
+	// 	if allocated {
+	// 		o.QoS = o.QoS + service.StandardQoS
+	// 		return allocated, nil
+	// 	}
+	// }
 
 	edgeAllocated, cloudAllocated, svc, _ := o.SplitSched(service, domainID, eventID)
 	if edgeAllocated && cloudAllocated {
@@ -246,10 +254,8 @@ func (o *Orchestrator) Allocate(domainID DomainID, serviceID ServiceID, eventID 
 			success, nodeName := o.edgePowerOnNode(domainID)
 			fmt.Println("Edge node powered on, node name: ", nodeName)
 			if success {
-				allocated, _ := o.allocateEdge(service, o.Domains[domainID].ActiveNodes[nodeName], eventID)
+				allocated, _ := o.allocateEdge(service, o.Domains[domainID].ActiveNodes[nodeName], eventID, o.Config.DomainNodeThreshold)
 				if allocated {
-					fmt.Println("qos before edge power on", o.QoS)
-					fmt.Println("qos of the service", service.StandardQoS)
 					o.QoS = o.QoS + service.StandardQoS
 					return allocated, nil
 				}
@@ -263,8 +269,6 @@ func (o *Orchestrator) Allocate(domainID DomainID, serviceID ServiceID, eventID 
 	edgeAllocated, cloudAllocated, svc, _ = o.SplitSched(service, domainID, eventID)
 	if edgeAllocated && cloudAllocated {
 		allocated = true
-		fmt.Println("qos before split sched", o.QoS)
-		fmt.Println("qos of the service", service.StandardQoS)
 		o.QoS = o.QoS + service.ReducedQoS
 	} else {
 		return false, nil

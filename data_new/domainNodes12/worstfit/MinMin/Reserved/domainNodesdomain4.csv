@@ -1,0 +1,14 @@
+NodeName,NumCores,PartitioningHeuristic,NodeSelectionHeuristic
+domain4_worker0_r,12,worstfit,MinMin
+domain4_worker1_r,12,worstfit,MinMin
+domain4_worker2_r,12,worstfit,MinMin
+domain4_worker3_r,12,worstfit,MinMin
+domain4_worker4_r,12,worstfit,MinMin
+domain4_worker5_r,12,worstfit,MinMin
+domain4_worker6_r,12,worstfit,MinMin
+domain4_worker7_r,12,worstfit,MinMin
+domain4_worker8_r,12,worstfit,MinMin
+domain4_worker9_r,12,worstfit,MinMin
+domain4_worker10_r,12,worstfit,MinMin
+domain4_worker11_r,12,worstfit,MinMin
+domain4_worker12_r,12,worstfit,MinMin

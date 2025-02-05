@@ -5,14 +5,14 @@ orchestrator:
   intra_domain_realloc: false
   intra_node_realloc: false
   intra_node_reduced: false
-  node_heuristic: MaxMax
-  node_reclaim: false
-  partition_heuristic: worstfit
-  reallocation_heuristic: HB
+  intra_node_removed: false
+  node_heuristic: MinMin
+  node_reclaim: true
+  partition_heuristic: bestfit
   upgrade_service: false
 system:
   addition: 0
   init_node_size: 16
-  node_size: "8"
-  results_dir: baseline
+  node_size: 8
+  results_dir: improved/with_node_reclaim
   scaled_node_size: 8

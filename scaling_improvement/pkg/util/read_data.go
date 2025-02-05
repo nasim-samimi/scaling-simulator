@@ -64,8 +64,8 @@ func LoadDomainFromCSV(filename string, domainID src.DomainID) (src.Nodes, src.N
 
 func LoadDomains(baseFolder string) src.Domains {
 	fmt.Println("loading domains from csv file: ", baseFolder)
-	activeFolder := filepath.Join(baseFolder, "active")
-	reservedFolder := filepath.Join(baseFolder, "reserved")
+	activeFolder := filepath.Join(baseFolder, "Active")
+	reservedFolder := filepath.Join(baseFolder, "Reserved")
 
 	// Get all active node files
 	activeFiles, err := filepath.Glob(filepath.Join(activeFolder, "*.csv"))

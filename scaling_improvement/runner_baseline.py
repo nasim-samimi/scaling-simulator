@@ -10,7 +10,9 @@ PARTITIONING_H=['bestfit','worstfit']
 
 # REALLOCATION_H=["HBCI"]
 NODE_SELECTION_H=["MinMin","MaxMax"]
+# NODE_SELECTION_H=["MinMin"]
 ADDITION=[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
+# ADDITION=[0.7,0.8,0.9,1]
 
 edge_node_cost=1
 cloud_node_cost=3
@@ -27,7 +29,6 @@ fixed_config = {
         "partition_heuristic": "bestfit",
         "node_heuristic": "MaxMax",
         "reallocation_heuristic": "HB",
-        "domain_node_threshold": 100,
         "upgrade_service":False,
         "node_reclaim":False,
         "intra_node_realloc":False,
@@ -42,7 +43,8 @@ fixed_config = {
 }
 
 # Define mutually exclusive options (only one can be enabled at a time)
-node_sizes = [8,12,16,20,24,28,32]
+# node_sizes = [8,12,16,20,24,28,32]
+node_sizes = [8,12]
 
 # Generate all parameter combinations
 def generate_param_combinations():

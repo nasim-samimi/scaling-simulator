@@ -16,6 +16,7 @@ type OrchestratorConfig struct {
 	IntraDomainReallocHeu Heuristic `yaml:"intra_domain_realloc_heu"`
 	IntraNodeReduced      bool      `yaml:"intra_node_reduced"`
 	IntraNodeReducedHeu   Heuristic `yaml:"intra_node_reduced_heu"`
+	IntraNodeRemoved      bool      `yaml:"intra_node_removed"`
 	DomainNodeThreshold   float64   `yaml:"domain_node_threshold"`
 	EdgeReduced           bool      `yaml:"edge_reduced"`
 	CloudNodeCost         Cost      `yaml:"cloud_node_cost"`

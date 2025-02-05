@@ -1,0 +1,5 @@
+NodeName,NumCores,PartitioningHeuristic,NodeSelectionHeuristic
+domain1_worker0_r,32,worstfit,MaxMax
+domain1_worker1_r,32,worstfit,MaxMax
+domain1_worker2_r,32,worstfit,MaxMax
+domain1_worker3_r,32,worstfit,MaxMax

@@ -20,6 +20,8 @@ const (
 	HBLI  cnfg.Heuristic = "HBLI"
 	HBIcC cnfg.Heuristic = "HBIcC"
 	LBCI  cnfg.Heuristic = "LBCI"
+	LBI   cnfg.Heuristic = "LBI"
+	LCI   cnfg.Heuristic = "LCI"
 )
 
 type ReallocContext struct {
@@ -43,13 +45,17 @@ func (o *Orchestrator) getReallocatedService(node *Node, t *Service) (ServiceID,
 		case HC:
 			return float64(service.StandardMode.cpusEdge)
 		case HBC:
-			return 1 / (service.StandardMode.bandwidthEdge * float64(service.StandardMode.cpusEdge))
+			return (service.StandardMode.bandwidthEdge * float64(service.StandardMode.cpusEdge))
 		case LB:
 			return (1 / service.StandardMode.bandwidthEdge)
 		case LC:
 			return 1 / float64(service.StandardMode.cpusEdge)
 		case LBC:
-			return (service.StandardMode.bandwidthEdge * float64(service.StandardMode.cpusEdge))
+			return 1 / (service.StandardMode.bandwidthEdge * float64(service.StandardMode.cpusEdge))
+		case LBI:
+			return 1 / (service.ImportanceFactor * (service.StandardMode.bandwidthEdge))
+		case LCI:
+			return 1 / (service.ImportanceFactor * (float64(service.StandardMode.cpusEdge)))
 		case HBI:
 			return (service.ImportanceFactor * service.StandardMode.bandwidthEdge)
 		case HCI:
@@ -151,11 +157,6 @@ func (o *Orchestrator) intraDomainRealloc(ctx ReallocContext) (bool, error) {
 			otherService.StandardMode.ServiceDeallocate(ctx.ReallocatedEventID, ctx.Node)
 			_, newSvc, _ := ctx.Service.StandardMode.ServiceAllocate(ctx.Service, ctx.Node, ctx.EventID, cpuThreshold)
 			_, oldSvc, _ := otherService.StandardMode.ServiceAllocate(otherService, otherNode, ctx.ReallocatedEventID, cpuThreshold)
-			// delete(o.RunningServices, otherEventID)
-			fmt.Println(" the services of the node:", ctx.Node.AllocatedServices)
-			fmt.Println(" the services of the other node:", otherNode.AllocatedServices)
-			fmt.Println("the new service:", newSvc)
-			fmt.Println("the old service:", oldSvc)
 			o.RunningServices[ctx.ReallocatedEventID] = oldSvc
 			o.RunningServices[ctx.EventID] = newSvc
 			reallocated = true
@@ -242,6 +243,32 @@ func (o *Orchestrator) IntraNodeCloudRealloc(ctx ReallocContext) (bool, error) {
 	o.RunningServices[ctx.ReallocatedEventID] = oldSvc
 	o.RunningServices[ctx.EventID] = newSvc
 	fmt.Println("intra node cloud reallocation completed")
+	return true, nil
+}
+
+func (o *Orchestrator) intraNodeRemove(ctx ReallocContext) (bool, error) {
+	const cpuThreshold = 100.0
+	if ctx.ReallocatedEventID == "" {
+		return false, nil
+	}
+	oldBandwidth := o.RunningServices[ctx.ReallocatedEventID].StandardMode.bandwidthEdge
+	_, err := ctx.Node.NodeAdmission.Admission(ctx.Node.AllocatedServices[ctx.ReallocatedEventID].StandardMode.cpusEdge, oldBandwidth, ctx.NewCores, cpuThreshold)
+
+	if err != nil {
+		return false, err
+	}
+	fmt.Println("show the status of the intra node reallocation:", true)
+
+	_, err = ctx.Service.StandardMode.ServiceDeallocate(ctx.ReallocatedEventID, ctx.Node)
+	if err != nil {
+		return false, err
+	}
+	delete(o.RunningServices, ctx.ReallocatedEventID)
+	_, newSvc, _ := ctx.Service.StandardMode.ServiceAllocate(ctx.Service, ctx.Node, ctx.EventID, cpuThreshold)
+	fmt.Println("in inra node reallocation, node average residual bandwidth after first allocation: ", ctx.Node.AverageResidualBandwidth)
+	o.RunningServices[ctx.EventID] = newSvc
+	fmt.Println("intra node reallocation completed")
+
 	return true, nil
 }
 
