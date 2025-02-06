@@ -11,8 +11,8 @@ PARTITIONING_H=['bestfit','worstfit']
 REALLOCATION_H=["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC","LBCI","LBI","LCI"]
 REALLOCATION_INTRANODE_H=["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC","LBCI","LBI","LCI"]
 REALLOCATION_INTRADOMAIN_H=["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC","LBCI","LBI","LCI"]
-REALLOCATION_REDUCED_H=["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC","LBCI","LBI","LCI"]
-REALLOCATION_REMOVED_H=["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC","LBCI","LBI","LCI"]
+REALLOCATION_REDUCED_H=["LB","LC","LBC","LBCI","LBI","LCI"]
+REALLOCATION_REMOVED_H=["LB","LC","LBC","LBCI","LBI","LCI"]
 # REALLOCATION_H=["HBCI"]
 NODE_SELECTION_H=["MinMin","MaxMax"]
 ADDITION=[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
@@ -22,8 +22,8 @@ intra_node_realloc_options = [True, False]
 edge_node_cost=1
 cloud_node_cost=3
 # thresholds=[80,100]
-threshold=100
-node_sizes = [8,12]
+threshold=60
+node_sizes = [8,12,16]
 
 results_dir = "improved"
 
@@ -36,8 +36,12 @@ fixed_config = {
         "partition_heuristic": "bestfit",
         "node_heuristic": "MaxMax",
         "reallocation_heuristic": "HB",
-        # "upgrade_service":False,
-        # "node_reclaim":False,
+        "upgrade_service":False,
+        "node_reclaim":False,
+        # "intra_node_realloc":False,
+        # "intra_domain_realloc":False,
+        "intra_node_reduced":False,
+        "intra_node_removed":False,
     },
     "system": {
         "init_node_size": 16,
@@ -48,12 +52,12 @@ fixed_config = {
 
 # Define mutually exclusive options (only one can be enabled at a time)
 exclusive_options = [
-    "upgrade_service",
-    "node_reclaim",
+    # "upgrade_service",
+    # "node_reclaim",
     "intra_node_realloc",
     "intra_domain_realloc",
-    "intra_node_reduced",
-    "intra_node_removed"
+    # "intra_node_reduced",
+    # "intra_node_removed"
 ]
 
 # Generate all parameter combinations
@@ -64,7 +68,7 @@ def generate_param_combinations():
                 for p in PARTITIONING_H:
                     for n in NODE_SELECTION_H:
                             # If the option is a reallocation strategy, iterate through heuristics
-                        if "realloc" in exclusive_option or "intra_node_reduced" in exclusive_option:
+                        if "intra" in exclusive_option :
                             # for threshold in thresholds:
                             if "intra_node_realloc" in exclusive_option:
                                 heuristics = REALLOCATION_INTRANODE_H
@@ -74,8 +78,10 @@ def generate_param_combinations():
                                 heuristics = REALLOCATION_REDUCED_H
                             elif "intra_node_removed" in exclusive_option:
                                 heuristics = REALLOCATION_REMOVED_H
+                            else:
+                                heuristics = REALLOCATION_H
 
-                            for heuristic in REALLOCATION_H:
+                            for heuristic in heuristics:
                                 # Create a new config with only one flag enabled
                                 config=fixed_config.copy()
                                 config["orchestrator"] = {key: False for key in exclusive_options}  # Disable all first

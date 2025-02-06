@@ -47,7 +47,7 @@ func WriteResults(results *cnfg.ResultContext, config *cnfg.Config) error {
 	// if orchestrator.Config.IntraNodeReduced {
 	// 	reallocName = string(orchestrator.Config.IntraNodeReducedHeu)
 	// }
-	if config.Orchestrator.IntraDomainRealloc || config.Orchestrator.IntraNodeRealloc || config.Orchestrator.IntraNodeReduced {
+	if config.Orchestrator.IntraDomainRealloc || config.Orchestrator.IntraNodeRealloc || config.Orchestrator.IntraNodeReduced || config.Orchestrator.IntraNodeRemoved {
 		reallocName = string(config.Orchestrator.ReallocationHeuristic)
 	}
 

@@ -21,7 +21,7 @@ EVENTS_LENGTH=1000
 
 
 # deriving the lower bound.
-def computeNodeCoresLowerbound(d,opt,num_cores):
+def computeNodeCoresLowerbound(d,opt,num_cores,Users,Services):
     userIDs=[]
     sIDs=[]
     print(Users.head())
@@ -40,7 +40,7 @@ def computeNodeCoresLowerbound(d,opt,num_cores):
     # print('overlapping users:',OverlappingUsers)
     # print('max domain users:',len(domainUsers))
     # print('domain users:',domainUsers)
-    selectedUsers = domainUsers.sort_values(by='TotalUtil', ascending=False).head(OverlappingUsers)
+    selectedUsers = domainUsers.sort_values(by='TotalUtil', ascending=True).head(OverlappingUsers)
     userIDs = selectedUsers['UserID'].tolist()
     
     for IDs in userIDs:
@@ -73,7 +73,7 @@ def computeNodeCoresLowerbound(d,opt,num_cores):
     return nodes
 
 
-def computeNodeCoresUpperbound(d,opt,num_cores_scaled,num_init_nodes,num_cores_init):
+def computeNodeCoresUpperbound(d,opt,num_cores_scaled,Users,Services,num_init_nodes,num_cores_init):
     userIDs=[]
     sIDs=[]
     for _, u in Users.iterrows():
@@ -109,12 +109,12 @@ def computeNodeCoresUpperbound(d,opt,num_cores_scaled,num_init_nodes,num_cores_i
         # nodes,_=WorstFitMaxMax(schedule)
     return nodes
 
-def domainNodesUpperBound(opt,dir,num_init_nodes,num_cores=NUM_CORES_PER_SCALED_NODE,num_domains=NUM_DOMAINS,num_cores_init=NUM_CORES_PER_INIT_NODE):
+def domainNodesUpperBound(opt,dir,num_init_nodes,Users=Users,Services=Services,num_cores=NUM_CORES_PER_SCALED_NODE,num_domains=NUM_DOMAINS,num_cores_init=NUM_CORES_PER_INIT_NODE):
     print(opt)
     domain_ids=range(num_domains)
     j=0
     for d in domain_ids: 
-        nodes=computeNodeCoresUpperbound(d,opt,num_cores,num_init_nodes=num_init_nodes[j],num_cores_init=num_cores_init)
+        nodes=computeNodeCoresUpperbound(d,opt,num_cores,Users=Users,Services=Services,num_init_nodes=num_init_nodes[j],num_cores_init=num_cores_init)
         nodeNames=[]
         for i in range(nodes):
             nodeNames.append(f'domain{d}_worker{i}_r')
@@ -129,13 +129,13 @@ def domainNodesUpperBound(opt,dir,num_init_nodes,num_cores=NUM_CORES_PER_SCALED_
         df.to_csv(f'{dir}domainNodes{domainID}.csv', index=False)
         j=j+1
 
-def domainNodesLowerBound(opt,dir,num_cores=NUM_CORES_PER_INIT_NODE,num_domains=NUM_DOMAINS):
+def domainNodesLowerBound(opt,dir,Users,Services,num_cores=NUM_CORES_PER_INIT_NODE,num_domains=NUM_DOMAINS):
     print(opt)
     domain_ids=range(num_domains)
     # print("num cores:",num_cores)
     nodes_cores=[]
     for d in domain_ids: 
-        nodes=computeNodeCoresLowerbound(d,opt,num_cores)
+        nodes=computeNodeCoresLowerbound(d,opt,num_cores,Users=Users,Services=Services)
         nodes_cores.append(nodes)
         nodeNames=[]
         for i in range(nodes):

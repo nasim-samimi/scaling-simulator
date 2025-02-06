@@ -112,7 +112,7 @@ def generateRandService(addedUtil,addition,events:pd.DataFrame,Services:pd.DataF
     while u<addedUtil:
         randServiceID=random.choice(SERVICE_IDS)
         randService=Services.loc[randServiceID]
-        randFirstAppearance=random.choice(range(int(events['EventTime'].max()*0.2),int(events['EventTime'].max()*0.8))) # the 0.8 is to make sure that the service is not added at the end of the events
+        randFirstAppearance=random.choice(range(int(events['EventTime'].max()*0.05),int(events['EventTime'].max()*0.9))) # the 0.8 is to make sure that the service is not added at the end of the events
         randDomain=random.choice(range(NUM_DOMAINS))
         randUpTime=random.choice(range(math.ceil(MIN_UP_TIME),math.ceil(MAX_UP_TIME/2)))
         util=randService['sTotalUtil']*randUpTime
@@ -153,3 +153,13 @@ def generateRandService(addedUtil,addition,events:pd.DataFrame,Services:pd.DataF
     print('added util:',addedUtil)
     return extraEvents.sort_values(by='EventTime')
 
+def interference(additions,totalUtil,events,Services,additionStep,events_dir):
+    addedUtil=totalUtil*additionStep
+    newEvents=events
+    for addition in additions: 
+        newUserEvents=generateRandService(addedUtil,0.5,newEvents,Services)
+        newEvents=pd.concat([newEvents,newUserEvents])
+        newEvents.sort_values(by='EventTime',inplace=True)
+        newEvents.to_csv(f'{events_dir}/events_{addition}.csv',index=False)
+
+        print('done')

@@ -288,7 +288,7 @@ def robustness(dir1='improved/allOpts',dir2='baseline/',metric='cost',flags='all
                 leg=[]
                 for dir in dirs:
                     fulldir=f'{dir}{metric}/nodesize={nodesize}/addition={a}/{n}/{p}/'
-                    print(fulldir)
+                    # print(fulldir)
                     for files in os.listdir(fulldir):
                         Values = pd.read_csv(f'{fulldir}{files}', header=None)
                         Values.columns = [metric]

@@ -65,7 +65,7 @@ func NewOrchestrator(config *cnfg.OrchestratorConfig, cloud *Cloud, domains Doma
 
 func (o *Orchestrator) allocateEdge(service *Service, node *Node, eventID ServiceID, cpuThreshold float64) (bool, error) {
 	fmt.Println("Allocating standard service: ", service.serviceID, " to node: ", node.NodeName)
-	allocated, svc, err := service.StandardMode.ServiceAllocate(service, node, eventID, 100.0)
+	allocated, svc, err := service.StandardMode.ServiceAllocate(service, node, eventID, cpuThreshold)
 	if allocated {
 		o.RunningServices[eventID] = svc
 	}
@@ -234,14 +234,14 @@ func (o *Orchestrator) Allocate(domainID DomainID, serviceID ServiceID, eventID 
 	// 		return allocated, nil
 	// 	}
 	// }
-	// sortedNodes, _ = o.sortNodes(domain.ActiveNodes, service.StandardMode.cpusEdge, service.StandardMode.bandwidthEdge)
-	// for _, nodeName := range sortedNodes {
-	// 	allocated, _ := o.allocateEdge(service, o.Domains[domainID].ActiveNodes[nodeName], eventID, 100)
-	// 	if allocated {
-	// 		o.QoS = o.QoS + service.StandardQoS
-	// 		return allocated, nil
-	// 	}
-	// }
+	sortedNodes, _ = o.sortNodes(domain.ActiveNodes, service.StandardMode.cpusEdge, service.StandardMode.bandwidthEdge)
+	for _, nodeName := range sortedNodes {
+		allocated, _ := o.allocateEdge(service, o.Domains[domainID].ActiveNodes[nodeName], eventID, 100)
+		if allocated {
+			o.QoS = o.QoS + service.StandardQoS
+			return allocated, nil
+		}
+	}
 
 	edgeAllocated, cloudAllocated, svc, _ := o.SplitSched(service, domainID, eventID)
 	if edgeAllocated && cloudAllocated {

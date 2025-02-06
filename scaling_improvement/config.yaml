@@ -1,18 +1,15 @@
 orchestrator:
   cloud_node_cost: 3
-  domain_node_threshold: 100
+  domain_node_threshold: 60
   edge_node_cost: 1
-  intra_domain_realloc: false
+  intra_domain_realloc: true
   intra_node_realloc: false
-  intra_node_reduced: false
-  intra_node_removed: false
   node_heuristic: MinMin
-  node_reclaim: true
-  partition_heuristic: bestfit
-  upgrade_service: false
+  partition_heuristic: worstfit
+  reallocation_heuristic: LBCI
 system:
-  addition: 0
+  addition: 0.8
   init_node_size: 16
   node_size: 8
-  results_dir: improved/with_node_reclaim
+  results_dir: improved/with_intra_domain_realloc
   scaled_node_size: 8
