@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sys
 
-figsize=(15, 10)
+figsize=(8,8)
 nodeHeus=['MinMin','MaxMax']
 partitionHeus=['bestfit','worstfit']
 reallocationHeus=["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC"]
@@ -153,9 +153,10 @@ def runtimes(dir1='improved/',dir2='baseline/'):
     return
 
 
-def time_based_avg(values,addition):
+def time_based_avg(values,times,addition):
     # print("values",values)
-    events=pd.read_csv(f'{events_dir}/events_{addition}.csv')
+    # events=pd.read_csv(f'{events_dir}/events_{addition}.csv')
+    events=times
     # add series of values as a new column to events dataframe because events does not have this column
     df = pd.DataFrame({'values': values, 'EventTime': events['EventTime']})
     # print("df",df)
@@ -288,29 +289,46 @@ def robustness(dir1='improved/allOpts',dir2='baseline/',metric='cost',flags='all
                 leg=[]
                 for dir in dirs:
                     fulldir=f'{dir}{metric}/nodesize={nodesize}/addition={a}/{n}/{p}/'
+                    Times_addr= f'{dir}eventTime/nodesize={nodesize}/addition={a}/{n}/{p}/'
                     # print(fulldir)
                     for files in os.listdir(fulldir):
                         Values = pd.read_csv(f'{fulldir}{files}', header=None)
+                        Times=pd.read_csv(f'{fulldir}improved.csv',header=None)
+                        Times.columns=['EventTime']
                         Values.columns = [metric]
 
-                        avg_value = time_based_avg(Values[metric],a) 
+                        avg_value = time_based_avg(Values[metric],Times,a) 
                         averages.loc[i]=[avg_value,dir[20:]+files[:-4],a]
                         leg.append(dir[20:]+files[:-4])
                         i+=1
  
             print(leg)
             plt.figure(figsize=figsize)
+            # colors = plt.cm.rainbow(np.linspace(0, 1, 15))
+            heuristic_averages = averages.groupby('heuristics')['averages'].mean()
+            top_heuristics = heuristic_averages.nlargest(4).index
             for l in leg:
-                
+                if 'baseline' in l:
+                    b=l
+                    break
+            if b not in top_heuristics:
+                top_heuristics=top_heuristics.append(pd.Index([b]))
+            for l in top_heuristics:
+                if 'baseline' in l:
+                    marker='o'
+                    linestyle='-'
+                else:
+                    marker='x'
+                    linestyle='--'
                 avgs = averages[averages['heuristics'] == l]
                 avgs = avgs.sort_values(by='addition')
-                plt.plot(avgs['addition'], avgs['averages'], marker='o')
+                plt.plot(avgs['addition'], avgs['averages'], marker=marker,linestyle=linestyle)
             plt.grid(True)
             plt.xlabel('randomness')
             # plt.xticks(range(len(ADDITIONS)), ADDITIONS)
             plt.ylabel(metric)
             plt.title(f'Robustness comparison for {metric} - {n}-{p}')    
-            plt.legend(leg)
+            plt.legend(top_heuristics)
             savingDir=f'{plots}robustness/{flags}/nodesize={nodesize}/{n}/{p}/'
             if not os.path.exists(savingDir):
                 os.makedirs(savingDir)

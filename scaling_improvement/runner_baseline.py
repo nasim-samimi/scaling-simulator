@@ -33,7 +33,8 @@ fixed_config = {
         "node_reclaim":False,
         "intra_node_realloc":False,
         "intra_domain_realloc":False,
-        "intra_node_reduced":False
+        "intra_node_reduced":False,
+        "baseline":True
     },
     "system": {
         "init_node_size": 16,

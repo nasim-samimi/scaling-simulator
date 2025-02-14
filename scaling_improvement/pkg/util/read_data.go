@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	cnfg "github.com/nasim-samimi/scaling-simulator/pkg/config"
+	eve "github.com/nasim-samimi/scaling-simulator/pkg/events"
 	src "github.com/nasim-samimi/scaling-simulator/pkg/orchestrator"
 )
 
@@ -172,7 +173,7 @@ func LoadHeuristicFromCSV(filePath string) (cnfg.Heuristic, cnfg.Heuristic, cnfg
 // must define a parameter validation function specially for heuristics
 
 // // Load events from CSV file
-func LoadEventsFromCSV(filePath string) []src.Event {
+func LoadEventsFromCSV(filePath string) []eve.Event {
 	file, err := os.Open(filePath)
 	if err != nil {
 		log.Fatalf("Unable to read input file %s, %v", filePath, err)
@@ -191,22 +192,25 @@ func LoadEventsFromCSV(filePath string) []src.Event {
 		log.Fatalf("Unable to parse CSV file %s, %v", filePath, err)
 	}
 
-	var events []src.Event
+	var events []eve.Event
 	i := 0
 	for _, record := range records {
 		// Assuming CSV has columns: EventType, TargetNodeID, Details
-		eventTime, _ := strconv.Atoi(record[0])
+		// eventTime, _ := strconv.Atoi(record[0])
+		eventTime, _ := strconv.ParseFloat(record[0], 64)
 		eventType := record[1]
 		TargetServiceID := record[2]
 		targetDomainID := record[3]
 		eventID := record[4]
+		totalUtil, _ := strconv.Atoi(record[5])
 
-		event := src.Event{
+		event := eve.Event{
 			EventType:       eventType,
 			TargetDomainID:  src.DomainID(targetDomainID),
 			TargetServiceID: src.ServiceID(TargetServiceID),
 			EventTime:       eventTime,
 			EventID:         src.ServiceID(eventID),
+			TotalUtil:       totalUtil,
 		}
 		events = append(events, event)
 		i++

@@ -11,19 +11,19 @@ PARTITIONING_H=['bestfit','worstfit']
 REALLOCATION_H=["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC","LBCI","LBI","LCI"]
 REALLOCATION_INTRANODE_H=["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC","LBCI","LBI","LCI"]
 REALLOCATION_INTRADOMAIN_H=["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC","LBCI","LBI","LCI"]
-REALLOCATION_REDUCED_H=["LB","LC","LBC","LBCI","LBI","LCI"]
-REALLOCATION_REMOVED_H=["LB","LC","LBC","LBCI","LBI","LCI"]
+# REALLOCATION_REDUCED_H=["LB","LC","LBC","LBCI","LBI","LCI","LRED","LI"]
+REALLOCATION_REDUCED_H=["LI"]
+# REALLOCATION_REMOVED_H=["LB","LC","LBC","LBCI","LBI","LCI","LREM","LI"]
+REALLOCATION_REMOVED_H=["LI"]
 # REALLOCATION_H=["HBCI"]
 NODE_SELECTION_H=["MinMin","MaxMax"]
+# ADDITION=[0]
 ADDITION=[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
-upgrade_service_options = [True, False]
-node_reclaim_options = [True, False]
-intra_node_realloc_options = [True, False]
 edge_node_cost=1
 cloud_node_cost=3
 # thresholds=[80,100]
-threshold=60
-node_sizes = [8,12,16]
+threshold=100
+node_sizes = [8,12]
 
 results_dir = "improved"
 
@@ -38,10 +38,11 @@ fixed_config = {
         "reallocation_heuristic": "HB",
         "upgrade_service":False,
         "node_reclaim":False,
-        # "intra_node_realloc":False,
-        # "intra_domain_realloc":False,
-        "intra_node_reduced":False,
-        "intra_node_removed":False,
+        "intra_node_realloc":False,
+        "intra_domain_realloc":False,
+        # "intra_node_reduced":False,
+        # "intra_node_removed":False,
+        "interval_based":False
     },
     "system": {
         "init_node_size": 16,
@@ -54,10 +55,11 @@ fixed_config = {
 exclusive_options = [
     # "upgrade_service",
     # "node_reclaim",
-    "intra_node_realloc",
-    "intra_domain_realloc",
+    # "intra_domain_realloc",
+    # "intra_node_realloc",
     # "intra_node_reduced",
     # "intra_node_removed"
+    "interval_based"
 ]
 
 # Generate all parameter combinations

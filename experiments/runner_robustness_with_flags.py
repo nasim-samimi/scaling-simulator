@@ -5,9 +5,9 @@ from results import *
 # import sleep
 
 
-# flags=['intra_node_removed'] #did we have more flags?
-flags=['upgrade_service','node_reclaim','intra_node_realloc','intra_domain_realloc','intra_node_reduced','intra_node_removed'] #did we have more flags?
-node_sizes = [8,12,16]
+flags=['interval_based'] #did we have more flags?
+# flags=['upgrade_service','node_reclaim','intra_node_realloc','intra_node_reduced','intra_node_removed'] #did we have more flags?
+node_sizes = [8,12]
 
 
 if __name__=='__main__':

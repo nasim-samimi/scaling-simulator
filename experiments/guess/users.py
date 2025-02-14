@@ -43,8 +43,8 @@ def alwaysUpUsers():
 
 def UserTiming(Services,num_users,num_domains=NUM_DOMAINS):
     Users['UserID']=range(num_users)
-    MAX_UP_TIME=100#int(TOTAL_DURATION/2)
-    MIN_UP_TIME=num_domains*3
+    MAX_UP_TIME=2000#int(TOTAL_DURATION/2)
+    MIN_UP_TIME=500
     UP_TIME_RANGE = range(num_domains, MAX_UP_TIME + 1, num_domains)
     NUM_SERVICE_PER_USER = range(1, 10)
     MOBILITY_RANGE = range(1, num_domains+1 ) 
@@ -114,11 +114,14 @@ def EventGenerator(eventsLength,weight,dir,Users,Services):
         arrival=random.choice(range(0,int(u['MaxArrivalTime']*10*weight)))/10
         while arrival<eventsLength:
             eT=arrival
+            temp_et=eT
             totalUpTime=totalUpTime+u['UpTime']
             for d in u['Domains']:
                 eventCount=i
+                temp_et=eT
                 for s in u['Services']:
-                    eventTime.append(round(eT,1))
+                    
+                    eventTime.append(round(temp_et,1))
                     eventType.append('allocate')
                     eventDomain.append(d)
                     eventServiceID.append(s)
@@ -126,10 +129,12 @@ def EventGenerator(eventsLength,weight,dir,Users,Services):
                     eventCount=eventCount+1
                     upTime.append(u['UpTimePerDomain'])
                     util.append(Services.loc[s,'sTotalUtil'])
+                    temp_et=temp_et
                 eT = eT + u['UpTimePerDomain']
+                temp_et=eT
                 eventCount=i
                 for s in u['Services']:
-                    eventTime.append(round(eT,1))
+                    eventTime.append(round(temp_et,1))
                     eventType.append('deallocate')
                     eventDomain.append(d)
                     eventServiceID.append(s)
@@ -137,7 +142,9 @@ def EventGenerator(eventsLength,weight,dir,Users,Services):
                     eventCount=eventCount+1
                     upTime.append(0)
                     util.append(Services.loc[s,'sTotalUtil'])
+                    temp_et=temp_et
                 i=eventCount
+                eT=eT+0.1
             if u['MinArrivalTime']!=u['MaxArrivalTime']:
                 # arrival=arrival+random.choice(range(int(u['MinArrivalTime']*10),int(u['MaxArrivalTime']*10)))/10
                 arrival = arrival + random.triangular(u['MinArrivalTime'], u['MaxArrivalTime'], u['MinArrivalTime'] + (u['MaxArrivalTime'] - u['MinArrivalTime']) * weight

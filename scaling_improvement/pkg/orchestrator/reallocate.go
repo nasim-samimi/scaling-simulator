@@ -22,6 +22,9 @@ const (
 	LBCI  cnfg.Heuristic = "LBCI"
 	LBI   cnfg.Heuristic = "LBI"
 	LCI   cnfg.Heuristic = "LCI"
+	LRED  cnfg.Heuristic = "LRED"
+	LREM  cnfg.Heuristic = "LREM"
+	LI    cnfg.Heuristic = "LI"
 )
 
 type ReallocContext struct {
@@ -34,12 +37,14 @@ type ReallocContext struct {
 	NewCores           Cores
 }
 
-func (o *Orchestrator) getReallocatedService(node *Node, t *Service) (ServiceID, error) {
+func (o *Orchestrator) getReallocatedService(node *Node, t *Service) (ServiceID, ServiceID, ServiceID, error) {
 	var selectedEventID ServiceID
 	var bestScore float64
 
 	calculateScore := func(service *Service, heuristic cnfg.Heuristic) float64 {
 		switch heuristic {
+		case LI:
+			return 1 / service.ImportanceFactor
 		case HB:
 			return (service.StandardMode.bandwidthEdge)
 		case HC:
@@ -68,6 +73,14 @@ func (o *Orchestrator) getReallocatedService(node *Node, t *Service) (ServiceID,
 			return float64(service.StandardMode.cpusEdge) * float64(1/service.ImportanceFactor)
 		case LBCI:
 			return 1 / (service.ImportanceFactor * (service.StandardMode.bandwidthEdge * float64(service.StandardMode.cpusEdge)))
+		case LRED:
+			if (service.StandardQoS - service.ReducedQoS) < (t.StandardQoS - t.ReducedQoS) {
+				return 1 / float64(service.StandardQoS)
+			}
+		case LREM:
+			if service.StandardQoS < (t.StandardQoS - t.ReducedQoS) {
+				return 1 / float64(service.StandardQoS)
+			}
 		case HBIcC:
 			if service.StandardMode.cpusEdge >= t.StandardMode.cpusEdge {
 				return service.StandardMode.bandwidthEdge
@@ -79,21 +92,46 @@ func (o *Orchestrator) getReallocatedService(node *Node, t *Service) (ServiceID,
 		return 0
 	}
 
+	// for eventID, service := range node.AllocatedServices {
+	// 	if service.AllocationMode == StandardMode {
+	// 		score := calculateScore(service, o.Config.ReallocationHeuristic)
+	// 		if score > bestScore {
+	// 			bestScore = score
+	// 			selectedEventID = eventID
+	// 		}
+	// 	}
+	// }
+	var secondBestScore, thirdBestScore float64
+	var secondSelectedEventID, thirdSelectedEventID ServiceID
+
 	for eventID, service := range node.AllocatedServices {
 		if service.AllocationMode == StandardMode {
 			score := calculateScore(service, o.Config.ReallocationHeuristic)
 			if score > bestScore {
+				thirdBestScore = secondBestScore
+				thirdSelectedEventID = secondSelectedEventID
+				secondBestScore = bestScore
+				secondSelectedEventID = selectedEventID
 				bestScore = score
 				selectedEventID = eventID
+			} else if score > secondBestScore {
+				thirdBestScore = secondBestScore
+				thirdSelectedEventID = secondSelectedEventID
+				secondBestScore = score
+				secondSelectedEventID = eventID
+			} else if score > thirdBestScore {
+				thirdBestScore = score
+				thirdSelectedEventID = eventID
 			}
 		}
 	}
 
-	if selectedEventID == "" {
-		return "", fmt.Errorf("no suitable service found for reallocation using heuristic %s", o.Config.ReallocationHeuristic)
+	if selectedEventID == "" && secondSelectedEventID == "" && thirdSelectedEventID == "" {
+		return "", "", "", fmt.Errorf("no suitable services found for reallocation using heuristic %s", o.Config.ReallocationHeuristic)
 	}
 
-	return selectedEventID, nil
+	return selectedEventID, secondSelectedEventID, thirdSelectedEventID, nil
+
 }
 
 func (o *Orchestrator) intraNodeRealloc(ctx ReallocContext) (bool, error) {
@@ -141,9 +179,6 @@ func (o *Orchestrator) intraDomainRealloc(ctx ReallocContext) (bool, error) {
 			continue
 		}
 		otherNode := ctx.Domain.ActiveNodes[nodeName]
-		fmt.Println("other event id:", ctx.ReallocatedEventID)
-		fmt.Println("other node:", otherNode.NodeName)
-		fmt.Println("other service:", otherService)
 		for _, core := range otherNode.Cores {
 			fmt.Println("cores of the other node:", core)
 		}

@@ -112,16 +112,24 @@ def generateRandService(addedUtil,addition,events:pd.DataFrame,Services:pd.DataF
     while u<addedUtil:
         randServiceID=random.choice(SERVICE_IDS)
         randService=Services.loc[randServiceID]
-        randFirstAppearance=random.choice(range(int(events['EventTime'].max()*0.05),int(events['EventTime'].max()*0.9))) # the 0.8 is to make sure that the service is not added at the end of the events
+        if randService['sTotalUtil']==0:
+            continue
+        max_time=events['EventTime'].max()
+        range1 = range(int(max_time * 0.1), int(max_time * 0.2))
+        range2 = range(int(max_time * 0.4), int(max_time * 0.5))
+        range3=range(int(max_time * 0.7), int(max_time * 0.9))
+        c_range=list(range1)+list(range2)+list(range3)
+        randFirstAppearance=random.choice(c_range) # the 0.8 is to make sure that the service is not added at the end of the events
         randDomain=random.choice(range(NUM_DOMAINS))
-        randUpTime=random.choice(range(math.ceil(MIN_UP_TIME),math.ceil(MAX_UP_TIME/2)))
+        randUpTime=random.choice(range(math.ceil(MIN_UP_TIME),math.ceil(MAX_UP_TIME)))
         util=randService['sTotalUtil']*randUpTime
-        while util>addedUtil-u:
-            randUpTime=randUpTime-1
-            if randUpTime<=0:
-                randUpTime=1
-                util=randService['sTotalUtil']*randUpTime
-                break
+        if util>addedUtil-u:
+            # randUpTime=randUpTime-1
+            # if randUpTime<=0:
+            #     randUpTime=1
+            #     util=randService['sTotalUtil']*randUpTime
+            #     break
+            break
         u=u+util
         arrival=randFirstAppearance
         
@@ -132,7 +140,7 @@ def generateRandService(addedUtil,addition,events:pd.DataFrame,Services:pd.DataF
         extraEvents.loc[ind,'DomainID']=randDomain
         extraEvents.loc[ind,'ServiceID']=randServiceID
         extraEvents.loc[ind,'EventID']=i
-        extraEvents.loc[ind,'TotalUtil']=util
+        extraEvents.loc[ind,'TotalUtil']=randService['sTotalUtil']
         # print('rand up time:',randUpTime)
         extraEvents.loc[ind,'UpTime']=randUpTime
         ind=ind+1
@@ -143,7 +151,7 @@ def generateRandService(addedUtil,addition,events:pd.DataFrame,Services:pd.DataF
         extraEvents.loc[ind,'DomainID']=randDomain
         extraEvents.loc[ind,'ServiceID']=randServiceID
         extraEvents.loc[ind,'EventID']=i
-        extraEvents.loc[ind,'TotalUtil']=util
+        extraEvents.loc[ind,'TotalUtil']=randService['sTotalUtil']
         extraEvents.loc[ind,'UpTime']=0
         i=i+1
         ind=ind+1

@@ -31,7 +31,7 @@ func (o *Orchestrator) NodeReclaim(domainID DomainID) {
 			underloadedNodes = append(underloadedNodes, nodeName)
 		}
 	}
-	sortedNodes, _ := o.sortNodesNoFilter(domain.ActiveNodes)
+	sortedNodes, _ := o.sortNodesNoFilter(domain.ActiveNodes, MinMin)
 	i := 0
 	l := len(sortedNodes)
 	// j := l - 1
@@ -57,7 +57,9 @@ func (o *Orchestrator) NodeReclaim(domainID DomainID) {
 				if otherNode.AverageResidualBandwidth < 0.5 {
 					fmt.Println("other node underloaded:", otherNodeName)
 					allocatedService := node.AllocatedServices
-					for eventID, service := range allocatedService {
+					sortedServices := o.sortServicesBW(allocatedService)
+					for _, eventID := range sortedServices {
+						service := allocatedService[eventID]
 						if service.AllocationMode == StandardMode {
 							selectedCpus, err := node.NodeAdmission.Admission(service.StandardMode.cpusEdge, service.StandardMode.bandwidthEdge, otherNode.Cores, cpuThreshold)
 							if err != nil || selectedCpus == nil {
@@ -115,7 +117,9 @@ func (o *Orchestrator) NodeReclaim(domainID DomainID) {
 }
 
 func (o *Orchestrator) UpgradeService() error {
-	for eventID, event := range o.RunningServices {
+	sortedEventIDs := o.sortServicesForUpgrade(o.RunningServices)
+	for _, eventID := range sortedEventIDs {
+		event := o.RunningServices[eventID]
 		domain := o.Domains[event.AllocatedDomain]
 		if event.AllocationMode == ReducedMode {
 			sortedNodes, _ := o.sortNodes(domain.ActiveNodes, event.StandardMode.cpusEdge, event.StandardMode.bandwidthEdge)

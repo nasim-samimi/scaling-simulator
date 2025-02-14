@@ -25,6 +25,7 @@ type OrchestratorConfig struct {
 	PartitionHeuristic    Heuristic `yaml:"partition_heuristic"`
 	NodeHeuristic         Heuristic `yaml:"node_heuristic"`
 	ReallocationHeuristic Heuristic `yaml:"reallocation_heuristic"`
+	Baseline              bool      `yaml:"baseline"`
 }
 type SystemConfig struct {
 	InitNodeSize   uint64 `yaml:"init_node_size"`

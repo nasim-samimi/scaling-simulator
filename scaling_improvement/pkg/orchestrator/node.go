@@ -7,7 +7,6 @@ import (
 )
 
 type NodeName string
-type AllocatedServices map[ServiceID]*Service
 type NodeStatus string
 
 const (
@@ -23,7 +22,7 @@ type Node struct {
 	NodeAdmission            *AdmissionTest
 	Location                 Location
 	DomainID                 DomainID
-	AllocatedServices        AllocatedServices
+	AllocatedServices        Services
 	AverageResidualBandwidth float64
 	TotalResidualBandwidth   float64
 	Status                   NodeStatus
@@ -40,7 +39,7 @@ func NewNode(cores Cores, heuristic cnfg.Heuristic, nodeName NodeName, domainID 
 		Status:                   Inactive,
 		AverageResidualBandwidth: 0,
 		TotalResidualBandwidth:   0,
-		AllocatedServices:        make(AllocatedServices),
+		AllocatedServices:        make(Services),
 		DomainID:                 domainID,
 		numCores:                 uint64(len(cores)),
 	}
@@ -71,6 +70,9 @@ func (n *Node) NodeAllocate(reqCpus uint64, reqBandwidth float64, service *Servi
 }
 
 func ReallocateTest(newService *Service, oldServiceID ServiceID, n Node) (bool, Cores, error) {
+	if oldServiceID == "" {
+		return false, nil, nil
+	}
 	NewCores := make(Cores, len(n.Cores))
 	for k, v := range n.Cores {
 		NewCores[k] = &Core{

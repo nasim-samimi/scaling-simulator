@@ -4,83 +4,11 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"math"
-
-	"time"
 
 	cnfg "github.com/nasim-samimi/scaling-simulator/pkg/config"
-	src "github.com/nasim-samimi/scaling-simulator/pkg/orchestrator"
+	eve "github.com/nasim-samimi/scaling-simulator/pkg/events"
 	util "github.com/nasim-samimi/scaling-simulator/pkg/util"
 )
-
-func processEvents(orchestrator *src.Orchestrator, addition string) (*cnfg.ResultContext, error) {
-
-	events := util.LoadEventsFromCSV("../data/events/hightraffic/events_" + addition + ".csv")
-	qosPerCost := make([]float64, 0)
-	qos := make([]float64, 0)
-	cost := make([]float64, 0)
-	durations := make([]float64, 0)
-	eventTime := make([]float64, 0)
-	test := 0
-	for _, event := range events {
-		eventID := event.EventID
-		fmt.Println("event:", event)
-		fmt.Println("service:", orchestrator.AllServices[event.TargetServiceID])
-		if event.EventType == "allocate" {
-			startTime := time.Now()
-			allocated, err := orchestrator.Allocate(event.TargetDomainID, event.TargetServiceID, eventID)
-			duration := time.Since(startTime)
-			fmt.Println("Allocate:", allocated, orchestrator.QoS, orchestrator.Cost)
-			fmt.Println("Time to allocate:", duration)
-			if err != nil {
-				fmt.Println(err)
-			}
-			if allocated {
-				fmt.Println("/////////////////////")
-				fmt.Println("service is allocated ")
-				fmt.Println("/////////////////////")
-			} else {
-				fmt.Println("/////////////////////")
-				fmt.Println("service is rejected ")
-				// delete(orchestrator.RunningServices, eventID)
-				fmt.Println("/////////////////////")
-			}
-			qosPerCost = append(qosPerCost, math.Round(float64(orchestrator.QoS)*1000/float64(orchestrator.Cost))/1000)
-			qos = append(qos, float64(orchestrator.QoS))
-			cost = append(cost, float64(orchestrator.Cost))
-			durations = append(durations, float64(duration.Microseconds())/1000)
-			eventTime = append(eventTime, float64(event.EventTime))
-			test++
-			// if test == 50 {
-			// 	break
-			// }
-		}
-		if event.EventType == "deallocate" {
-			fmt.Println("/////////////////////")
-			fmt.Println("Deallocate")
-			if _, ok := orchestrator.RunningServices[eventID]; ok {
-				orchestrator.Deallocate(event.TargetDomainID, event.TargetServiceID, eventID)
-			}
-			orchestrator.UpgradeServiceIfEnabled()
-			orchestrator.NodeReclaimIfEnabled(event.TargetDomainID)
-			qosPerCost = append(qosPerCost, math.Round(float64(orchestrator.QoS)*1000/float64(orchestrator.Cost))/1000)
-			qos = append(qos, float64(orchestrator.QoS))
-			cost = append(cost, float64(orchestrator.Cost))
-			eventTime = append(eventTime, float64(event.EventTime))
-			fmt.Println("/////////////////////")
-		}
-	}
-	fmt.Println("QoS per Cost: ", qosPerCost)
-
-	fmt.Println("Durations: ", durations)
-	return &cnfg.ResultContext{
-		QosPerCost: qosPerCost,
-		Qos:        qos,
-		Cost:       cost,
-		Durations:  durations,
-		EventTime:  eventTime,
-	}, nil
-}
 
 func main() {
 	configPath := flag.String("config", "config.yaml", "Path to the configuration YAML file")
@@ -90,7 +18,14 @@ func main() {
 		log.Fatal(err)
 	}
 	orchestrator := util.Initialise(config)
-	results, err := processEvents(orchestrator, config.System.Addition)
+	results := new(cnfg.ResultContext)
+	fmt.Println("../data/events/hightraffic/events_" + config.System.Addition + ".csv")
+	events := util.LoadEventsFromCSV("../data/events/hightraffic/events_" + config.System.Addition + ".csv")
+	if config.Orchestrator.Baseline {
+		results, err = eve.ProcessEvents(events, orchestrator)
+	} else {
+		results, err = eve.BufferEvents(events, 3.0, orchestrator)
+	}
 	if err != nil {
 		log.Fatal(err)
 	}
