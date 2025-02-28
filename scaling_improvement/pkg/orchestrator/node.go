@@ -1,8 +1,6 @@
 package orchestrator
 
 import (
-	"fmt"
-
 	cnfg "github.com/nasim-samimi/scaling-simulator/pkg/config"
 )
 
@@ -23,22 +21,22 @@ type Node struct {
 	Location                 Location
 	DomainID                 DomainID
 	AllocatedServices        Services
-	AverageResidualBandwidth float64
-	TotalResidualBandwidth   float64
+	AverageConsumedBandwidth float64
+	TotalConsumedBandwidth   float64
 	Status                   NodeStatus
 }
 
 func NewNode(cores Cores, heuristic cnfg.Heuristic, nodeName NodeName, domainID DomainID) *Node {
 	admissionTest := NewAdmissionTest(cores, heuristic)
-	// fmt.Println("Node Admission Test Cores: ", admissionTest.Cores[CoreID("core-0")])
+	// log.Info("Node Admission Test Cores: ", admissionTest.Cores[CoreID("core-0")])
 	return &Node{
 		Cores:                    cores,
 		ReallocHeuristic:         heuristic,
 		NodeName:                 nodeName,
 		NodeAdmission:            admissionTest,
 		Status:                   Inactive,
-		AverageResidualBandwidth: 0,
-		TotalResidualBandwidth:   0,
+		AverageConsumedBandwidth: 0,
+		TotalConsumedBandwidth:   0,
 		AllocatedServices:        make(Services),
 		DomainID:                 domainID,
 		numCores:                 uint64(len(cores)),
@@ -47,25 +45,30 @@ func NewNode(cores Cores, heuristic cnfg.Heuristic, nodeName NodeName, domainID 
 
 func (n *Node) NodeAllocate(reqCpus uint64, reqBandwidth float64, service *Service, eventID ServiceID, cpuThreshold float64) ([]CoreID, error) {
 	selectedCpus, err := n.NodeAdmission.Admission(reqCpus, reqBandwidth, n.Cores, cpuThreshold)
-	fmt.Println("Selected CPUs: ", selectedCpus)
+	log.Info("Selected CPUs: ", selectedCpus)
 	if err != nil {
 		return selectedCpus, err
 	}
-	totalResidualBandwidth := 0.0
-	for _, coreID := range selectedCpus {
-		core := n.Cores[coreID]
-		core.ConsumedBandwidth += reqBandwidth
-		n.Cores[coreID] = core
-	}
+	TotalConsumedBandwidth := n.TotalConsumedBandwidth
+	log.Info("NodeAllocate, before allocation")
 	for _, core := range n.Cores {
-		totalResidualBandwidth += core.ConsumedBandwidth
+		log.Info("core: ", core.ConsumedBandwidth)
 	}
-	fmt.Println("Service: ", service)
+	for _, coreID := range selectedCpus {
+		n.Cores[coreID].ConsumedBandwidth += reqBandwidth
+		TotalConsumedBandwidth += reqBandwidth
+	}
+	log.Info("NodeAllocate, after allocation")
+	for _, core := range n.Cores {
+		log.Info("core: ", core.ConsumedBandwidth)
+	}
+
+	log.Info("Service: ", service)
 	// service.AllocatedNodeEdge = n.NodeName
-	fmt.Println("in node allocation, total residual bandwidth and average: ", n.TotalResidualBandwidth, n.AverageResidualBandwidth)
-	n.TotalResidualBandwidth = totalResidualBandwidth
-	n.AverageResidualBandwidth = totalResidualBandwidth / float64(len(n.Cores))
-	fmt.Println("in node allocation, total residual bandwidth and average after update: ", n.TotalResidualBandwidth, n.AverageResidualBandwidth)
+	log.Info("in node allocation, total residual bandwidth and average: ", n.TotalConsumedBandwidth, n.AverageConsumedBandwidth)
+	n.TotalConsumedBandwidth = TotalConsumedBandwidth
+	n.AverageConsumedBandwidth = TotalConsumedBandwidth / float64(len(n.Cores))
+	log.Info("in node allocation, total residual bandwidth and average after update: ", n.TotalConsumedBandwidth, n.AverageConsumedBandwidth)
 	return selectedCpus, nil
 }
 
@@ -80,7 +83,7 @@ func ReallocateTest(newService *Service, oldServiceID ServiceID, n Node) (bool, 
 			ID:                v.ID,
 		}
 	}
-	fmt.Println("Reallocate Test")
+	log.Info("Reallocate Test")
 	oldServiceCores := n.AllocatedServices[oldServiceID].AllocatedCoresEdge
 	bandwidth := n.AllocatedServices[oldServiceID].StandardMode.bandwidthEdge
 	newBandwidth := newService.StandardMode.bandwidthEdge
@@ -100,7 +103,7 @@ func ReallocateTest(newService *Service, oldServiceID ServiceID, n Node) (bool, 
 }
 
 func IntraDomainReallocateTest(newService *Service, oldServiceID ServiceID, n *Node) (bool, error) {
-	fmt.Println("Intra Domain Reallocate Test")
+	log.Info("Intra Domain Reallocate Test")
 	NewCores := make(Cores, len(n.Cores))
 	for k, v := range n.Cores {
 		NewCores[k] = &Core{
@@ -116,7 +119,7 @@ func IntraDomainReallocateTest(newService *Service, oldServiceID ServiceID, n *N
 	}
 	_, err := n.NodeAdmission.Admission(newService.StandardMode.cpusEdge, newService.StandardMode.bandwidthEdge, NewCores, 100.0)
 	for _, core := range NewCores {
-		fmt.Println("cores after intra domain realocate test newcores:", core)
+		log.Info("cores after intra domain realocate test newcores:", core)
 	}
 	if err == nil {
 		return true, nil
@@ -149,13 +152,14 @@ func IntraDomainReallocateTest(newService *Service, oldServiceID ServiceID, n *N
 // }
 
 func (n *Node) NodeDeallocate(eventID ServiceID) bool {
-	fmt.Println("going to Node Deallocate", n)
-	fmt.Println("allocated services:", n.AllocatedServices)
-	fmt.Println("eventID:", eventID)
+	log.Info("going to Node Deallocate", n)
+	log.Info("allocated services:", n.AllocatedServices)
+	log.Info("eventID:", eventID)
 	cores := n.AllocatedServices[eventID].AllocatedCoresEdge
-	fmt.Println("cores for deallocating in node deallocate:", cores)
+	log.Info("cores for deallocating in node deallocate:", cores)
 	mode := n.AllocatedServices[eventID].AllocationMode
-	fmt.Println("deallocation mode: ", mode)
+	log.Info("deallocation mode: ", mode)
+
 	bandwidth := n.AllocatedServices[eventID].StandardMode.bandwidthEdge
 	switch mode {
 	case StandardMode:
@@ -166,40 +170,47 @@ func (n *Node) NodeDeallocate(eventID ServiceID) bool {
 		bandwidth = n.AllocatedServices[eventID].ReducedMode.bandwidthCloud
 
 	}
-	totalResidualBandwidth := n.TotalResidualBandwidth
+	log.Info("bandwidth of the service:", bandwidth)
+	log.Info("total bandwidth before edge deallocation: ", n.TotalConsumedBandwidth)
+	TotalConsumedBandwidth := n.TotalConsumedBandwidth
 	for _, core := range cores {
 		n.Cores[core].ConsumedBandwidth -= bandwidth
-		totalResidualBandwidth -= bandwidth
+		TotalConsumedBandwidth -= bandwidth
 	}
-	n.TotalResidualBandwidth = totalResidualBandwidth
-	n.AverageResidualBandwidth = totalResidualBandwidth / float64(len(n.Cores))
-	if n.TotalResidualBandwidth < 0 {
+	log.Info("total bandwidth after edge deallocation: ", TotalConsumedBandwidth)
+	delete(n.AllocatedServices, eventID)
+	n.TotalConsumedBandwidth = TotalConsumedBandwidth
+	n.AverageConsumedBandwidth = TotalConsumedBandwidth / float64(len(n.Cores))
+	if n.TotalConsumedBandwidth < 0 {
 		return false
 	}
-	delete(n.AllocatedServices, eventID)
+
 	return true
 }
 
 func (n *Node) CloudNodeDeallocate(eventID ServiceID) bool {
-	fmt.Println("going to Node Deallocate", n)
-	fmt.Println("allocated services:", n.AllocatedServices)
-	fmt.Println("eventID:", eventID)
+	log.Info("going to Node Deallocate", n)
+	log.Info("allocated services:", n.AllocatedServices)
+	log.Info("eventID:", eventID)
 	cores := n.AllocatedServices[eventID].AllocatedCoresCloud
-	fmt.Println("cores for deallocating in node deallocate:", cores)
+	log.Info("cores for deallocating in cloud node deallocate:", cores)
 
 	bandwidth := n.AllocatedServices[eventID].ReducedMode.bandwidthCloud
-
-	totalResidualBandwidth := n.TotalResidualBandwidth
+	log.Info("bandwidth of the service:", bandwidth)
+	log.Info("total bandwidth before cloud deallocation: ", n.TotalConsumedBandwidth)
+	TotalConsumedBandwidth := n.TotalConsumedBandwidth
 	for _, core := range cores {
 		n.Cores[core].ConsumedBandwidth -= bandwidth
-		totalResidualBandwidth -= bandwidth
+		TotalConsumedBandwidth -= bandwidth
 	}
-	n.TotalResidualBandwidth = totalResidualBandwidth
-	n.AverageResidualBandwidth = totalResidualBandwidth / float64(len(n.Cores))
-	if n.TotalResidualBandwidth < 0 {
+	n.TotalConsumedBandwidth = TotalConsumedBandwidth
+	delete(n.AllocatedServices, eventID)
+	log.Info("total bandwidth after cloud deallocation: ", TotalConsumedBandwidth)
+	n.AverageConsumedBandwidth = TotalConsumedBandwidth / float64(len(n.Cores))
+	if n.TotalConsumedBandwidth < 0 {
 		return false
 	}
-	delete(n.AllocatedServices, eventID)
+
 	return true
 }
 
@@ -207,11 +218,11 @@ func (n *Node) Upgraded(event *Service) {
 	cores := event.AllocatedCoresEdge
 	bandwidth := event.ReducedMode.bandwidthEdge
 
-	totalResidualBandwidth := n.TotalResidualBandwidth
+	TotalConsumedBandwidth := n.TotalConsumedBandwidth
 	for _, core := range cores {
 		n.Cores[core].ConsumedBandwidth -= bandwidth
-		totalResidualBandwidth -= bandwidth
+		TotalConsumedBandwidth -= bandwidth
 	}
-	n.TotalResidualBandwidth = totalResidualBandwidth
-	n.AverageResidualBandwidth = totalResidualBandwidth / float64(len(n.Cores))
+	n.TotalConsumedBandwidth = TotalConsumedBandwidth
+	n.AverageConsumedBandwidth = TotalConsumedBandwidth / float64(len(n.Cores))
 }

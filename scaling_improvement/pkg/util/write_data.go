@@ -77,6 +77,7 @@ func WriteResults(results *cnfg.ResultContext, config *cnfg.Config) error {
 
 	// Write results to CSV files
 	for path, data := range filePaths {
+		log.Println("Writing to file: ", path)
 		if err := WriteToCsv(path, data); err != nil {
 			return fmt.Errorf("error writing to file %s: %v", path, err)
 		}

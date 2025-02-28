@@ -1,13 +1,34 @@
 package events
 
 import (
-	"fmt"
 	"math"
+	"sort"
 	"time"
 
 	cnfg "github.com/nasim-samimi/scaling-simulator/pkg/config"
 	src "github.com/nasim-samimi/scaling-simulator/pkg/orchestrator"
 )
+
+type EventResult struct {
+	Results *cnfg.ResultContext
+}
+
+func NewEventResult() *EventResult {
+	qosPerCost := make([]float64, 0)
+	qos := make([]float64, 0)
+	cost := make([]float64, 0)
+	durations := make([]float64, 0)
+	eventTime := make([]float64, 0)
+	return &EventResult{
+		Results: &cnfg.ResultContext{
+			QosPerCost: qosPerCost,
+			Qos:        qos,
+			Cost:       cost,
+			Durations:  durations,
+			EventTime:  eventTime,
+		},
+	}
+}
 
 func ProcessEvents(events []Event, orchestrator *src.Orchestrator) (*cnfg.ResultContext, error) {
 
@@ -20,27 +41,35 @@ func ProcessEvents(events []Event, orchestrator *src.Orchestrator) (*cnfg.Result
 	test := 0
 	for _, event := range events {
 		eventID := event.EventID
-		fmt.Println("event:", event)
-		fmt.Println("service:", orchestrator.AllServices[event.TargetServiceID])
+		log.Info("event:", event)
+		log.Info("service:", orchestrator.AllServices[event.TargetServiceID])
 		if event.EventType == "allocate" {
 			startTime := time.Now()
 			allocated, err := orchestrator.Allocate(event.TargetDomainID, event.TargetServiceID, eventID)
 			duration := time.Since(startTime)
-			fmt.Println("Allocate:", allocated, orchestrator.QoS, orchestrator.Cost)
-			fmt.Println("Time to allocate:", duration)
+			log.Info("Allocate:", allocated, orchestrator.QoS, orchestrator.Cost)
+			log.Info("Time to allocate:", duration)
 			if err != nil {
-				fmt.Println(err)
+				log.Info(err)
 			}
 			if allocated {
-				fmt.Println("/////////////////////")
-				fmt.Println("service is allocated ")
-				fmt.Println("/////////////////////")
+				log.Info("/////////////////////")
+				log.Info("service is allocated ")
+				log.Info("/////////////////////")
 			} else {
-				fmt.Println("/////////////////////")
-				fmt.Println("service is rejected ")
+				log.Info("/////////////////////")
+				log.Info("service is rejected ")
 				// delete(orchestrator.RunningServices, eventID)
-				fmt.Println("/////////////////////")
+				log.Info("/////////////////////")
 
+			}
+			log.Info("//////////////////bw of the domain nodes////////////////////")
+			for _, node := range orchestrator.Domains[event.TargetDomainID].ActiveNodes {
+				log.Info("node:", node.NodeName, "consumed bandwidth:", node.TotalConsumedBandwidth)
+			}
+			log.Info("//////////////////bw of the cloud nodes////////////////////")
+			for _, node := range orchestrator.Cloud.ActiveNodes {
+				log.Info("node:", node.NodeName, "consumed bandwidth:", node.TotalConsumedBandwidth)
 			}
 			qosPerCost = append(qosPerCost, math.Round(float64(orchestrator.QoS)*1000/float64(orchestrator.Cost))/1000)
 			qos = append(qos, float64(orchestrator.QoS))
@@ -53,10 +82,12 @@ func ProcessEvents(events []Event, orchestrator *src.Orchestrator) (*cnfg.Result
 			// }
 		}
 		if event.EventType == "deallocate" {
-			fmt.Println("/////////////////////")
-			fmt.Println("Deallocate")
+			log.Info("/////////////////////")
+			log.Info("Deallocate")
 			if _, ok := orchestrator.RunningServices[eventID]; ok {
 				orchestrator.Deallocate(event.TargetDomainID, event.TargetServiceID, eventID)
+			} else {
+				log.Info("Service does not exist. rejected?")
 			}
 			orchestrator.UpgradeServiceIfEnabled()
 			orchestrator.NodeReclaimIfEnabled(event.TargetDomainID)
@@ -64,12 +95,20 @@ func ProcessEvents(events []Event, orchestrator *src.Orchestrator) (*cnfg.Result
 			qos = append(qos, float64(orchestrator.QoS))
 			cost = append(cost, float64(orchestrator.Cost))
 			eventTime = append(eventTime, float64(event.EventTime))
-			fmt.Println("/////////////////////")
+			log.Info("/////////////////////")
+			log.Info("//////////////////bw of the domain nodes////////////////////")
+			for _, node := range orchestrator.Domains[event.TargetDomainID].ActiveNodes {
+				log.Info("node:", node.NodeName, "consumed bandwidth:", node.TotalConsumedBandwidth, "allocated services:", node.AllocatedServices)
+			}
+			log.Info("//////////////////bw of the cloud nodes////////////////////")
+			for _, node := range orchestrator.Cloud.ActiveNodes {
+				log.Info("node:", node.NodeName, "consumed bandwidth:", node.TotalConsumedBandwidth, "allocated services:", node.AllocatedServices)
+			}
 		}
 	}
-	fmt.Println("QoS per Cost: ", qosPerCost)
+	log.Info("QoS per Cost: ", qosPerCost)
 
-	fmt.Println("Durations: ", durations)
+	log.Info("Durations: ", durations)
 	return &cnfg.ResultContext{
 		QosPerCost: qosPerCost,
 		Qos:        qos,
@@ -86,114 +125,75 @@ func BufferEvents(events []Event, interval float64, orchestrator *src.Orchestrat
 		DeallocEvents: make(DeallocEvents, 0),
 		AllocEvents:   make(AllocEvents, 0),
 	}
-	processedIDs := make(map[src.ServiceID]bool)
-	qosPerCost := make([]float64, 0)
-	qos := make([]float64, 0)
-	cost := make([]float64, 0)
-	durations := make([]float64, 0)
-	eventTime := make([]float64, 0)
-	unprocessedDeallocs := make([]Event, 0)
-	fmt.Println("length of events:", len(events))
-	fmt.Println("interval:", interval)
-	fmt.Println("initTime:", initTime)
-	fmt.Println("endTime:", endTime)
-	for _, event := range events {
+	// processedIDs := make(map[src.ServiceID]bool)
+	qosPerCost, qos, cost, durations, eventTime := []float64{}, []float64{}, []float64{}, []float64{}, []float64{}
+	results := NewEventResult()
+	unprocessedDeallocs := []Event{}
+	rejectedEvents := []Event{}
+
+	log.Info("Total events:", len(events), "Interval:", interval)
+	log.Info("interval:", interval)
+	log.Info("initTime:", initTime)
+	log.Info("endTime:", endTime)
+	eventIndex := 0
+	processedEvents := 0
+	processedEventsa := 0
+	processedEventsd := 0
+	bufferedEventsa := 0
+	bufferedEventsd := 0
+	for eventIndex < len(events) {
+		event := events[eventIndex]
 		if event.EventTime >= initTime && event.EventTime <= endTime {
-			if event.EventType == "allocate" {
+			switch event.EventType {
+			case "allocate":
 				eventsBuffer.AllocEvents = append(eventsBuffer.AllocEvents, event)
-			}
-			if event.EventType == "deallocate" {
+				bufferedEventsa++
+			case "deallocate":
 				eventsBuffer.DeallocEvents = append(eventsBuffer.DeallocEvents, event)
+				bufferedEventsd++
 			}
+			eventIndex++
 			continue
 		}
-		fmt.Println("events are buffered")
+		log.Info("events are buffered")
 		if event.EventTime > endTime {
-			fmt.Println("attempt to process deallocate events")
-			unprocessedDeallocs = nil
-			for e, dEvent := range eventsBuffer.DeallocEvents {
-				if _, ok := processedIDs[dEvent.EventID]; !ok {
-					unprocessedDeallocs = append(unprocessedDeallocs, eventsBuffer.DeallocEvents[e])
-					continue
-				}
-				eventID := dEvent.EventID
-				if _, ok := orchestrator.RunningServices[eventID]; ok {
-					orchestrator.Deallocate(dEvent.TargetDomainID, dEvent.TargetServiceID, eventID)
-					qosPerCost = append(qosPerCost, math.Round(float64(orchestrator.QoS)*1000/float64(orchestrator.Cost))/1000)
-					qos = append(qos, float64(orchestrator.QoS))
-					cost = append(cost, float64(orchestrator.Cost))
-					// eventTime = append(eventTime, float64(dEvent.EventTime))
-					eventTime = append(eventTime, float64(endTime))
-					fmt.Println("/////////////////////")
-				}
+			unprocessedDeallocs = make([]Event, 0)
+			deallocateBufferedEvents(orchestrator, eventsBuffer.DeallocEvents, results, endTime, unprocessedDeallocs)
+			allocateBufferedEvents(orchestrator, eventsBuffer, results, endTime)
+			deallocateBufferedEvents(orchestrator, unprocessedDeallocs, results, endTime, rejectedEvents)
+			// unprocessedDeallocs = make([]Event, 0)
 
-			}
-			// sort events based on qos
-			for _, aEvent := range eventsBuffer.AllocEvents {
-				eventID := aEvent.EventID
-				startTime := time.Now()
-				allocated, err := orchestrator.Allocate(aEvent.TargetDomainID, aEvent.TargetServiceID, eventID)
-				duration := time.Since(startTime)
-				fmt.Println("Allocate:", allocated, orchestrator.QoS, orchestrator.Cost)
-				fmt.Println("Time to allocate:", duration)
-				if err != nil {
-					fmt.Println(err)
-				}
-				if allocated {
-					fmt.Println("/////////////////////")
-					fmt.Println("service is allocated ")
-					fmt.Println("/////////////////////")
-				} else {
-					fmt.Println("/////////////////////")
-					fmt.Println("service is rejected ")
-					// delete(orchestrator.RunningServices, eventID)
-					fmt.Println("/////////////////////")
-
-				}
-				qosPerCost = append(qosPerCost, math.Round(float64(orchestrator.QoS)*1000/float64(orchestrator.Cost))/1000)
-				qos = append(qos, float64(orchestrator.QoS))
-				cost = append(cost, float64(orchestrator.Cost))
-				durations = append(durations, float64(duration.Microseconds())/1000)
-				// eventTime = append(eventTime, float64(aEvent.EventTime))
-				eventTime = append(eventTime, float64(endTime))
-				processedIDs[eventID] = true
-			}
-			if len(unprocessedDeallocs) > 0 {
-				for _, dEvent := range unprocessedDeallocs {
-					eventID := dEvent.EventID
-					if _, ok := orchestrator.RunningServices[eventID]; ok {
-						orchestrator.Deallocate(dEvent.TargetDomainID, dEvent.TargetServiceID, eventID)
-						qosPerCost = append(qosPerCost, math.Round(float64(orchestrator.QoS)*1000/float64(orchestrator.Cost))/1000)
-						qos = append(qos, float64(orchestrator.QoS))
-						cost = append(cost, float64(orchestrator.Cost))
-						// eventTime = append(eventTime, float64(dEvent.EventTime))
-						eventTime = append(eventTime, float64(endTime))
-						fmt.Println("/////////////////////")
-					}
-
-				}
-				unprocessedDeallocs = make([]Event, 0)
-			}
 			initTime = endTime
 			endTime = interval + initTime
 			eventsBuffer = EventsBuffer{
 				DeallocEvents: make(DeallocEvents, 0),
 				AllocEvents:   make(AllocEvents, 0),
 			}
-			fmt.Println("initTime:", initTime)
-			fmt.Println("endTime:", endTime)
+			log.Info("initTime:", initTime)
+			log.Info("endTime:", endTime)
 
-		}
-		if event.EventTime <= endTime {
-			if event.EventType == "allocate" {
-				eventsBuffer.AllocEvents = append(eventsBuffer.AllocEvents, event)
-			}
-			if event.EventType == "deallocate" {
-				eventsBuffer.DeallocEvents = append(eventsBuffer.DeallocEvents, event)
-			}
 		}
 	}
 
+	if len(eventsBuffer.DeallocEvents) > 0 {
+		unprocessedDeallocs = make([]Event, 0)
+		deallocateBufferedEvents(orchestrator, eventsBuffer.DeallocEvents, results, endTime, unprocessedDeallocs)
+	}
+	if len(eventsBuffer.AllocEvents) > 0 {
+		allocateBufferedEvents(orchestrator, eventsBuffer, results, endTime)
+	}
+	if len(unprocessedDeallocs) > 0 {
+		deallocateBufferedEvents(orchestrator, unprocessedDeallocs, results, endTime, rejectedEvents)
+	}
+
+	log.Info("Total processed events:", processedEvents)
+	log.Info("number of events:", len(events))
+	log.Info("number of buffered deallocate events:", bufferedEventsd)
+	log.Info("number of buffered allocate events:", bufferedEventsa)
+	log.Info("number of processed deallocate events:", processedEventsd)
+	log.Info("number of processed allocate events:", processedEventsa)
+	log.Info("number of services in running services:", len(orchestrator.RunningServices))
+	log.Info("remaining services in the running services:", orchestrator.RunningServices)
 	return &cnfg.ResultContext{
 		QosPerCost: qosPerCost,
 		Qos:        qos,
@@ -201,4 +201,95 @@ func BufferEvents(events []Event, interval float64, orchestrator *src.Orchestrat
 		Durations:  durations,
 		EventTime:  eventTime,
 	}, nil
+}
+
+func sortEvents(allocEvents []Event, allServices src.Services) ([]src.ServiceID, map[src.ServiceID]Event) {
+	sortedEventIDs := make([]src.ServiceID, 0, len(allocEvents))
+	sortedEvents := make(map[src.ServiceID]Event)
+	for _, event := range allocEvents {
+		sortedEventIDs = append(sortedEventIDs, event.EventID)
+		sortedEvents[event.EventID] = event
+	}
+	sort.Slice(sortedEventIDs, func(i, j int) bool {
+		serviceimpi := allServices[sortedEvents[sortedEventIDs[i]].TargetServiceID].ImportanceFactor
+		serviceimpj := allServices[sortedEvents[sortedEventIDs[j]].TargetServiceID].ImportanceFactor
+		return float64(sortedEvents[sortedEventIDs[i]].TotalUtil)*serviceimpi > float64(sortedEvents[sortedEventIDs[j]].TotalUtil)*serviceimpj
+	})
+	return sortedEventIDs, sortedEvents
+
+}
+
+func computeQoSCost(qos float64, cost float64) float64 {
+	return math.Round(qos*1000/cost) / 1000
+}
+
+func (e *EventResult) appendMetrics(orchestrator *src.Orchestrator, endTime float64, duration float64) {
+	// *qosPerCost = append(*qosPerCost, computeQoSCost(float64(orchestrator.QoS), float64(orchestrator.Cost)))
+	// *qos = append(*qos, float64(orchestrator.QoS))
+	// *cost = append(*cost, float64(orchestrator.Cost))
+	// if duration != 0 {
+	// 	*durations = append(*durations, duration)
+	// }
+	// *eventTime = append(*eventTime, endTime)
+	e.Results.QosPerCost = append(e.Results.QosPerCost, computeQoSCost(float64(orchestrator.QoS), float64(orchestrator.Cost)))
+	e.Results.Qos = append(e.Results.Qos, float64(orchestrator.QoS))
+	e.Results.Cost = append(e.Results.Cost, float64(orchestrator.Cost))
+	if duration != 0 {
+		e.Results.Durations = append(e.Results.Durations, duration)
+	}
+	e.Results.EventTime = append(e.Results.EventTime, endTime)
+}
+
+func allocateBufferedEvents(orchestrator *src.Orchestrator, eventsBuffer EventsBuffer, results *EventResult, endTime float64) {
+	sortedEventIDs, sortedEvents := sortEvents(eventsBuffer.AllocEvents, orchestrator.AllServices)
+	if len(sortedEventIDs) != len(eventsBuffer.AllocEvents) {
+		log.Info("sorted events do not match the buffer")
+	}
+	log.Info("sorted event ids for allocation:", sortedEventIDs)
+	for _, eventID := range sortedEventIDs {
+		aEvent := sortedEvents[eventID]
+		log.Info("allocate event:", aEvent)
+		eventID := aEvent.EventID
+		startTime := time.Now()
+		allocated, err := orchestrator.Allocate(aEvent.TargetDomainID, aEvent.TargetServiceID, eventID)
+		duration := time.Since(startTime)
+		log.Info("Allocate:", allocated, orchestrator.QoS, orchestrator.Cost)
+		log.Info("Time to allocate:", duration)
+		if err != nil {
+			log.Info(err)
+		}
+		if allocated {
+			log.Info("/////////////////////")
+			log.Info("service is allocated ")
+			log.Info("/////////////////////")
+		} else {
+			log.Info("/////////////////////")
+			log.Info("service is rejected ")
+			// delete(orchestrator.RunningServices, eventID)
+			log.Info("/////////////////////")
+
+		}
+		results.appendMetrics(orchestrator, endTime, float64(duration.Microseconds()/1000))
+	}
+}
+
+func deallocateBufferedEvents(orchestrator *src.Orchestrator, eventsBuffer []Event, results *EventResult, endTime float64, unprocessedDeallocs []Event) {
+	log.Info("attempt to process deallocate events")
+	log.Info("deallocation events:", eventsBuffer)
+	for _, dEvent := range eventsBuffer {
+		// if _, ok := processedIDs[dEvent.EventID]; !ok {
+		log.Info("deallocate event:", dEvent)
+		// }
+		eventID := dEvent.EventID
+		if _, ok := orchestrator.RunningServices[eventID]; ok {
+			orchestrator.Deallocate(dEvent.TargetDomainID, dEvent.TargetServiceID, eventID)
+			results.appendMetrics(orchestrator, endTime, 0)
+			log.Info("service exists in the first round")
+			log.Info("/////////////////////")
+		} else {
+			unprocessedDeallocs = append(unprocessedDeallocs, dEvent)
+			log.Info("service does not exist in first round. rejected?")
+		}
+
+	}
 }

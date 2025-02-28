@@ -45,7 +45,7 @@ fixed_config = {
 
 # Define mutually exclusive options (only one can be enabled at a time)
 # node_sizes = [8,12,16,20,24,28,32]
-node_sizes = [8,12,16]
+node_sizes = [8,12]
 
 # Generate all parameter combinations
 def generate_param_combinations():

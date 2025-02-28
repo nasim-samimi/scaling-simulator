@@ -3,10 +3,11 @@ orchestrator:
   domain_node_threshold: 100
   edge_node_cost: 1
   interval_based: true
-  node_heuristic: MaxMax
+  node_heuristic: mMRB
+  node_reclaim: false
   partition_heuristic: worstfit
 system:
-  addition: 1
+  addition: 0.1
   init_node_size: 16
   node_size: 12
   results_dir: improved/with_interval_based

@@ -11,6 +11,7 @@ type Domain struct {
 	AllocatedServices Services
 	AlwaysActiveNodes []NodeName
 	SortedNodes       []NodeName
+	MinActiveNodes    int
 }
 
 type Domains map[DomainID]*Domain
@@ -27,5 +28,6 @@ func NewDomain(nodes Nodes, reservedNodes Nodes, domainID DomainID) *Domain {
 		DomainID:          domainID,
 		AllocatedServices: nil,
 		AlwaysActiveNodes: AlwaysActiveNodes,
+		MinActiveNodes:    len(AlwaysActiveNodes),
 	}
 }

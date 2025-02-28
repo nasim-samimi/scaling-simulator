@@ -5,7 +5,8 @@ import numpy as np
 import sys
 
 figsize=(8,8)
-nodeHeus=['MinMin','MaxMax']
+# nodeHeus=['MinMin','MaxMax',]
+nodeHeus=['MMRB','mmRB','MmRB','mMRB']
 partitionHeus=['bestfit','worstfit']
 reallocationHeus=["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC"]
 main_dir = 'experiments/results/'
@@ -153,7 +154,7 @@ def runtimes(dir1='improved/',dir2='baseline/'):
     return
 
 
-def time_based_avg(values,times,addition):
+def time_based_avg(values,times):
     # print("values",values)
     # events=pd.read_csv(f'{events_dir}/events_{addition}.csv')
     events=times
@@ -239,12 +240,17 @@ def compareBaselines(dir='baseline/'):
                     
                     for a in ADDITIONS:
                         fulldir=f'{main_dir}{dir}{metric}/nodesize={node_size}/addition={a}/{n}/{p}/'
+                        Times_addr= f'{main_dir}{dir}eventTime/nodesize={node_size}/addition={a}/MaxMax/{p}/'
+                # print(fulldir)
                         print(fulldir)
                         for files in os.listdir(fulldir):
                             Values = pd.read_csv(f'{fulldir}{files}', header=None)
+                            Times=pd.read_csv(f'{Times_addr}{files}',header=None)
+                            Times.columns=['EventTime']
                             Values.columns = [metric]
 
-                            avg_value = time_based_avg(Values[metric],a)
+                            # avg_value = time_based_avg(Values[metric],a)
+                            avg_value = time_based_avg(Values[metric],Times)
                             avg.append(avg_value)
                             averages.loc[i]=[avg_value,f'{n}-{p}-nodesize={node_size}',a]
                             i=i+1
@@ -287,26 +293,45 @@ def robustness(dir1='improved/allOpts',dir2='baseline/',metric='cost',flags='all
             averages=pd.DataFrame(columns=['averages','heuristics','addition'])
             for a in ADDITIONS:
                 leg=[]
-                for dir in dirs:
-                    fulldir=f'{dir}{metric}/nodesize={nodesize}/addition={a}/{n}/{p}/'
-                    Times_addr= f'{dir}eventTime/nodesize={nodesize}/addition={a}/{n}/{p}/'
-                    # print(fulldir)
-                    for files in os.listdir(fulldir):
-                        Values = pd.read_csv(f'{fulldir}{files}', header=None)
-                        Times=pd.read_csv(f'{fulldir}improved.csv',header=None)
-                        Times.columns=['EventTime']
-                        Values.columns = [metric]
+                # for heuristics
+                dir=dirs[0]
+                fulldir=f'{dir}{metric}/nodesize={nodesize}/addition={a}/{n}/{p}/'
+                Times_addr= f'{dir}eventTime/nodesize={nodesize}/addition={a}/{n}/{p}/'
+                # print(fulldir)
+                for files in os.listdir(fulldir):
+                    Values = pd.read_csv(f'{fulldir}{files}', header=None)
+                    Times=pd.read_csv(f'{Times_addr}{files}',header=None)
+                    Times.columns=['EventTime']
+                    Values.columns = [metric]
 
-                        avg_value = time_based_avg(Values[metric],Times,a) 
-                        averages.loc[i]=[avg_value,dir[20:]+files[:-4],a]
-                        leg.append(dir[20:]+files[:-4])
-                        i+=1
+                    avg_value = time_based_avg(Values[metric],Times) 
+                    averages.loc[i]=[avg_value,dir[20:]+files[:-4],a]
+                    leg.append(dir[20:]+files[:-4])
+                    i+=1
+                # for baseline
+                dir=dirs[1]
+                fulldir=f'{dir}{metric}/nodesize={nodesize}/addition={a}/MaxMax/{p}/'
+                Times_addr= f'{dir}eventTime/nodesize={nodesize}/addition={a}/MaxMax/{p}/'
+                # print(fulldir)
+                for files in os.listdir(fulldir):
+                    Values = pd.read_csv(f'{fulldir}{files}', header=None)
+                    Times=pd.read_csv(f'{Times_addr}{files}',header=None)
+                    Times.columns=['EventTime']
+                    Values.columns = [metric]
+
+                    avg_value = time_based_avg(Values[metric],Times) 
+                    averages.loc[i]=[avg_value,dir[20:]+files[:-4],a]
+                    leg.append(dir[20:]+files[:-4])
+                    i+=1
  
             print(leg)
             plt.figure(figsize=figsize)
             # colors = plt.cm.rainbow(np.linspace(0, 1, 15))
             heuristic_averages = averages.groupby('heuristics')['averages'].mean()
-            top_heuristics = heuristic_averages.nlargest(4).index
+            if metric=='cost':
+                top_heuristics = heuristic_averages.nsmallest(4).index
+            else:
+                top_heuristics = heuristic_averages.nlargest(4).index
             for l in leg:
                 if 'baseline' in l:
                     b=l
@@ -365,6 +390,7 @@ if __name__ == '__main__':
     # # avgcost=cost(dir1=dir1,dir2=dir2)
     # avgcost=processfiles(dir1=dir1,dir2=dir2,metric='cost')
     # print(avgcost)  
+    nodeHeus=['MaxMax','MinMin']
     compareBaselines(dir=dir2)
 
 

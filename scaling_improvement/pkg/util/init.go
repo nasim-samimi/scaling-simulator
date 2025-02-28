@@ -2,10 +2,21 @@ package util
 
 import (
 	"fmt"
+	"os"
 
 	cnfg "github.com/nasim-samimi/scaling-simulator/pkg/config"
 	src "github.com/nasim-samimi/scaling-simulator/pkg/orchestrator"
+	"github.com/sirupsen/logrus"
 )
+
+var logr = logrus.New()
+
+// Automatically runs when the package is imported
+func init() {
+	logr.SetFormatter(&logrus.TextFormatter{FullTimestamp: true})
+	logr.SetOutput(os.Stdout)       // Log to console
+	logr.SetLevel(logrus.InfoLevel) // Set log level
+}
 
 func Initialise(config *cnfg.Config) *src.Orchestrator {
 
@@ -22,7 +33,7 @@ func Initialise(config *cnfg.Config) *src.Orchestrator {
 	fmt.Println("partitionHeuristic:", partitionHeuristic)
 	fmt.Println("node size:", config.System.NodeSize)
 
-	baseFolder := "../data/domainNodes" + config.System.NodeSize + "/" + string(partitionHeuristic) + "/" + string(nodeHeuristic)
+	baseFolder := "../data/domainNodes" + config.System.NodeSize + "/" + string(partitionHeuristic) + "/MaxMax" //+ string(nodeHeuristic) /TODO: select MAXMAX for now
 	domains := LoadDomains(baseFolder)
 
 	// initialise the orchestrator

@@ -21,6 +21,7 @@ type OrchestratorConfig struct {
 	EdgeReduced           bool      `yaml:"edge_reduced"`
 	CloudNodeCost         Cost      `yaml:"cloud_node_cost"`
 	EdgeNodeCost          Cost      `yaml:"edge_node_cost"`
+	IntervalBased         bool      `yaml:"interval_based"`
 
 	PartitionHeuristic    Heuristic `yaml:"partition_heuristic"`
 	NodeHeuristic         Heuristic `yaml:"node_heuristic"`

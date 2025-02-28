@@ -14,7 +14,7 @@ import (
 )
 
 func loadNodesFromCSV(filePath string, domainID src.DomainID) src.Nodes {
-	fmt.Println("loading nodes from csv file: ", filePath)
+	logr.Info("loading nodes from csv file: ", filePath)
 	file, err := os.Open(filePath)
 	if err != nil {
 		log.Fatalf("Unable to read input file %s, %v", filePath, err)
@@ -28,7 +28,7 @@ func loadNodesFromCSV(filePath string, domainID src.DomainID) src.Nodes {
 		log.Fatalf("Unable to read header row from CSV file %s, %v", filePath, err)
 	}
 	records, err := reader.ReadAll()
-	fmt.Println(records)
+	logr.Info(records)
 	if err != nil {
 		log.Fatalf("Unable to parse CSV file %s, %v", filePath, err)
 	}
@@ -64,7 +64,7 @@ func LoadDomainFromCSV(filename string, domainID src.DomainID) (src.Nodes, src.N
 }
 
 func LoadDomains(baseFolder string) src.Domains {
-	fmt.Println("loading domains from csv file: ", baseFolder)
+	logr.Info("loading domains from csv file: ", baseFolder)
 	activeFolder := filepath.Join(baseFolder, "Active")
 	reservedFolder := filepath.Join(baseFolder, "Reserved")
 
@@ -113,7 +113,7 @@ func LoadSVCFromCSV(filePath string) src.Services {
 		log.Fatalf("Unable to read header row from CSV file %s, %v", filePath, err)
 	}
 	records, err := reader.ReadAll()
-	fmt.Println(records)
+	logr.Info(records)
 	if err != nil {
 		log.Fatalf("Unable to parse CSV file %s, %v", filePath, err)
 	}
@@ -130,7 +130,7 @@ func LoadSVCFromCSV(filePath string) src.Services {
 		reducedCloudBandwidth, _ := strconv.ParseFloat(record[6], 64)
 		reducedCloudCores, _ := strconv.ParseFloat(record[7], 64)
 		// print reduced parameters:
-		fmt.Println(" reduced parameters:", reducedEdgeBandwidth, reducedEdgeCores, reducedCloudBandwidth, reducedCloudCores)
+		logr.Info(" reduced parameters:", reducedEdgeBandwidth, reducedEdgeCores, reducedCloudBandwidth, reducedCloudCores)
 
 		newSVC := src.NewService(float64(importanceFactor), src.ServiceID(svcID), float64(standardBandwidth), uint64(standardCores), float64(reducedEdgeBandwidth), uint64(reducedEdgeCores), float64(reducedCloudBandwidth), uint64(reducedCloudCores))
 
@@ -154,7 +154,7 @@ func LoadHeuristicFromCSV(filePath string) (cnfg.Heuristic, cnfg.Heuristic, cnfg
 		log.Fatalf("Unable to read header row from CSV file %s, %v", filePath, err)
 	}
 	records, err := reader.ReadAll()
-	fmt.Println(records)
+	logr.Info(records)
 	if err != nil {
 		log.Fatalf("Unable to parse CSV file %s, %v", filePath, err)
 	}
@@ -187,7 +187,7 @@ func LoadEventsFromCSV(filePath string) []eve.Event {
 		log.Fatalf("Unable to read header row from CSV file %s, %v", filePath, err)
 	}
 	records, err := reader.ReadAll()
-	// fmt.Println(records)
+	// logr.Info(records)
 	if err != nil {
 		log.Fatalf("Unable to parse CSV file %s, %v", filePath, err)
 	}

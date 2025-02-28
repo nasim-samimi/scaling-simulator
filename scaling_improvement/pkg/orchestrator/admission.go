@@ -21,8 +21,8 @@ func NewAdmissionTest(core Cores, heuristic cnfg.Heuristic) *AdmissionTest {
 
 func (at *AdmissionTest) QuickFilter(reqCpus uint64, reqBandwidth float64, cores Cores) (bool, error) {
 	i := 0
-	fmt.Println("average added bandwidth for quick filter:", reqBandwidth*float64(reqCpus)/float64(len(cores)))
-	fmt.Println("bandwidth and cpus requested for quick filter:", reqBandwidth, reqCpus)
+	log.Info("average added bandwidth for quick filter:", reqBandwidth*float64(reqCpus)/float64(len(cores)))
+	log.Info("bandwidth and cpus requested for quick filter:", reqBandwidth, reqCpus)
 	for _, cpuinfo := range cores {
 		if cpuinfo.ConsumedBandwidth+reqBandwidth <= 100.0 {
 			i++

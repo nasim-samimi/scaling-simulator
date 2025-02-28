@@ -16,13 +16,13 @@ type standardSched struct {
 
 func (s *standardSched) ServiceAllocate(service *Service, node *Node, eventID ServiceID, cpuThreshold float64) (bool, *Service, error) {
 	allocated := false
-	fmt.Println("Allocating service: ", service)
+	log.Info("Allocating service: ", service)
 	allocatedCores, err := node.NodeAllocate(s.cpusEdge, s.bandwidthEdge, service, eventID, cpuThreshold)
 	if err != nil {
-		fmt.Println("Error allocating service: ", err)
+		log.Info("Error allocating service: ", err)
 		return allocated, service, err
 	}
-	fmt.Println("node name:", node.NodeName)
+	log.Info("node name:", node.NodeName)
 	allocated = true
 
 	newSvc := &Service{
@@ -36,8 +36,8 @@ func (s *standardSched) ServiceAllocate(service *Service, node *Node, eventID Se
 		AllocatedNodeCloud:       service.AllocatedNodeCloud,
 		AllocatedDomain:          node.DomainID,
 		AllocationMode:           StandardMode,
-		AverageResidualBandwidth: s.bandwidthEdge,
-		TotalResidualBandwidth:   s.bandwidthEdge * float64(s.cpusEdge),
+		AverageConsumedBandwidth: s.bandwidthEdge,
+		TotalConsumedBandwidth:   s.bandwidthEdge * float64(s.cpusEdge),
 		StandardQoS:              service.StandardQoS,
 		ReducedQoS:               service.ReducedQoS,
 	}
@@ -52,12 +52,12 @@ func (s *standardSched) ServiceAllocate(service *Service, node *Node, eventID Se
 		AllocatedNodeCloud:       service.AllocatedNodeCloud,
 		AllocatedDomain:          node.DomainID,
 		AllocationMode:           StandardMode,
-		AverageResidualBandwidth: s.bandwidthEdge,
-		TotalResidualBandwidth:   s.bandwidthEdge * float64(s.cpusEdge),
+		AverageConsumedBandwidth: s.bandwidthEdge,
+		TotalConsumedBandwidth:   s.bandwidthEdge * float64(s.cpusEdge),
 		StandardQoS:              service.StandardQoS,
 		ReducedQoS:               service.ReducedQoS,
 	}
-	fmt.Println("Allocating service after: ", service)
+	log.Info("Allocating service after: ", service)
 	return allocated, newSvc, err
 }
 
@@ -91,8 +91,8 @@ func (r *reducedSched) ServiceAllocate(service *Service, node *Node, loc Locatio
 			AllocatedNodeEdge:        node.NodeName,
 			AllocatedDomain:          node.DomainID,
 			AllocationMode:           ReducedMode,
-			AverageResidualBandwidth: (r.bandwidthEdge*float64(r.cpusEdge) + r.bandwidthCloud*float64(r.cpusCloud)) / float64(r.cpusEdge+r.cpusCloud),
-			TotalResidualBandwidth:   r.bandwidthEdge*float64(r.cpusEdge) + r.bandwidthCloud*float64(r.cpusCloud),
+			AverageConsumedBandwidth: (r.bandwidthEdge*float64(r.cpusEdge) + r.bandwidthCloud*float64(r.cpusCloud)) / float64(r.cpusEdge+r.cpusCloud),
+			TotalConsumedBandwidth:   r.bandwidthEdge*float64(r.cpusEdge) + r.bandwidthCloud*float64(r.cpusCloud),
 			StandardQoS:              service.StandardQoS,
 			ReducedQoS:               service.ReducedQoS,
 		}
@@ -105,8 +105,8 @@ func (r *reducedSched) ServiceAllocate(service *Service, node *Node, loc Locatio
 			AllocatedNodeEdge:        node.NodeName,
 			AllocatedDomain:          node.DomainID,
 			AllocationMode:           ReducedMode,
-			AverageResidualBandwidth: (r.bandwidthEdge*float64(r.cpusEdge) + r.bandwidthCloud*float64(r.cpusCloud)) / float64(r.cpusEdge+r.cpusCloud),
-			TotalResidualBandwidth:   r.bandwidthEdge*float64(r.cpusEdge) + r.bandwidthCloud*float64(r.cpusCloud),
+			AverageConsumedBandwidth: (r.bandwidthEdge*float64(r.cpusEdge) + r.bandwidthCloud*float64(r.cpusCloud)) / float64(r.cpusEdge+r.cpusCloud),
+			TotalConsumedBandwidth:   r.bandwidthEdge*float64(r.cpusEdge) + r.bandwidthCloud*float64(r.cpusCloud),
 			StandardQoS:              service.StandardQoS,
 			ReducedQoS:               service.ReducedQoS,
 		}
@@ -128,8 +128,8 @@ func (r *reducedSched) ServiceAllocate(service *Service, node *Node, loc Locatio
 			AllocatedNodeCloud:       node.NodeName,
 			AllocatedDomain:          node.DomainID,
 			AllocationMode:           ReducedMode,
-			AverageResidualBandwidth: (r.bandwidthEdge*float64(r.cpusEdge) + r.bandwidthCloud*float64(r.cpusCloud)) / float64(r.cpusEdge+r.cpusCloud),
-			TotalResidualBandwidth:   r.bandwidthEdge*float64(r.cpusEdge) + r.bandwidthCloud*float64(r.cpusCloud),
+			AverageConsumedBandwidth: (r.bandwidthEdge*float64(r.cpusEdge) + r.bandwidthCloud*float64(r.cpusCloud)) / float64(r.cpusEdge+r.cpusCloud),
+			TotalConsumedBandwidth:   r.bandwidthEdge*float64(r.cpusEdge) + r.bandwidthCloud*float64(r.cpusCloud),
 			StandardQoS:              service.StandardQoS,
 			ReducedQoS:               service.ReducedQoS,
 		}
@@ -142,8 +142,8 @@ func (r *reducedSched) ServiceAllocate(service *Service, node *Node, loc Locatio
 			AllocatedNodeCloud:       node.NodeName,
 			AllocatedDomain:          node.DomainID,
 			AllocationMode:           ReducedMode,
-			AverageResidualBandwidth: (r.bandwidthEdge*float64(r.cpusEdge) + r.bandwidthCloud*float64(r.cpusCloud)) / float64(r.cpusEdge+r.cpusCloud),
-			TotalResidualBandwidth:   r.bandwidthEdge*float64(r.cpusEdge) + r.bandwidthCloud*float64(r.cpusCloud),
+			AverageConsumedBandwidth: (r.bandwidthEdge*float64(r.cpusEdge) + r.bandwidthCloud*float64(r.cpusCloud)) / float64(r.cpusEdge+r.cpusCloud),
+			TotalConsumedBandwidth:   r.bandwidthEdge*float64(r.cpusEdge) + r.bandwidthCloud*float64(r.cpusCloud),
 			StandardQoS:              service.StandardQoS,
 			ReducedQoS:               service.ReducedQoS,
 		}
@@ -189,8 +189,8 @@ type Service struct {
 	AllocatedNodeCloud       NodeName
 	AllocatedDomain          DomainID
 	AllocationMode           ServiceMode
-	AverageResidualBandwidth float64
-	TotalResidualBandwidth   float64
+	AverageConsumedBandwidth float64
+	TotalConsumedBandwidth   float64
 	StandardQoS              QoS
 	ReducedQoS               QoS
 	EdgeReducedQoS           QoS
@@ -269,8 +269,8 @@ func (r *reducedSched) EdgeServiceAllocate(service *Service, node *Node, eventID
 		AllocatedNodeEdge:        node.NodeName,
 		AllocatedDomain:          node.DomainID,
 		AllocationMode:           EdgeReducedMode,
-		AverageResidualBandwidth: (r.bandwidthCloud * float64(r.cpusCloud)) / float64(r.cpusCloud),
-		TotalResidualBandwidth:   r.bandwidthCloud * float64(r.cpusCloud),
+		AverageConsumedBandwidth: (r.bandwidthCloud * float64(r.cpusCloud)) / float64(r.cpusCloud),
+		TotalConsumedBandwidth:   r.bandwidthCloud * float64(r.cpusCloud),
 		StandardQoS:              service.StandardQoS,
 		ReducedQoS:               service.ReducedQoS,
 		EdgeReducedQoS:           service.EdgeReducedQoS,
@@ -284,8 +284,8 @@ func (r *reducedSched) EdgeServiceAllocate(service *Service, node *Node, eventID
 		AllocatedNodeEdge:        node.NodeName,
 		AllocatedDomain:          node.DomainID,
 		AllocationMode:           EdgeReducedMode,
-		AverageResidualBandwidth: (r.bandwidthCloud * float64(r.cpusCloud)) / float64(r.cpusCloud),
-		TotalResidualBandwidth:   r.bandwidthCloud * float64(r.cpusCloud),
+		AverageConsumedBandwidth: (r.bandwidthCloud * float64(r.cpusCloud)) / float64(r.cpusCloud),
+		TotalConsumedBandwidth:   r.bandwidthCloud * float64(r.cpusCloud),
 		StandardQoS:              service.StandardQoS,
 		ReducedQoS:               service.ReducedQoS,
 		EdgeReducedQoS:           service.EdgeReducedQoS,

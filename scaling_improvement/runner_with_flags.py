@@ -11,12 +11,13 @@ PARTITIONING_H=['bestfit','worstfit']
 REALLOCATION_H=["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC","LBCI","LBI","LCI"]
 REALLOCATION_INTRANODE_H=["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC","LBCI","LBI","LCI"]
 REALLOCATION_INTRADOMAIN_H=["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC","LBCI","LBI","LCI"]
-# REALLOCATION_REDUCED_H=["LB","LC","LBC","LBCI","LBI","LCI","LRED","LI"]
-REALLOCATION_REDUCED_H=["LI"]
+REALLOCATION_REDUCED_H=["LB","LC","LBC","LBCI","LBI","LCI","LRED","LI"]
+# REALLOCATION_REDUCED_H=["LI"]
 # REALLOCATION_REMOVED_H=["LB","LC","LBC","LBCI","LBI","LCI","LREM","LI"]
 REALLOCATION_REMOVED_H=["LI"]
 # REALLOCATION_H=["HBCI"]
-NODE_SELECTION_H=["MinMin","MaxMax"]
+# NODE_SELECTION_H=["MinMin","MaxMax"]
+NODE_SELECTION_H=["MMRB","mmRB","MmRB","mMRB"]
 # ADDITION=[0]
 ADDITION=[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
 edge_node_cost=1
@@ -42,7 +43,7 @@ fixed_config = {
         "intra_domain_realloc":False,
         # "intra_node_reduced":False,
         # "intra_node_removed":False,
-        "interval_based":False
+        "interval_based":False,
     },
     "system": {
         "init_node_size": 16,
@@ -54,7 +55,7 @@ fixed_config = {
 # Define mutually exclusive options (only one can be enabled at a time)
 exclusive_options = [
     # "upgrade_service",
-    # "node_reclaim",
+    "node_reclaim",
     # "intra_domain_realloc",
     # "intra_node_realloc",
     # "intra_node_reduced",
