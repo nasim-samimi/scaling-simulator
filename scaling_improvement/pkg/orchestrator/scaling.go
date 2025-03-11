@@ -33,6 +33,10 @@ func (o *Orchestrator) cloudPowerOffNode(nodeName NodeName) bool {
 func (o *Orchestrator) edgePowerOnNode(domainID DomainID) (bool, NodeName) {
 	// log.Info("active nodes in domain:", o.Domains[domainID].ActiveNodes)
 	// var nodeName NodeName
+	if len(o.Domains[domainID].ActiveNodes) == int(o.Config.MaxScalingThreshold) {
+		log.Info("cannot power on more nodes, max threshold reached")
+		return false, ""
+	}
 	for nodeName, node := range o.Domains[domainID].InactiveNodes {
 		node.Status = Active
 		cores := CreateNodeCores(len(node.Cores))

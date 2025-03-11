@@ -9,6 +9,7 @@ import (
 
 type OrchestratorConfig struct {
 	UpgradeService        bool      `yaml:"upgrade_service"`
+	UpgradeHeuristic      Heuristic `yaml:"upgrade_heuristic"`
 	NodeReclaim           bool      `yaml:"node_reclaim"`
 	IntraNodeRealloc      bool      `yaml:"intra_node_realloc"`
 	IntraNodeReallocHeu   Heuristic `yaml:"intra_node_realloc_heu"`
@@ -27,6 +28,7 @@ type OrchestratorConfig struct {
 	NodeHeuristic         Heuristic `yaml:"node_heuristic"`
 	ReallocationHeuristic Heuristic `yaml:"reallocation_heuristic"`
 	Baseline              bool      `yaml:"baseline"`
+	MaxScalingThreshold   uint64    `yaml:"max_scaling_threshold"`
 }
 type SystemConfig struct {
 	InitNodeSize   uint64 `yaml:"init_node_size"`

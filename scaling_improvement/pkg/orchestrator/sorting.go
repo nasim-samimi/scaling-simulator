@@ -24,7 +24,7 @@ func (o *Orchestrator) sortNodes(nodes Nodes, serviceCpus uint64, serviceBandwid
 	log.Info("inside switch case", o.Config.NodeHeuristic)
 	switch o.Config.NodeHeuristic {
 
-	case MinMin:
+	case Min:
 		// Sort by number of cores (descending) first, then by average residual bandwidth (ascending)
 		sort.Slice(sortedNodes, func(i, j int) bool {
 			if len(sortedNodes[i].Cores) == len(sortedNodes[j].Cores) {
@@ -33,7 +33,7 @@ func (o *Orchestrator) sortNodes(nodes Nodes, serviceCpus uint64, serviceBandwid
 			return len(sortedNodes[i].Cores) > len(sortedNodes[j].Cores)
 		})
 
-	case MaxMax:
+	case Max:
 		// Sort by number of cores (descending) first, then by average residual bandwidth (descending)
 		sort.Slice(sortedNodes, func(i, j int) bool {
 			if len(sortedNodes[i].Cores) == len(sortedNodes[j].Cores) {
@@ -85,7 +85,7 @@ func (o *Orchestrator) sortNodesNoFilter(nodes Nodes, nodeSelection config.Heuri
 
 	switch nodeSelection {
 
-	case MinMin:
+	case Min:
 		sort.Slice(sortedNodes, func(i, j int) bool {
 			if len(sortedNodes[i].Cores) == len(sortedNodes[j].Cores) {
 				return sortedNodes[i].AverageConsumedBandwidth > sortedNodes[j].AverageConsumedBandwidth
@@ -96,7 +96,7 @@ func (o *Orchestrator) sortNodesNoFilter(nodes Nodes, nodeSelection config.Heuri
 	// 	sort.Slice(sortedNodes, func(i, j int) bool {
 	// 		return sortedNodes[i].AverageConsumedBandwidth < sortedNodes[j].AverageConsumedBandwidth
 	// 	})
-	case MaxMax:
+	case Max:
 		// 	sort.Slice(sortedNodes, func(i, j int) bool {
 		// 		return sortedNodes[i].AverageConsumedBandwidth > sortedNodes[j].AverageConsumedBandwidth
 		// 	})

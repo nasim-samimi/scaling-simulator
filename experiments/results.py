@@ -4,9 +4,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sys
 
-figsize=(8,8)
-# nodeHeus=['MinMin','MaxMax',]
-nodeHeus=['MMRB','mmRB','MmRB','mMRB']
+figsize=(12,8)
+linewidth=2.6
+fontsize=12
+
+nodeHeus=['MMRB','mmRB','MmRB','mMRB','MaxMax','MinMin']
 partitionHeus=['bestfit','worstfit']
 reallocationHeus=["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC"]
 main_dir = 'experiments/results/'
@@ -51,7 +53,7 @@ def plotfiles(main_dir,dir,addition,metric,dirs):
     plt.grid(True)
     if not os.path.exists(f'{main_dir}plots/baselines/addition={addition}'):
         os.makedirs(f'{main_dir}plots/baselines/addition={addition}')
-    plt.savefig(f'{main_dir}plots/baselines/addition={addition}/{metric}_baseline.png')
+    plt.savefig(f'{main_dir}plots/baselines/addition={addition}/{metric}_baseline.pdf')
     plt.close()
     
     return
@@ -105,7 +107,7 @@ def processfiles(dir1='improved/',dir2='baseline/',metric='cost'):
         savingDir=f'{plots}nodesize={node_size}/addition={addition}/{metric}/'
     if not os.path.exists(savingDir):
         os.makedirs(savingDir)
-    plt.savefig(f'{savingDir}{nodeHeu}_{partitionHeu}.png')
+    plt.savefig(f'{savingDir}{nodeHeu}_{partitionHeu}.pdf')
     averages.to_csv(f'{savingDir}{nodeHeu}_{partitionHeu}_averages.csv',index=False)
     plt.close()
     return averages
@@ -148,7 +150,7 @@ def runtimes(dir1='improved/',dir2='baseline/'):
     savingDir=f'{plots}nodesize={node_size}/addition={addition}/runs/'
     if not os.path.exists(savingDir):
         os.makedirs(savingDir)
-    plt.savefig(f'{savingDir}{nodeHeu}_{partitionHeu}.png')
+    plt.savefig(f'{savingDir}{nodeHeu}_{partitionHeu}.pdf')
     averages.to_csv(f'{savingDir}{nodeHeu}_{partitionHeu}_averages.csv',index=False)
     plt.close()
     return
@@ -212,7 +214,7 @@ def compareBaselines(dir='baseline/'):
     #     plt.grid(True)
     #     if not os.path.exists(f'{main_dir}/plots/baselines/nodesize={node_size}/addition={addition}'):
     #         os.makedirs(f'{main_dir}/plots/baselines/nodesize={node_size}/addition={addition}')
-    #     plt.savefig(f'{main_dir}/plots/baselines/nodesize={node_size}/addition={addition}/runs_baselines.png')
+    #     plt.savefig(f'{main_dir}/plots/baselines/nodesize={node_size}/addition={addition}/runs_baselines.pdf')
     #     plt.close()
 
     #     fulldir=f'{main_dir}{dir}qosPerCost/nodesize={node_size}/addition={addition}/'
@@ -240,7 +242,7 @@ def compareBaselines(dir='baseline/'):
                     
                     for a in ADDITIONS:
                         fulldir=f'{main_dir}{dir}{metric}/nodesize={node_size}/addition={a}/{n}/{p}/'
-                        Times_addr= f'{main_dir}{dir}eventTime/nodesize={node_size}/addition={a}/MaxMax/{p}/'
+                        Times_addr= f'{main_dir}{dir}eventTime/nodesize={node_size}/addition={a}/Max/{p}/'
                 # print(fulldir)
                         print(fulldir)
                         for files in os.listdir(fulldir):
@@ -271,7 +273,7 @@ def compareBaselines(dir='baseline/'):
             savingDir=f'{plots}/robustness/baselines/nodesize={node_size}/'
             if not os.path.exists(savingDir):
                 os.makedirs(savingDir)
-            plt.savefig(f'{savingDir}robustness_{metric}.png')
+            plt.savefig(f'{savingDir}robustness_{metric}.pdf')
             plt.close()
 
     return
@@ -329,9 +331,9 @@ def robustness(dir1='improved/allOpts',dir2='baseline/',metric='cost',flags='all
             # colors = plt.cm.rainbow(np.linspace(0, 1, 15))
             heuristic_averages = averages.groupby('heuristics')['averages'].mean()
             if metric=='cost':
-                top_heuristics = heuristic_averages.nsmallest(4).index
+                top_heuristics = heuristic_averages.nsmallest(15).index
             else:
-                top_heuristics = heuristic_averages.nlargest(4).index
+                top_heuristics = heuristic_averages.nlargest(15).index
             for l in leg:
                 if 'baseline' in l:
                     b=l
@@ -357,13 +359,204 @@ def robustness(dir1='improved/allOpts',dir2='baseline/',metric='cost',flags='all
             savingDir=f'{plots}robustness/{flags}/nodesize={nodesize}/{n}/{p}/'
             if not os.path.exists(savingDir):
                 os.makedirs(savingDir)
-            plt.savefig(f'{savingDir}robustness_{metric}.png')
+            plt.savefig(f'{savingDir}robustness_{metric}.pdf')
             plt.close()
 
     return
 
 
 
+def robustness_compare_node_core_selection(dir1='improved/allOpts',dir2='baseline/',metric='cost',flags='allOpts',nodesize=8):
+
+    avg=[]
+    columns=[]
+    averages=pd.DataFrame(columns=['averages','heuristics','addition'])
+    dirs=[main_dir+dir1,main_dir+dir2]
+    legend=[]
+    #cost
+    plt.figure(figsize=figsize)
+    for n in nodeHeus:
+        for p in partitionHeus:
+            avg=[]
+            
+            i=0
+            averages=pd.DataFrame(columns=['averages','heuristics','addition'])
+            for a in ADDITIONS:
+                # for heuristics
+                leg=[]
+                if n not in ['MaxMax','MinMin']:
+                    dir=dirs[0]
+                    fulldir=f'{dir}{metric}/nodesize={nodesize}/addition={a}/{n}/{p}/'
+                    Times_addr= f'{dir}eventTime/nodesize={nodesize}/addition={a}/{n}/{p}/'
+                    # print(fulldir)
+                    for files in os.listdir(fulldir):
+                        Values = pd.read_csv(f'{fulldir}{files}', header=None)
+                        Times=pd.read_csv(f'{Times_addr}{files}',header=None)
+                        Times.columns=['EventTime']
+                        Values.columns = [metric]
+
+                        avg_value = time_based_avg(Values[metric],Times) 
+                        averages.loc[i]=[avg_value,dir[20:]+files[:-4]+f'_{n}_{p}',a]
+                        leg.append(dir[20:]+files[:-4]+f'_{n}_{p}')
+                        i+=1
+                # for baseline
+                if n=='MaxMax' and p=='bestfit':
+                    dir=dirs[1]
+                    fulldir=f'{dir}{metric}/nodesize={nodesize}/addition={a}/MaxMax/bestfit/'
+                    Times_addr= f'{dir}eventTime/nodesize={nodesize}/addition={a}/MaxMax/bestfit/'
+                    # print(fulldir)
+                    for files in os.listdir(fulldir):
+                        Values = pd.read_csv(f'{fulldir}{files}', header=None)
+                        Times=pd.read_csv(f'{Times_addr}{files}',header=None)
+                        Times.columns=['EventTime']
+                        Values.columns = [metric]
+
+                        avg_value = time_based_avg(Values[metric],Times) 
+                        averages.loc[i]=[avg_value,dir[20:]+files[:-4]+'_MaxMax_bestfit',a]
+                        leg.append(dir[20:]+files[:-4]+'_MaxMax_bestfit')
+                        i+=1
+ 
+            # print(leg)
+            
+            # colors = plt.cm.rainbow(np.linspace(0, 1, 15))
+            if averages.empty:
+                continue
+            heuristic_averages = averages.groupby('heuristics')['averages'].mean()
+            if metric=='cost':
+                top_heuristics = heuristic_averages.nsmallest(1).index
+            else:
+                top_heuristics = heuristic_averages.nlargest(1).index
+            for l in leg:
+                if 'baseline' in l:
+                    b=l
+                    if b not in top_heuristics:
+                        top_heuristics=top_heuristics.append(pd.Index([b]))
+                    break
+            
+            for l in top_heuristics:
+                avgs = averages[averages['heuristics'] == l]
+                avgs = avgs.sort_values(by='addition')
+                legend.append(l)
+                if 'baseline' in l:
+                    marker='x'
+                    linestyle='-'
+                    plt.plot(avgs['addition'], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8,color='black')
+                else:
+                    marker='o'
+                    linestyle='--'
+                    plt.plot(avgs['addition'], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
+                
+                # plt.plot(avgs['addition'], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
+    plt.grid(True)
+    plt.xlabel('randomness')
+    # plt.xticks(range(len(ADDITIONS)), ADDITIONS)
+    plt.ylabel(metric)
+    plt.title(f'Robustness comparison for {metric}')    
+    # plt.legend(top_heuristics)
+    plt.legend(legend,fontsize=fontsize)
+    savingDir=f'{plots}robustness/{flags}/nodesize={nodesize}/'
+    if not os.path.exists(savingDir):
+        os.makedirs(savingDir)
+    plt.savefig(f'{savingDir}robustness_{metric}.pdf')
+    plt.close()
+
+    return
+
+
+def robustness_compare_nodesize(dir1='improved/allOpts',dir2='baseline/',metric='cost',flags='allOpts',nodesize=8):
+
+    avg=[]
+    columns=[]
+    averages=pd.DataFrame(columns=['averages','heuristics','addition'])
+    dirs=[main_dir+dir1,main_dir+dir2]
+    legend=[]
+    #cost
+    nodes=[8,12]
+    plt.figure(figsize=figsize)
+    for n in nodes:
+        for p in partitionHeus:
+            avg=[]
+            
+            i=0
+            averages=pd.DataFrame(columns=['averages','heuristics','addition'])
+            for a in ADDITIONS:
+                leg=[]
+                # for heuristics
+                if n not in ['MaxMax','MinMin']:
+                    dir=dirs[0]
+                    fulldir=f'{dir}{metric}/nodesize={n}/addition={a}/mmRB/{p}/'
+                    Times_addr= f'{dir}eventTime/nodesize={n}/addition={a}/mmRB/{p}/'
+                    # print(fulldir)
+                    for files in os.listdir(fulldir):
+                        Values = pd.read_csv(f'{fulldir}{files}', header=None)
+                        Times=pd.read_csv(f'{Times_addr}{files}',header=None)
+                        Times.columns=['EventTime']
+                        Values.columns = [metric]
+
+                        avg_value = time_based_avg(Values[metric],Times) 
+                        averages.loc[i]=[avg_value,dir[20:]+files[:-4]+f'_mmRB_{p}_{n}',a]
+                        leg.append(dir[20:]+files[:-4]+f'_mmRB_{p}_{n}')
+                        i+=1
+                # for baseline
+                if p=='bestfit':
+                    dir=dirs[1]
+                    fulldir=f'{dir}{metric}/nodesize={n}/addition={a}/MaxMax/bestfit/'
+                    Times_addr= f'{dir}eventTime/nodesize={n}/addition={a}/MaxMax/bestfit/'
+                    # print(fulldir)
+                    for files in os.listdir(fulldir):
+                        Values = pd.read_csv(f'{fulldir}{files}', header=None)
+                        Times=pd.read_csv(f'{Times_addr}{files}',header=None)
+                        Times.columns=['EventTime']
+                        Values.columns = [metric]
+
+                        avg_value = time_based_avg(Values[metric],Times) 
+                        averages.loc[i]=[avg_value,dir[20:]+files[:-4]+f'_MaxMax_bestfit_{n}',a]
+                        leg.append(dir[20:]+files[:-4]+f'_MaxMax_bestfit_{n}')
+                        i+=1
+    
+            print(leg)
+            
+            # colors = plt.cm.rainbow(np.linspace(0, 1, 15))
+            if averages.empty:
+                continue
+            heuristic_averages = averages.groupby('heuristics')['averages'].mean()
+            if metric=='cost':
+                top_heuristics = heuristic_averages.nsmallest(1).index
+            else:
+                top_heuristics = heuristic_averages.nlargest(1).index
+            for l in leg:
+                if 'baseline' in l:
+                    b=l
+                    if b not in top_heuristics:
+                        top_heuristics=top_heuristics.append(pd.Index([b]))
+                    break
+            
+            for l in top_heuristics:
+                avgs = averages[averages['heuristics'] == l]
+                avgs = avgs.sort_values(by='addition')
+                legend.append(l)
+                if 'baseline' in l:
+                    marker='x'
+                    linestyle='-'
+                    plt.plot(avgs['addition'], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
+                else:
+                    marker='o'
+                    linestyle='--'
+                    plt.plot(avgs['addition'], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
+    plt.grid(True)
+    plt.xlabel('randomness')
+    # plt.xticks(range(len(ADDITIONS)), ADDITIONS)
+    plt.ylabel(metric)
+    plt.title(f'Robustness comparison for {metric}')    
+    # plt.legend(top_heuristics)
+    plt.legend(legend,fontsize=fontsize)
+    savingDir=f'{plots}robustness/{flags}/'
+    if not os.path.exists(savingDir):
+        os.makedirs(savingDir)
+    plt.savefig(f'{savingDir}robustness_{metric}_mmRB_{p}.pdf')
+    plt.close()
+
+    return
 
 if __name__ == '__main__':
     dir1='improved/allOpts/'
@@ -390,7 +583,7 @@ if __name__ == '__main__':
     # # avgcost=cost(dir1=dir1,dir2=dir2)
     # avgcost=processfiles(dir1=dir1,dir2=dir2,metric='cost')
     # print(avgcost)  
-    nodeHeus=['MaxMax','MinMin']
+    nodeHeus=['Max','Min']
     compareBaselines(dir=dir2)
 
 
@@ -443,7 +636,7 @@ if __name__ == '__main__':
 #             savingDir=f'{plots}robustness_with_flags/{n}/{p}/'
 #             if not os.path.exists(savingDir):
 #                 os.makedirs(savingDir)
-#             plt.savefig(f'{savingDir}robustness_{metric}.png')
+#             plt.savefig(f'{savingDir}robustness_{metric}.pdf')
 #             plt.close()
 
 # def qosPerCost(dir1='improved/',dir2='baseline/'):
@@ -461,7 +654,7 @@ if __name__ == '__main__':
 #     savingDir=f'{plots}addition={addition}/QpC/'
 #     if not os.path.exists(savingDir):
 #         os.makedirs(savingDir)
-#     plt.savefig(f'{savingDir}{nodeHeu}_{partitionHeu}.png')
+#     plt.savefig(f'{savingDir}{nodeHeu}_{partitionHeu}.pdf')
 #     averages.to_csv(f'{savingDir}{nodeHeu}_{partitionHeu}_averages.csv',index=False)
 #     plt.close()
 #     return averages
@@ -481,7 +674,7 @@ if __name__ == '__main__':
 #     savingDir=f'{plots}addition={addition}/QoS/'
 #     if not os.path.exists(savingDir):
 #         os.makedirs(savingDir)
-#     plt.savefig(f'{savingDir}{nodeHeu}_{partitionHeu}.png')
+#     plt.savefig(f'{savingDir}{nodeHeu}_{partitionHeu}.pdf')
 #     averages.to_csv(f'{savingDir}{nodeHeu}_{partitionHeu}_averages.csv',index=False)
 #     plt.close()
 #     return averages
@@ -500,7 +693,7 @@ if __name__ == '__main__':
 #         savingDir=f'{plots}addition={addition}/Cost/'
 #     if not os.path.exists(savingDir):
 #         os.makedirs(savingDir)
-#     plt.savefig(f'{savingDir}{nodeHeu}_{partitionHeu}.png')
+#     plt.savefig(f'{savingDir}{nodeHeu}_{partitionHeu}.pdf')
 #     averages.to_csv(f'{savingDir}{nodeHeu}_{partitionHeu}_averages.csv',index=False)
 #     plt.close()
 #     return averages

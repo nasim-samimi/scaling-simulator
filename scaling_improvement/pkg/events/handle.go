@@ -84,13 +84,22 @@ func ProcessEvents(events []Event, orchestrator *src.Orchestrator) (*cnfg.Result
 		if event.EventType == "deallocate" {
 			log.Info("/////////////////////")
 			log.Info("Deallocate")
+			upgrade := false
 			if _, ok := orchestrator.RunningServices[eventID]; ok {
+				svc := *orchestrator.RunningServices[eventID]
+				if svc.AllocationMode == "Standard" {
+					upgrade = true
+				}
+
 				orchestrator.Deallocate(event.TargetDomainID, event.TargetServiceID, eventID)
+				if upgrade {
+					orchestrator.UpgradeServiceIfEnabled(orchestrator.Config.UpgradeHeuristic, svc, event.TargetDomainID) // change this to only one domain.
+				}
+				orchestrator.BasicNodeReclaim(event.TargetDomainID)
+				orchestrator.NodeReclaimIfEnabled(event.TargetDomainID)
 			} else {
 				log.Info("Service does not exist. rejected?")
 			}
-			orchestrator.UpgradeServiceIfEnabled()
-			orchestrator.NodeReclaimIfEnabled(event.TargetDomainID)
 			qosPerCost = append(qosPerCost, math.Round(float64(orchestrator.QoS)*1000/float64(orchestrator.Cost))/1000)
 			qos = append(qos, float64(orchestrator.QoS))
 			cost = append(cost, float64(orchestrator.Cost))
@@ -126,7 +135,7 @@ func BufferEvents(events []Event, interval float64, orchestrator *src.Orchestrat
 		AllocEvents:   make(AllocEvents, 0),
 	}
 	// processedIDs := make(map[src.ServiceID]bool)
-	qosPerCost, qos, cost, durations, eventTime := []float64{}, []float64{}, []float64{}, []float64{}, []float64{}
+	// qosPerCost, qos, cost, durations, eventTime := []float64{}, []float64{}, []float64{}, []float64{}, []float64{}
 	results := NewEventResult()
 	unprocessedDeallocs := []Event{}
 	rejectedEvents := []Event{}
@@ -194,13 +203,7 @@ func BufferEvents(events []Event, interval float64, orchestrator *src.Orchestrat
 	log.Info("number of processed allocate events:", processedEventsa)
 	log.Info("number of services in running services:", len(orchestrator.RunningServices))
 	log.Info("remaining services in the running services:", orchestrator.RunningServices)
-	return &cnfg.ResultContext{
-		QosPerCost: qosPerCost,
-		Qos:        qos,
-		Cost:       cost,
-		Durations:  durations,
-		EventTime:  eventTime,
-	}, nil
+	return results.Results, nil
 }
 
 func sortEvents(allocEvents []Event, allServices src.Services) ([]src.ServiceID, map[src.ServiceID]Event) {

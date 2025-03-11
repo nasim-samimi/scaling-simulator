@@ -48,8 +48,17 @@ func WriteResults(results *cnfg.ResultContext, config *cnfg.Config) error {
 	// 	reallocName = string(orchestrator.Config.IntraNodeReducedHeu)
 	// }
 	if config.Orchestrator.IntraDomainRealloc || config.Orchestrator.IntraNodeRealloc || config.Orchestrator.IntraNodeReduced || config.Orchestrator.IntraNodeRemoved {
+		if config.Orchestrator.UpgradeService{
+			reallocName=string(config.Orchestrator.ReallocationHeuristic)+"_"+string(config.Orchestrator.UpgradeHeuristic)
+		}
 		reallocName = string(config.Orchestrator.ReallocationHeuristic)
 	}
+	if reallocname ==""{
+		if config.Orchestrator.UpgradeService{
+			reallocName=string(config.Orchestrator.UpgradeHeuristic)
+		}
+	}
+	
 
 	if reallocName == "" {
 		reallocName = "improved"

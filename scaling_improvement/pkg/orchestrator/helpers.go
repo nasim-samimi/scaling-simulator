@@ -1,5 +1,18 @@
 package orchestrator
 
+import (
+	"sort"
+
+	cnfg "github.com/nasim-samimi/scaling-simulator/pkg/config"
+)
+
+const (
+	HQ    cnfg.Heuristic = "HQ"
+	HQcC  cnfg.Heuristic = "HQcC"
+	HQcB  cnfg.Heuristic = "HQcB"
+	HQcCB cnfg.Heuristic = "HQcCB"
+)
+
 func (o *Orchestrator) BasicNodeReclaim(domainID DomainID) {
 	domain := o.Domains[domainID]
 	for nodeName, node := range domain.ActiveNodes {
@@ -19,6 +32,7 @@ func (o *Orchestrator) BasicNodeReclaim(domainID DomainID) {
 		}
 	}
 }
+
 func (o *Orchestrator) NodeReclaim(domainID DomainID) {
 	const cpuThreshold = 100.0
 	o.BasicNodeReclaim(domainID)
@@ -32,7 +46,7 @@ func (o *Orchestrator) NodeReclaim(domainID DomainID) {
 			underloadedNodes = append(underloadedNodes, nodeName)
 		}
 	}
-	sortedNodes, _ := o.sortNodesNoFilter(domain.ActiveNodes, MinMin)
+	sortedNodes, _ := o.sortNodesNoFilter(domain.ActiveNodes, Min)
 	i := 0
 	l := len(sortedNodes)
 	// j := l - 1
@@ -117,8 +131,8 @@ func (o *Orchestrator) NodeReclaim(domainID DomainID) {
 
 }
 
-func (o *Orchestrator) UpgradeService() error {
-	sortedEventIDs := o.sortServicesForUpgrade(o.RunningServices)
+func (o *Orchestrator) UpgradeService(Heu cnfg.Heuristic, svc Service, domainID DomainID) error {
+	sortedEventIDs := SortServicesForUpgrade(o.RunningServices, Heu, svc.StandardMode.bandwidthEdge, svc.StandardMode.cpusEdge, domainID)
 	for _, eventID := range sortedEventIDs {
 		event := o.RunningServices[eventID]
 		domain := o.Domains[event.AllocatedDomain]
@@ -158,9 +172,9 @@ func (o *Orchestrator) UpgradeService() error {
 	return nil
 }
 
-func (o *Orchestrator) UpgradeServiceIfEnabled() {
+func (o *Orchestrator) UpgradeServiceIfEnabled(Heu cnfg.Heuristic, svc Service, domainID DomainID) {
 	if o.Config.UpgradeService {
-		o.UpgradeService()
+		o.UpgradeService(Heu, svc, domainID)
 	}
 }
 
@@ -170,6 +184,69 @@ func (o *Orchestrator) NodeReclaimIfEnabled(domainID DomainID) {
 	} else {
 		o.BasicNodeReclaim(domainID)
 	}
+}
+
+func SortServicesForUpgrade(services Services, upgradeHeu cnfg.Heuristic, BW float64, m uint64, domainID DomainID) []ServiceID {
+	sortedEventIDs := make([]ServiceID, 0, len(services))
+	for id, svc := range services {
+		if svc.AllocatedDomain == domainID {
+			sortedEventIDs = append(sortedEventIDs, id)
+		}
+	}
+
+	switch upgradeHeu {
+	case HQ:
+		sort.Slice(sortedEventIDs, func(i, j int) bool {
+			return float64(services[sortedEventIDs[i]].StandardQoS-services[sortedEventIDs[i]].ReducedQoS) >
+				float64(services[sortedEventIDs[j]].StandardQoS-services[sortedEventIDs[j]].ReducedQoS)
+		})
+
+	case HQcC:
+		sort.Slice(sortedEventIDs, func(i, j int) bool {
+			cpuI := services[sortedEventIDs[i]].StandardMode.cpusEdge <= m
+			cpuJ := services[sortedEventIDs[j]].StandardMode.cpusEdge <= m
+
+			if cpuI && cpuJ {
+				return float64(services[sortedEventIDs[i]].StandardQoS-services[sortedEventIDs[i]].ReducedQoS) >
+					float64(services[sortedEventIDs[j]].StandardQoS-services[sortedEventIDs[j]].ReducedQoS)
+			}
+			return cpuI
+		})
+
+	case HQcB:
+		sort.Slice(sortedEventIDs, func(i, j int) bool {
+			bwI := services[sortedEventIDs[i]].StandardMode.bandwidthEdge <= BW
+			bwJ := services[sortedEventIDs[j]].StandardMode.bandwidthEdge <= BW
+
+			if bwI && bwJ {
+				return float64(services[sortedEventIDs[i]].StandardQoS-services[sortedEventIDs[i]].ReducedQoS) >
+					float64(services[sortedEventIDs[j]].StandardQoS-services[sortedEventIDs[j]].ReducedQoS)
+			}
+			return bwI
+		})
+
+	case HQcCB:
+		sort.Slice(sortedEventIDs, func(i, j int) bool {
+			cpuI := services[sortedEventIDs[i]].StandardMode.cpusEdge <= m
+			cpuJ := services[sortedEventIDs[j]].StandardMode.cpusEdge <= m
+			bwI := services[sortedEventIDs[i]].StandardMode.bandwidthEdge <= BW
+			bwJ := services[sortedEventIDs[j]].StandardMode.bandwidthEdge <= BW
+
+			if cpuI && cpuJ && bwI && bwJ {
+				return float64(services[sortedEventIDs[i]].StandardQoS-services[sortedEventIDs[i]].ReducedQoS) >
+					float64(services[sortedEventIDs[j]].StandardQoS-services[sortedEventIDs[j]].ReducedQoS)
+			}
+			if cpuI && bwI {
+				return true
+			}
+			if cpuJ && bwJ {
+				return false
+			}
+			return false
+		})
+	}
+
+	return sortedEventIDs
 }
 
 // type AlgorithmStep func(*src.Orchestrator, src.DomainID, src.ServiceID, string)

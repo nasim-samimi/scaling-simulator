@@ -25,12 +25,12 @@ const (
 )
 
 const (
-	MinMin cnfg.Heuristic = "MinMin"
-	MaxMax cnfg.Heuristic = "MaxMax"
-	MmRB   cnfg.Heuristic = "MmRB"
-	mMRB   cnfg.Heuristic = "mMRB"
-	MMRB   cnfg.Heuristic = "MMRB"
-	mmRB   cnfg.Heuristic = "mmRB"
+	Min  cnfg.Heuristic = "Min"
+	Max  cnfg.Heuristic = "Max"
+	MmRB cnfg.Heuristic = "MmRB"
+	mMRB cnfg.Heuristic = "mMRB"
+	MMRB cnfg.Heuristic = "MMRB"
+	mmRB cnfg.Heuristic = "mmRB"
 )
 
 type QoS int
@@ -192,7 +192,7 @@ func (o *Orchestrator) Allocate(domainID DomainID, serviceID ServiceID, eventID 
 		}
 	}
 
-	sortedNodesNoFilter, _ := o.sortNodesNoFilter(domain.ActiveNodes, MaxMax)
+	sortedNodesNoFilter, _ := o.sortNodesNoFilter(domain.ActiveNodes, Max)
 
 	intraDomainHelp := true
 	// reallocationHelp := false
@@ -200,7 +200,7 @@ func (o *Orchestrator) Allocate(domainID DomainID, serviceID ServiceID, eventID 
 	// removedHelpful := false
 	for _, nodeName := range sortedNodesNoFilter {
 		node := domain.ActiveNodes[nodeName]
-		reallocatedEventID, secondReallocatedEventID, thirdreallocatedEventID, err := o.getReallocatedService(node, service)
+		reallocatedEventID, secondReallocatedEventID, thirdreallocatedEventID, err := o.getReallocatedService(node, service, o.Config.ReallocationHeuristic)
 		if err != nil {
 			continue
 		}
@@ -393,22 +393,22 @@ func (o *Orchestrator) Deallocate(domainID DomainID, serviceID ServiceID, eventI
 		}
 
 	}
-	for nodeName, node := range domain.ActiveNodes {
-		if node.AverageConsumedBandwidth == 0 && node.TotalConsumedBandwidth == 0 {
-			o.edgePowerOffNode(domainID, nodeName)
-			log.Info("Edge node powered off: ", nodeName)
-		}
-	}
-	for nodeName, node := range o.Cloud.ActiveNodes {
-		if len(o.Cloud.ActiveNodes) == 1 {
-			log.Info("Cannot power off the last cloud node")
-			break
-		}
-		if node.AverageConsumedBandwidth == 0 && node.TotalConsumedBandwidth == 0 {
-			o.cloudPowerOffNode(nodeName)
-			log.Info("Cloud node powered off: ", nodeName)
-		}
-	}
+	// for nodeName, node := range domain.ActiveNodes {
+	// 	if node.AverageConsumedBandwidth == 0 && node.TotalConsumedBandwidth == 0 {
+	// 		o.edgePowerOffNode(domainID, nodeName)
+	// 		log.Info("Edge node powered off: ", nodeName)
+	// 	}
+	// }
+	// for nodeName, node := range o.Cloud.ActiveNodes {
+	// 	if len(o.Cloud.ActiveNodes) == 1 {
+	// 		log.Info("Cannot power off the last cloud node")
+	// 		break
+	// 	}
+	// 	if node.AverageConsumedBandwidth == 0 && node.TotalConsumedBandwidth == 0 {
+	// 		o.cloudPowerOffNode(nodeName)
+	// 		log.Info("Cloud node powered off: ", nodeName)
+	// 	}
+	// }
 
 	delete(o.RunningServices, eventID)
 

@@ -37,7 +37,7 @@ type ReallocContext struct {
 	NewCores           Cores
 }
 
-func (o *Orchestrator) getReallocatedService(node *Node, t *Service) (ServiceID, ServiceID, ServiceID, error) {
+func (o *Orchestrator) getReallocatedService(node *Node, t *Service, heuristic cnfg.Heuristic) (ServiceID, ServiceID, ServiceID, error) {
 	var selectedEventID ServiceID
 	var bestScore float64
 
@@ -83,7 +83,7 @@ func (o *Orchestrator) getReallocatedService(node *Node, t *Service) (ServiceID,
 			}
 		case HBIcC:
 			if service.StandardMode.cpusEdge >= t.StandardMode.cpusEdge {
-				return service.StandardMode.bandwidthEdge
+				return service.StandardMode.bandwidthEdge * (1 / service.ImportanceFactor)
 			}
 			// if service.StandardMode.bandwidthEdge >= t.StandardMode.bandwidthEdge {
 			// 	return 1 / float64(service.StandardMode.cpusEdge)
@@ -106,7 +106,7 @@ func (o *Orchestrator) getReallocatedService(node *Node, t *Service) (ServiceID,
 
 	for eventID, service := range node.AllocatedServices {
 		if service.AllocationMode == StandardMode {
-			score := calculateScore(service, o.Config.ReallocationHeuristic)
+			score := calculateScore(service, heuristic)
 			if score > bestScore {
 				thirdBestScore = secondBestScore
 				thirdSelectedEventID = secondSelectedEventID
