@@ -53,7 +53,7 @@ func WriteResults(results *cnfg.ResultContext, config *cnfg.Config) error {
 		}
 		reallocName = string(config.Orchestrator.ReallocationHeuristic)
 	}
-	if reallocname ==""{
+	if reallocName ==""{
 		if config.Orchestrator.UpgradeService{
 			reallocName=string(config.Orchestrator.UpgradeHeuristic)
 		}

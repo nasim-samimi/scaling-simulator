@@ -200,7 +200,7 @@ func (o *Orchestrator) Allocate(domainID DomainID, serviceID ServiceID, eventID 
 	// removedHelpful := false
 	for _, nodeName := range sortedNodesNoFilter {
 		node := domain.ActiveNodes[nodeName]
-		reallocatedEventID, secondReallocatedEventID, thirdreallocatedEventID, err := o.getReallocatedService(node, service, o.Config.ReallocationHeuristic)
+		reallocatedEventID, secondReallocatedEventID, thirdreallocatedEventID, err := o.getReallocatedService(node, service, o.Config.IntraNodeReallocHeu)
 		if err != nil {
 			continue
 		}
@@ -257,7 +257,41 @@ func (o *Orchestrator) Allocate(domainID DomainID, serviceID ServiceID, eventID 
 					}
 				}
 			}
-			// intraDomainHelp = false
+		} else {
+			log.Info("Reallocated event not helpful")
+		}
+
+	}
+
+	for _, nodeName := range sortedNodesNoFilter {
+		node := domain.ActiveNodes[nodeName]
+		reallocatedEventID, secondReallocatedEventID, thirdreallocatedEventID, err := o.getReallocatedService(node, service, o.Config.IntraNodeReducedHeu)
+		if err != nil {
+			continue
+		}
+		reallocationHelp, NewCores, _ := ReallocateTest(service, reallocatedEventID, *node)
+		selectedEventID := reallocatedEventID
+
+		if !reallocationHelp {
+			reallocationHelp, NewCores, _ = ReallocateTest(service, secondReallocatedEventID, *node)
+			selectedEventID = secondReallocatedEventID
+		}
+		if !reallocationHelp {
+			reallocationHelp, NewCores, _ = ReallocateTest(service, thirdreallocatedEventID, *node)
+			selectedEventID = thirdreallocatedEventID
+		}
+		log.Info("selected event id for reallocation:", selectedEventID)
+
+		if reallocationHelp {
+			ctx := ReallocContext{
+				Service:            service,
+				Node:               node,
+				Domain:             domain,
+				SortedNodes:        sortedNodes,
+				EventID:            eventID,
+				ReallocatedEventID: selectedEventID,
+				NewCores:           NewCores,
+			}
 			if o.Config.IntraNodeReduced {
 				log.Info("going to intra node cloud reallocation")
 				otherEvent := o.RunningServices[ctx.ReallocatedEventID]

@@ -9,9 +9,9 @@ import itertools
 PARTITIONING_H=['bestfit','worstfit']
 
 REALLOCATION_H=["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC","LBCI","LBI","LCI","HBLI","HCLI","HBIcC"]
-REALLOCATION_INTRANODE_H=["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC","LBCI","LBI","LCI","HBLI","HCLI","HBIcC"]
+REALLOCATION_INTRANODE_H=["HB","HC","HBC","LB","LC","LBC","LBCI","LBI","LCI"]
 REALLOCATION_INTRADOMAIN_H=["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC","LBCI","LBI","LCI","HBLI","HCLI","HBIcC"]
-REALLOCATION_REDUCED_H=["LB","LC","LBC","LBCI","LBI","LCI","LRED","LI"]
+REALLOCATION_REDUCED_H=["LBCI","LBI","LCI","LRED","LI"]
 UPGRADE_H=["HQ","HQcC","HQcB","HQcCB"]
 # REALLOCATION_REDUCED_H=["LI"]
 # REALLOCATION_REMOVED_H=["LB","LC","LBC","LBCI","LBI","LCI","LREM","LI"]
@@ -116,8 +116,9 @@ def generate_param_combinations():
 
                                 # Run the Go script
                                 os.system(f'go run main.go > log.txt')
-                        elif exclusive_option=="upgrade_service":
+                        elif "upgrade_service" in exclusive_option:
                             for heuristic in UPGRADE_H:
+                                config=fixed_config.copy()
                                 config["orchestrator"] = {key: False for key in exclusive_options}  # Disable all first
                                 config["orchestrator"][exclusive_option] = True  # Enable only the current one
 
@@ -131,6 +132,13 @@ def generate_param_combinations():
                                 config["orchestrator"]["domain_node_threshold"] = threshold
                                 config["orchestrator"]["max_scaling_threshold"]=100
                                 config["orchestrator"]["upgrade_heuristic"]=heuristic
+
+                                with open("config.yaml", "w") as file:
+                                    yaml.dump(config, file, default_flow_style=False)
+
+                                print(f"Generated config.yaml with: {exclusive_option} = True, Heuristic = {heuristic}, Addition = {addition}, Results Dir = {results_dir}")
+
+                                os.system(f'go run main.go > log.txt')
                         else:
                             # Non-reallocation cases (directly set the option to True)
                             config=fixed_config.copy()
