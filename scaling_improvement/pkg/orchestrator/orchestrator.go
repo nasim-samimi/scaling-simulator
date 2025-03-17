@@ -260,7 +260,6 @@ func (o *Orchestrator) Allocate(domainID DomainID, serviceID ServiceID, eventID 
 		} else {
 			log.Info("Reallocated event not helpful")
 		}
-
 	}
 
 	for _, nodeName := range sortedNodesNoFilter {

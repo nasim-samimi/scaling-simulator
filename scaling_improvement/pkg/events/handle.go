@@ -2,6 +2,8 @@ package events
 
 import (
 	"math"
+	"os"
+	"runtime/pprof"
 	"sort"
 	"time"
 
@@ -31,6 +33,9 @@ func NewEventResult() *EventResult {
 }
 
 func ProcessEvents(events []Event, orchestrator *src.Orchestrator) (*cnfg.ResultContext, error) {
+	// f, _ := os.Create("cpu_profile.prof")
+	// pprof.StartCPUProfile(f)
+	// defer pprof.StopCPUProfile()
 
 	qosPerCost := make([]float64, 0)
 	qos := make([]float64, 0)
@@ -242,6 +247,9 @@ func (e *EventResult) appendMetrics(orchestrator *src.Orchestrator, time float64
 }
 
 func allocateBufferedEvents(orchestrator *src.Orchestrator, eventsBuffer EventsBuffer, results *EventResult, timed float64, unprocessedDealloc map[src.ServiceID]Event) {
+	f, _ := os.Create("cpu_profile.prof")
+	pprof.StartCPUProfile(f)
+	defer pprof.StopCPUProfile()
 	sortedEventIDs, sortedEvents := sortEvents(eventsBuffer.AllocEvents, orchestrator.AllServices, unprocessedDealloc)
 	if len(sortedEventIDs) != len(eventsBuffer.AllocEvents) {
 		log.Info("sorted events do not match the buffer")

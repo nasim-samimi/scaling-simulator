@@ -15,13 +15,13 @@ if __name__=='__main__':
         if 'intra' in f:
 
             dir=f'improved/with_{f}/'
-            robustness_compare_nodesize(dir1=dir,metric='cost',flags=f'with_{f}',nodesize=n)            
-            robustness_compare_nodesize(dir1=dir,metric='qos',flags=f'with_{f}',nodesize=n)
-            robustness_compare_nodesize(dir1=dir,metric='qosPerCost',flags=f'with_{f}',nodesize=n)
+            robustness_compare_nodesize(dir1=dir,metric='cost',flags=f'with_{f}')            
+            robustness_compare_nodesize(dir1=dir,metric='qos',flags=f'with_{f}')
+            robustness_compare_nodesize(dir1=dir,metric='qosPerCost',flags=f'with_{f}')
         else:
             dir=f'improved/with_{f}/'   
-            robustness_compare_nodesize(dir1=dir,metric='cost',flags=f'with_{f}',nodesize=n)            
-            robustness_compare_nodesize(dir1=dir,metric='qos',flags=f'with_{f}',nodesize=n)
-            robustness_compare_nodesize(dir1=dir,metric='qosPerCost',flags=f'with_{f}',nodesize=n)
+            robustness_compare_nodesize(dir1=dir,metric='cost',flags=f'with_{f}')            
+            robustness_compare_nodesize(dir1=dir,metric='qos',flags=f'with_{f}')
+            robustness_compare_nodesize(dir1=dir,metric='qosPerCost',flags=f'with_{f}')
 
             

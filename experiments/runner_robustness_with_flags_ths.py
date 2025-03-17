@@ -5,7 +5,7 @@ from results import *
 # import sleep
 
 
-flags=['upgrade_service'] #did we have more flags?
+flags=['intra_node_realloc'] #did we have more flags?
 # flags=['upgrade_service','intra_node_realloc','intra_node_reduced','interval_based'] #did we have more flags?
 node_sizes = [8]
 

@@ -2,7 +2,7 @@ orchestrator:
   cloud_node_cost: 3
   domain_node_threshold: 100
   edge_node_cost: 1
-  interval_based: true
+  interval_based: false
   intra_domain_realloc: false
   intra_node_realloc: true
   intra_node_reduced: true
@@ -19,6 +19,6 @@ orchestrator:
 system:
   addition: 1
   init_node_size: 16
-  node_size: 8
-  results_dir: improved/allOpts_interval_based/max_scaling_threshold=64
+  node_size: 16
+  results_dir: improved/allOpts/max_scaling_threshold=128
   scaled_node_size: 8

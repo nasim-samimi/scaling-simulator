@@ -6,7 +6,7 @@ import subprocess
 import itertools
 # import sleep
 
-PARTITIONING_H=['bestfit','worstfit']
+PARTITIONING_H=['bestfit']
 
 REALLOCATION_H=["LB","LC","LBC","LBCI","LBI","LCI","LRED","LI"]
 REALLOCATION_INTRANODE_H=["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC","LBCI","LBI","LCI"]
@@ -16,8 +16,8 @@ REALLOCATION_REDUCED_H=["LB","LC","LBC","LBCI","LBI","LCI","LRED","LI"]
 # REALLOCATION_REMOVED_H=["LB","LC","LBC","LBCI","LBI","LCI","LREM","LI"]
 REALLOCATION_REMOVED_H=["LI"]
 # REALLOCATION_H=["HBCI"]
-# NODE_SELECTION_H=["MinMin","MaxMax"]
-NODE_SELECTION_H=["MMRB","mmRB","MmRB","mMRB"]
+NODE_SELECTION_H=["mmRB"]
+# NODE_SELECTION_H=["MMRB","mmRB","MmRB","mMRB"]
 # ADDITION=[0]
 ADDITION=[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
 edge_node_cost=1

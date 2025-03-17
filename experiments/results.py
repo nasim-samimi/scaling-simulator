@@ -16,6 +16,7 @@ reallocationHeus=["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC"]
 main_dir = 'experiments/results/'
 plots=main_dir+'plots/'
 ADDITIONS=[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
+ADDITIONS_LABEL=[0,0.3,0.6,0.9,1.2,1.5,1.8,2.1,2.4,2.7,3]
 node_sizes = [8,12,16,20,24,28,32]
 events_dir='data/events/hightraffic'
 
@@ -357,9 +358,9 @@ def robustness(dir1='improved/allOpts',dir2='baseline/',metric='cost',flags='all
             # colors = plt.cm.rainbow(np.linspace(0, 1, 15))
             heuristic_averages = averages.groupby('heuristics')['averages'].mean()
             if metric=='cost':
-                top_heuristics = heuristic_averages.nsmallest(4).index
+                top_heuristics = heuristic_averages.nsmallest(7).index
             else:
-                top_heuristics = heuristic_averages.nlargest(4).index
+                top_heuristics = heuristic_averages.nlargest(7).index
             for l in leg:
                 if 'baseline' in l:
                     b=l
@@ -499,74 +500,72 @@ def robustness_compare_node_core_selection(dir1='improved/allOpts',dir2='baselin
         plt.close()
 
 
-
-def robustness_compare_nodesize(dir1='improved/allOpts',dir2='baseline/',metric='cost',flags='allOpts',nodesize=8):
+def robustness_compare_nodesize(dir1='improved/allOpts',dir2='baseline',metric='cost',flags='allOpts'):
 
     avg=[]
     columns=[]
     averages=pd.DataFrame(columns=['averages','heuristics','addition'])
     dirs=[main_dir+dir1,main_dir+dir2]
     legend=[]
+    max_size=[64]
+    nodesizes=[8,16]
     #cost
-    nodes=[8,12]
     plt.figure(figsize=figsize)
-    for n in nodes:
-        for p in partitionHeus:
+    for nodesize in nodesizes:
+        for m in max_size:
             avg=[]
             
             i=0
             averages=pd.DataFrame(columns=['averages','heuristics','addition'])
             for a in ADDITIONS:
-                leg=[]
                 # for heuristics
-                if n not in ['MaxMax','MinMin']:
-                    dir=dirs[0]
-                    fulldir=f'{dir}{metric}/nodesize={n}/addition={a}/mmRB/{p}/'
-                    Times_addr= f'{dir}eventTime/nodesize={n}/addition={a}/mmRB/{p}/'
-                    # print(fulldir)
-                    for files in os.listdir(fulldir):
-                        Values = pd.read_csv(f'{fulldir}{files}', header=None)
-                        Times=pd.read_csv(f'{Times_addr}{files}',header=None)
-                        Times.columns=['EventTime']
-                        Values.columns = [metric]
+                leg=[]
+                dir=dirs[0]+f'/max_scaling_threshold={m}/'
+                fulldir=f'{dir}{metric}/nodesize={nodesize}/addition={a}/mmRB/bestfit/'
+                Times_addr= f'{dir}eventTime/nodesize={nodesize}/addition={a}/mmRB/bestfit/'
+                # print(fulldir)
+                for files in os.listdir(fulldir):
+                    Values = pd.read_csv(f'{fulldir}{files}', header=None)
+                    Times=pd.read_csv(f'{Times_addr}{files}',header=None)
+                    Times.columns=['EventTime']
+                    Values.columns = [metric]
 
-                        if 'qos' in metric:
-                            avg_value = time_based_avg(Values[metric]/10000, Times)
-                        else:
-                            avg_value = time_based_avg(Values[metric], Times) 
-                        averages.loc[i]=[avg_value,dir[20:]+files[:-4]+f'_mmRB_{p}_{n}',a]
-                        leg.append(dir[20:]+files[:-4]+f'_mmRB_{p}_{n}')
-                        i+=1
+                    if 'qos' in metric:
+                        avg_value = time_based_avg(Values[metric]/10000, Times)
+                    else:
+                        avg_value = time_based_avg(Values[metric], Times)
+                    averages.loc[i]=[avg_value,f'node_size={nodesize}',a]
+                    leg.append(f'node_size={nodesize}')
+                    i+=1
                 # for baseline
-                if p=='bestfit':
-                    dir=dirs[1]
-                    fulldir=f'{dir}{metric}/nodesize={n}/addition={a}/MaxMax/bestfit/'
-                    Times_addr= f'{dir}eventTime/nodesize={n}/addition={a}/MaxMax/bestfit/'
-                    # print(fulldir)
-                    for files in os.listdir(fulldir):
-                        Values = pd.read_csv(f'{fulldir}{files}', header=None)
-                        Times=pd.read_csv(f'{Times_addr}{files}',header=None)
-                        Times.columns=['EventTime']
-                        Values.columns = [metric]
+                dir=dirs[1]+f'_{m}/'
+                fulldir=f'{dir}{metric}/nodesize={nodesize}/addition={a}/MaxMax/bestfit/'
+                Times_addr= f'{dir}eventTime/nodesize={nodesize}/addition={a}/MaxMax/bestfit/'
+                # print(fulldir)
+                for files in os.listdir(fulldir):
+                    Values = pd.read_csv(f'{fulldir}{files}', header=None)
+                    Times=pd.read_csv(f'{Times_addr}{files}',header=None)
+                    Times.columns=['EventTime']
+                    Values.columns = [metric]
 
-                        if 'qos' in metric:
-                            avg_value = time_based_avg(Values[metric]/10000, Times)
-                        else:
-                            avg_value = time_based_avg(Values[metric], Times) 
-                        averages.loc[i]=[avg_value,dir[20:]+files[:-4]+f'_MaxMax_bestfit_{n}',a]
-                        leg.append(dir[20:]+files[:-4]+f'_MaxMax_bestfit_{n}')
-                        i+=1
-    
-            print(leg)
+                    if 'qos' in metric:
+                        avg_value = time_based_avg(Values[metric]/10000, Times)
+                    else:
+                        avg_value = time_based_avg(Values[metric], Times)
+                    averages.loc[i]=[avg_value,f'baseline_nodesize={nodesize}',a]
+                    leg.append(f'baseline_nodesize={nodesize}')
+                    i+=1
+
+            # print(leg)
             
             # colors = plt.cm.rainbow(np.linspace(0, 1, 15))
             if averages.empty:
                 continue
             heuristic_averages = averages.groupby('heuristics')['averages'].mean()
             if metric=='cost':
-                top_heuristics = heuristic_averages.nsmallest(1).index
+                top_heuristics = heuristic_averages.nsmallest(5).index
             else:
-                top_heuristics = heuristic_averages.nlargest(1).index
+                top_heuristics = heuristic_averages.nlargest(5).index
             for l in leg:
                 if 'baseline' in l:
                     b=l
@@ -581,11 +580,13 @@ def robustness_compare_nodesize(dir1='improved/allOpts',dir2='baseline/',metric=
                 if 'baseline' in l:
                     marker='x'
                     linestyle='-'
-                    plt.plot(avgs['addition'], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
+                    plt.plot(ADDITIONS_LABEL, avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
                 else:
                     marker='o'
                     linestyle='--'
-                    plt.plot(avgs['addition'], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
+                    plt.plot(ADDITIONS_LABEL, avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
+                
+                # plt.plot(avgs['addition'], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
     plt.grid(True)
     plt.xlabel('randomness')
     # plt.xticks(range(len(ADDITIONS)), ADDITIONS)
@@ -593,13 +594,12 @@ def robustness_compare_nodesize(dir1='improved/allOpts',dir2='baseline/',metric=
     # plt.title(f'Robustness comparison for {metric}')    
     # plt.legend(top_heuristics)
     plt.legend(legend,fontsize=fontsize)
-    savingDir=f'{plots}robustness/{flags}/'
+    savingDir=f'{plots}robustness/{flags}_{m}/'
     if not os.path.exists(savingDir):
         os.makedirs(savingDir)
-    plt.savefig(f'{savingDir}robustness_{metric}_mmRB_{p}.pdf')
+    plt.savefig(f'{savingDir}robustness_{metric}_all_nodesizes.pdf')
     plt.close()
 
-    return
 def compute_cost(qospercost:pd.DataFrame,qos:pd.DataFrame):
     cost=qos/qospercost
     cost=cost.fillna(0)
@@ -674,9 +674,9 @@ def robustness_max_scaling_size(dir1='improved/allOpts',dir2='baseline',metric='
                 # colors = plt.cm.rainbow(np.linspace(0, 1, 15))
                 heuristic_averages = averages.groupby('heuristics')['averages'].mean()
                 if metric=='cost':
-                    top_heuristics = heuristic_averages.nsmallest(2).index
+                    top_heuristics = heuristic_averages.nsmallest(8).index
                 else:
-                    top_heuristics = heuristic_averages.nlargest(2).index
+                    top_heuristics = heuristic_averages.nlargest(8).index
                 for l in leg:
                     if 'baseline' in l:
                         b=l
