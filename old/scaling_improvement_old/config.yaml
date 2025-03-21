@@ -1,0 +1,24 @@
+orchestrator:
+  cloud_node_cost: 3
+  domain_node_threshold: 100
+  edge_node_cost: 1
+  interval_based: false
+  intra_domain_realloc: false
+  intra_node_realloc: true
+  intra_node_reduced: true
+  intra_node_reduced_heu: LRED
+  intra_node_removed: false
+  intraintra_node_realloc_heu: LBCI
+  max_scaling_threshold: 8.0
+  node_heuristic: mmRB
+  node_reclaim: false
+  partition_heuristic: bestfit
+  reallocation_heuristic: HB
+  upgrade_heuristic: HQ
+  upgrade_service: true
+system:
+  addition: 1
+  init_node_size: 16
+  node_size: 16
+  results_dir: improved/allOpts/max_scaling_threshold=128
+  scaled_node_size: 8

@@ -1,0 +1,4 @@
+NodeName,NumCores,PartitioningHeuristic
+domain0_worker0,5,bestfit
+domain0_worker1,5,bestfit
+domain0_worker2,5,bestfit
