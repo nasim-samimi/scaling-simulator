@@ -19,11 +19,11 @@ func init() {
 }
 
 func Initialise(config *cnfg.Config) *src.Orchestrator {
-
-	CloudNodes, reservedCloudNodes := LoadCloudFromCSV("../data/cloud_b.csv")
+	data_dir := "../" + config.System.DataDir
+	CloudNodes, reservedCloudNodes := LoadCloudFromCSV(data_dir + "/cloud_b.csv")
 	cloud := src.NewCloud(CloudNodes, reservedCloudNodes)
 	// read domain csv files in domain folder
-	svcs := LoadSVCFromCSV("../data/services/services0.csv")
+	svcs := LoadSVCFromCSV(data_dir + "/services/services0.csv")
 	// nodeHeuristic, reallocHeuristic, partitionHeuristic := util.LoadHeuristicFromCSV("../data/heuristics.csv")
 	nodeHeuristic := config.Orchestrator.NodeHeuristic
 	partitionHeuristic := config.Orchestrator.PartitionHeuristic
@@ -31,9 +31,9 @@ func Initialise(config *cnfg.Config) *src.Orchestrator {
 	fmt.Println("initialising the orchestrator")
 	fmt.Println("nodeHeuristic:", nodeHeuristic)
 	fmt.Println("partitionHeuristic:", partitionHeuristic)
-	fmt.Println("node size:", config.System.NodeSize)
+	fmt.Println("node size:", config.Orchestrator.NodeSize)
 
-	baseFolder := "../data/domainNodes" + config.System.NodeSize + "/" + string(partitionHeuristic) + "/MaxMax" //+ string(nodeHeuristic) /TODO: select MAXMAX for now
+	baseFolder := data_dir + "/domainNodes" + config.Orchestrator.NodeSize + "/" + string(partitionHeuristic) + "/MaxMax" //+ string(nodeHeuristic) /TODO: select MAXMAX for now
 	domains := LoadDomains(baseFolder)
 
 	// initialise the orchestrator

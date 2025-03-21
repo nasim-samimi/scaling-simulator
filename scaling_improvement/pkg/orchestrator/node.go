@@ -85,13 +85,13 @@ func ReallocateTest(newService *Service, oldServiceID ServiceID, n Node) (bool, 
 	}
 	log.Info("Reallocate Test")
 	oldServiceCores := n.AllocatedServices[oldServiceID].AllocatedCoresEdge
-	bandwidth := n.AllocatedServices[oldServiceID].StandardMode.bandwidthEdge
-	newBandwidth := newService.StandardMode.bandwidthEdge
+	bandwidth := n.AllocatedServices[oldServiceID].StandardMode.BandwidthEdge
+	newBandwidth := newService.StandardMode.BandwidthEdge
 	for _, coreID := range oldServiceCores {
 		NewCores[coreID].ConsumedBandwidth -= bandwidth
 
 	}
-	possibleCores, err := n.NodeAdmission.Admission(newService.StandardMode.cpusEdge, newService.StandardMode.bandwidthEdge, NewCores, 100.0)
+	possibleCores, err := n.NodeAdmission.Admission(newService.StandardMode.CpusEdge, newService.StandardMode.BandwidthEdge, NewCores, 100.0)
 
 	if err == nil {
 		for _, coreID := range possibleCores {
@@ -113,11 +113,11 @@ func IntraDomainReallocateTest(newService *Service, oldServiceID ServiceID, n *N
 	}
 	// n.Cores = NewCores
 	oldServiceCores := n.AllocatedServices[oldServiceID].AllocatedCoresEdge
-	bandwidth := n.AllocatedServices[oldServiceID].StandardMode.bandwidthEdge
+	bandwidth := n.AllocatedServices[oldServiceID].StandardMode.BandwidthEdge
 	for _, coreID := range oldServiceCores {
 		NewCores[coreID].ConsumedBandwidth -= bandwidth
 	}
-	_, err := n.NodeAdmission.Admission(newService.StandardMode.cpusEdge, newService.StandardMode.bandwidthEdge, NewCores, 100.0)
+	_, err := n.NodeAdmission.Admission(newService.StandardMode.CpusEdge, newService.StandardMode.BandwidthEdge, NewCores, 100.0)
 	for _, core := range NewCores {
 		log.Info("cores after intra domain realocate test newcores:", core)
 	}
@@ -160,10 +160,10 @@ func (n *Node) NodeDeallocate(eventID ServiceID) bool {
 	mode := n.AllocatedServices[eventID].AllocationMode
 	log.Info("deallocation mode: ", mode)
 
-	bandwidth := n.AllocatedServices[eventID].StandardMode.bandwidthEdge
+	bandwidth := n.AllocatedServices[eventID].StandardMode.BandwidthEdge
 	switch mode {
 	case StandardMode:
-		bandwidth = n.AllocatedServices[eventID].StandardMode.bandwidthEdge
+		bandwidth = n.AllocatedServices[eventID].StandardMode.BandwidthEdge
 	case ReducedMode:
 		bandwidth = n.AllocatedServices[eventID].ReducedMode.bandwidthEdge
 	case EdgeReducedMode:

@@ -1,2 +1,0 @@
-NodeName,NumCores,PartitioningHeuristic,NodeSelectionHeuristic
-domain1_worker0_a,24,bestfit,MaxMax

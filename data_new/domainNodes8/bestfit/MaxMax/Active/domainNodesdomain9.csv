@@ -1,5 +1,3 @@
 NodeName,NumCores,PartitioningHeuristic,NodeSelectionHeuristic
 domain9_worker0_a,8,bestfit,MaxMax
 domain9_worker1_a,8,bestfit,MaxMax
-domain9_worker2_a,8,bestfit,MaxMax
-domain9_worker3_a,8,bestfit,MaxMax

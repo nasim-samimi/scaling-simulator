@@ -76,7 +76,7 @@ func (o *Orchestrator) NodeReclaim(domainID DomainID) {
 					for _, eventID := range sortedServices {
 						service := allocatedService[eventID]
 						if service.AllocationMode == StandardMode {
-							selectedCpus, err := node.NodeAdmission.Admission(service.StandardMode.cpusEdge, service.StandardMode.bandwidthEdge, otherNode.Cores, cpuThreshold)
+							selectedCpus, err := node.NodeAdmission.Admission(service.StandardMode.CpusEdge, service.StandardMode.BandwidthEdge, otherNode.Cores, cpuThreshold)
 							if err != nil || selectedCpus == nil {
 								log.Info("Error in admission test for node reclaim: ", err)
 								continue
@@ -132,18 +132,59 @@ func (o *Orchestrator) NodeReclaim(domainID DomainID) {
 }
 
 func (o *Orchestrator) UpgradeService(Heu cnfg.Heuristic, svc Service, domainID DomainID) error {
-	sortedEventIDs := SortServicesForUpgrade(o.RunningServices, Heu, svc.StandardMode.bandwidthEdge, svc.StandardMode.cpusEdge, domainID)
+	sortedEventIDs := SortServicesForUpgrade(o.RunningServices, Heu, svc.StandardMode.BandwidthEdge, svc.StandardMode.CpusEdge, domainID)
 	for _, eventID := range sortedEventIDs {
 		event := o.RunningServices[eventID]
 		domain := o.Domains[event.AllocatedDomain]
 		if event.AllocationMode == ReducedMode {
-			sortedNodes, _ := o.sortNodes(domain.ActiveNodes, event.StandardMode.cpusEdge, event.StandardMode.bandwidthEdge)
+			sortedNodes, _ := o.sortNodes(domain.ActiveNodes, event.StandardMode.CpusEdge, event.StandardMode.BandwidthEdge)
 			edgeNode := domain.ActiveNodes[event.AllocatedNodeEdge]
 			cloudNode := o.Cloud.ActiveNodes[event.AllocatedNodeCloud]
 			oldEvent := event
 			for _, nodeName := range sortedNodes {
 				node := domain.ActiveNodes[nodeName]
-				selectedCPUs, err := node.NodeAdmission.Admission(event.StandardMode.cpusEdge, event.StandardMode.bandwidthEdge, node.Cores, 100.0)
+				selectedCPUs, err := node.NodeAdmission.Admission(event.StandardMode.CpusEdge, event.StandardMode.BandwidthEdge, node.Cores, 100.0)
+				if err != nil || selectedCPUs == nil {
+					log.Info("Error in admission test for upgrading: ", err)
+					continue
+				}
+
+				_, err = oldEvent.ReducedMode.ServiceDeallocate(eventID, edgeNode, edgeLoc)
+				_, err = oldEvent.ReducedMode.ServiceDeallocate(eventID, cloudNode, cloudLoc)
+				if err != nil {
+					log.Info("Error in deallocation: ", err)
+				}
+				_, svc, err := event.StandardMode.ServiceAllocate(event, domain.ActiveNodes[nodeName], eventID, 100)
+				domain.ActiveNodes[nodeName].AllocatedServices[eventID] = svc
+				if err != nil {
+					log.Info("Error in allocation upgrade: ", err)
+				}
+				o.QoS = o.QoS - event.ReducedQoS + event.StandardQoS
+				o.RunningServices[eventID] = svc
+				log.Info("the upgraded service:", svc)
+				oldEvent = nil
+				log.Info("upgrade successful")
+				return nil
+
+			}
+		}
+	}
+	return nil
+}
+
+func (o *Orchestrator) UpgradeServiceIntervalBased(domainID DomainID) error {
+	sortedEventIDs := SortServicesForUpgradeIntervalBased(o.RunningServices, domainID)
+	for _, eventID := range sortedEventIDs {
+		event := o.RunningServices[eventID]
+		domain := o.Domains[event.AllocatedDomain]
+		if event.AllocationMode == ReducedMode {
+			sortedNodes, _ := o.sortNodes(domain.ActiveNodes, event.StandardMode.CpusEdge, event.StandardMode.BandwidthEdge)
+			edgeNode := domain.ActiveNodes[event.AllocatedNodeEdge]
+			cloudNode := o.Cloud.ActiveNodes[event.AllocatedNodeCloud]
+			oldEvent := event
+			for _, nodeName := range sortedNodes {
+				node := domain.ActiveNodes[nodeName]
+				selectedCPUs, err := node.NodeAdmission.Admission(event.StandardMode.CpusEdge, event.StandardMode.BandwidthEdge, node.Cores, 100.0)
 				if err != nil || selectedCPUs == nil {
 					log.Info("Error in admission test for upgrading: ", err)
 					continue
@@ -178,6 +219,12 @@ func (o *Orchestrator) UpgradeServiceIfEnabled(Heu cnfg.Heuristic, svc Service, 
 	}
 }
 
+func (o *Orchestrator) UpgradeServiceIfEnabledIntervalBased(domainID DomainID) {
+	if o.Config.UpgradeService {
+		o.UpgradeServiceIntervalBased(domainID)
+	}
+}
+
 func (o *Orchestrator) NodeReclaimIfEnabled(domainID DomainID) {
 	if o.Config.NodeReclaim {
 		o.NodeReclaim(domainID)
@@ -203,8 +250,8 @@ func SortServicesForUpgrade(services Services, upgradeHeu cnfg.Heuristic, BW flo
 
 	case HQcC:
 		sort.Slice(sortedEventIDs, func(i, j int) bool {
-			cpuI := services[sortedEventIDs[i]].StandardMode.cpusEdge <= m
-			cpuJ := services[sortedEventIDs[j]].StandardMode.cpusEdge <= m
+			cpuI := services[sortedEventIDs[i]].StandardMode.CpusEdge <= m
+			cpuJ := services[sortedEventIDs[j]].StandardMode.CpusEdge <= m
 
 			if cpuI && cpuJ {
 				return float64(services[sortedEventIDs[i]].StandardQoS-services[sortedEventIDs[i]].ReducedQoS) >
@@ -215,8 +262,8 @@ func SortServicesForUpgrade(services Services, upgradeHeu cnfg.Heuristic, BW flo
 
 	case HQcB:
 		sort.Slice(sortedEventIDs, func(i, j int) bool {
-			bwI := services[sortedEventIDs[i]].StandardMode.bandwidthEdge <= BW
-			bwJ := services[sortedEventIDs[j]].StandardMode.bandwidthEdge <= BW
+			bwI := services[sortedEventIDs[i]].StandardMode.BandwidthEdge <= BW
+			bwJ := services[sortedEventIDs[j]].StandardMode.BandwidthEdge <= BW
 
 			if bwI && bwJ {
 				return float64(services[sortedEventIDs[i]].StandardQoS-services[sortedEventIDs[i]].ReducedQoS) >
@@ -227,10 +274,10 @@ func SortServicesForUpgrade(services Services, upgradeHeu cnfg.Heuristic, BW flo
 
 	case HQcCB:
 		sort.Slice(sortedEventIDs, func(i, j int) bool {
-			cpuI := services[sortedEventIDs[i]].StandardMode.cpusEdge <= m
-			cpuJ := services[sortedEventIDs[j]].StandardMode.cpusEdge <= m
-			bwI := services[sortedEventIDs[i]].StandardMode.bandwidthEdge <= BW
-			bwJ := services[sortedEventIDs[j]].StandardMode.bandwidthEdge <= BW
+			cpuI := services[sortedEventIDs[i]].StandardMode.CpusEdge <= m
+			cpuJ := services[sortedEventIDs[j]].StandardMode.CpusEdge <= m
+			bwI := services[sortedEventIDs[i]].StandardMode.BandwidthEdge <= BW
+			bwJ := services[sortedEventIDs[j]].StandardMode.BandwidthEdge <= BW
 
 			if cpuI && cpuJ && bwI && bwJ {
 				return float64(services[sortedEventIDs[i]].StandardQoS-services[sortedEventIDs[i]].ReducedQoS) >
@@ -245,6 +292,22 @@ func SortServicesForUpgrade(services Services, upgradeHeu cnfg.Heuristic, BW flo
 			return false
 		})
 	}
+
+	return sortedEventIDs
+}
+
+func SortServicesForUpgradeIntervalBased(services Services, domainID DomainID) []ServiceID {
+	sortedEventIDs := make([]ServiceID, 0, len(services))
+	for id, svc := range services {
+		if svc.AllocatedDomain == domainID {
+			sortedEventIDs = append(sortedEventIDs, id)
+		}
+	}
+
+	sort.Slice(sortedEventIDs, func(i, j int) bool {
+		return float64(services[sortedEventIDs[i]].StandardQoS-services[sortedEventIDs[i]].ReducedQoS) >
+			float64(services[sortedEventIDs[j]].StandardQoS-services[sortedEventIDs[j]].ReducedQoS)
+	})
 
 	return sortedEventIDs
 }

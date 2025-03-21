@@ -18,9 +18,9 @@ if __name__=='__main__':
         robustness_max_scaling_size(dir1=dir,metric='qos',flags='all_interval_based',nodesize=n)
         robustness_max_scaling_size(dir1=dir,metric='qosPerCost',flags='all_interval_based',nodesize=n)
 
-        robustness_max_scaling_size_3d_sheets(dir1=dir,metric='cost',flags='all_interval_based',nodesize=n)            
-        robustness_max_scaling_size_3d_sheets(dir1=dir,metric='qos',flags='all_interval_based',nodesize=n)
-        robustness_max_scaling_size_3d_sheets(dir1=dir,metric='qosPerCost',flags='all_interval_based',nodesize=n)
+        # robustness_max_scaling_size_3d_sheets(dir1=dir,metric='cost',flags='all_interval_based',nodesize=n)            
+        # robustness_max_scaling_size_3d_sheets(dir1=dir,metric='qos',flags='all_interval_based',nodesize=n)
+        # robustness_max_scaling_size_3d_sheets(dir1=dir,metric='qosPerCost',flags='all_interval_based',nodesize=n)
 
 
             

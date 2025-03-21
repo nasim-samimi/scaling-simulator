@@ -10,9 +10,9 @@ import itertools
 PARTITIONING_H=['bestfit']
 
 REALLOCATION_H=["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC","LBCI","LBI","LCI"]
-REALLOCATION_INTRANODE_H=["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC","LBCI","LBI","LCI"]
-REALLOCATION_INTRADOMAIN_H=["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC","LBCI","LBI","LCI"]
-REALLOCATION_REDUCED_H=["LB","LC","LBC","LBCI","LBI","LCI","LRED","LI"]
+REALLOCATION_INTRANODE_H=["LB"]#["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC","LBCI","LBI","LCI"]
+REALLOCATION_INTRADOMAIN_H=["LB"]#["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC","LBCI","LBI","LCI"]
+REALLOCATION_REDUCED_H=["LBCI"]#["LB","LC","LBC","LBCI","LBI","LCI","LRED","LI"]
 # REALLOCATION_REDUCED_H=["LI"]
 # REALLOCATION_REMOVED_H=["LB","LC","LBC","LBCI","LBI","LCI","LREM","LI"]
 REALLOCATION_REMOVED_H=["LI"]
@@ -21,18 +21,20 @@ REALLOCATION_REMOVED_H=["LI"]
 # NODE_SELECTION_H=["MMRB","mmRB","MmRB","mMRB"]
 NODE_SELECTION_H=["mmRB"]
 # ADDITION=[0]
-ADDITION=[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
+# ADDITION=[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
+ADDITION=[0,0.2,0.4,0.6,0.8,1.0,1.2,1.4,1.6,1.8,2.0]
 edge_node_cost=1
 cloud_node_cost=3
 # thresholds=[80,100]
 threshold=100
 node_sizes = [8]
-max_scaling_cores=[64]
-UPGRADE_H=["HQ","HQcC","HQcB","HQcCB"]
+max_scaling_cores=[64,32,512,128,200,96,256,16]
+UPGRADE_H=["HQ"]#,"HQcC","HQcB","HQcCB"]
 # divide cores by node size.
 # max_scaling_threshold=[1,2,4]
 
 results_dir = "improved"
+data_dir = "data"
 
 # Define fixed configuration
 fixed_config = {
@@ -51,6 +53,7 @@ fixed_config = {
         # "intra_node_removed":False,
         "interval_based":False,
         "max_scaling_threshold":20,
+        "node_size": 8,
     },
     "system": {
         "init_node_size": 16,
@@ -61,13 +64,13 @@ fixed_config = {
 
 # Define mutually exclusive options (only one can be enabled at a time)
 exclusive_options = [
-    "upgrade_service",
+    # "upgrade_service",
     # "node_reclaim",
     # "intra_domain_realloc",
-    # "intra_node_realloc",
-    # "intra_node_reduced",
+    "intra_node_realloc",
+    "intra_node_reduced",
     # "intra_node_removed"
-    # "interval_based"
+    "interval_based"
 ]
 
 # Generate all parameter combinations
@@ -102,14 +105,16 @@ def generate_param_combinations():
                                     config["orchestrator"]["domain_node_threshold"] = threshold
 
                                     config["system"]["addition"] = addition
+                                    config["system"]["data_dir"] = data_dir
                                     config["system"]["results_dir"] = f'{results_dir}/with_{exclusive_option}/max_scaling_threshold={th}'
                                     config["orchestrator"]["partition_heuristic"]=p
                                     config["orchestrator"]["node_heuristic"]=n
                                     config["orchestrator"]["edge_node_cost"]=edge_node_cost
                                     config["orchestrator"]["cloud_node_cost"]=cloud_node_cost
-                                    config["system"]["node_size"]=size
+                                    config["orchestrator"]["node_size"]=size
                                     config["orchestrator"]["max_scaling_threshold"]=max_scaling_threshold
                                     config["orchestrator"][f"{exclusive_option}_heu"] = heuristic
+                                    config["system"]["filename"]=heuristic
 
                                     # Write to config.yaml
                                     print(config)
@@ -125,6 +130,7 @@ def generate_param_combinations():
                                     config=fixed_config.copy()
                                     config["orchestrator"] = {key: False for key in exclusive_options}  # Disable all first
                                     config["orchestrator"][exclusive_option] = True  # Enable only the current one
+                                    config["system"]["data_dir"] = data_dir
 
                                     config["system"]["addition"] = addition
                                     config["system"]["results_dir"] = f'{results_dir}/with_{exclusive_option}/max_scaling_threshold={th}'
@@ -132,10 +138,11 @@ def generate_param_combinations():
                                     config["orchestrator"]["node_heuristic"]=n  
                                     config["orchestrator"]["edge_node_cost"]=edge_node_cost
                                     config["orchestrator"]["cloud_node_cost"]=cloud_node_cost
-                                    config["system"]["node_size"]=size
+                                    config["orchestrator"]["node_size"]=size
                                     config["orchestrator"]["domain_node_threshold"] = threshold
                                     config["orchestrator"]["max_scaling_threshold"]=max_scaling_threshold
                                     config["orchestrator"]["upgrade_heuristic"]=heuristic
+                                    config["system"]["filename"]=heuristic
 
                                     with open("config.yaml", "w") as file:
                                         yaml.dump(config, file, default_flow_style=False)
@@ -151,14 +158,16 @@ def generate_param_combinations():
                                 config["orchestrator"][exclusive_option] = True  # Enable only the current one
 
                                 config["system"]["addition"] = addition
+                                config["system"]["data_dir"] = data_dir
                                 config["system"]["results_dir"] = f'{results_dir}/with_{exclusive_option}/max_scaling_threshold={th}'
                                 config["orchestrator"]["partition_heuristic"]=p
                                 config["orchestrator"]["node_heuristic"]=n  
                                 config["orchestrator"]["edge_node_cost"]=edge_node_cost
                                 config["orchestrator"]["cloud_node_cost"]=cloud_node_cost
-                                config["system"]["node_size"]=size
+                                config["orchestrator"]["node_size"]=size
                                 config["orchestrator"]["domain_node_threshold"] = threshold
                                 config["orchestrator"]["max_scaling_threshold"]=max_scaling_threshold
+                                config["system"]["filename"]="improved"
 
                                 # Write to config.yaml
                                 print(config)

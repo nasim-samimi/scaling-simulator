@@ -178,4 +178,3 @@ def EventGenerator(eventsLength,weight,dir,Users,Services):
     
 
 
-

@@ -35,7 +35,7 @@ func WriteToCsv(filePath string, records []float64) error {
 func WriteResults(results *cnfg.ResultContext, config *cnfg.Config) error {
 	// Construct the base directory paths
 	// nodeSize := strconv.Itoa(int(config.System.NodeSize))
-	nodeSize := config.System.NodeSize
+	nodeSize := config.Orchestrator.NodeSize
 	name := "/nodesize=" + nodeSize + "/addition=" + config.System.Addition + "/" + string(config.Orchestrator.NodeHeuristic) + "/" + string(config.Orchestrator.PartitionHeuristic) + "/"
 	reallocName := ""
 	// if orchestrator.Config.IntraDomainRealloc {
@@ -47,22 +47,28 @@ func WriteResults(results *cnfg.ResultContext, config *cnfg.Config) error {
 	// if orchestrator.Config.IntraNodeReduced {
 	// 	reallocName = string(orchestrator.Config.IntraNodeReducedHeu)
 	// }
-	if config.Orchestrator.IntraDomainRealloc || config.Orchestrator.IntraNodeRealloc || config.Orchestrator.IntraNodeReduced || config.Orchestrator.IntraNodeRemoved {
-		if config.Orchestrator.UpgradeService{
-			reallocName=string(config.Orchestrator.ReallocationHeuristic)+"_"+string(config.Orchestrator.UpgradeHeuristic)
+	if config.Orchestrator.Baseline {
+		reallocName = "baseline"
+	} else if config.System.Filaname != "" {
+		reallocName = config.System.Filaname
+	} else {
+		if config.Orchestrator.IntraDomainRealloc || config.Orchestrator.IntraNodeRealloc || config.Orchestrator.IntraNodeReduced || config.Orchestrator.IntraNodeRemoved {
+			if config.Orchestrator.UpgradeService {
+				reallocName = string(config.Orchestrator.ReallocationHeuristic) + "_" + string(config.Orchestrator.UpgradeHeuristic)
+			}
+			reallocName = string(config.Orchestrator.ReallocationHeuristic)
 		}
-		reallocName = string(config.Orchestrator.ReallocationHeuristic)
-	}
-	if reallocName ==""{
-		if config.Orchestrator.UpgradeService{
-			reallocName=string(config.Orchestrator.UpgradeHeuristic)
+		if reallocName == "" {
+			if config.Orchestrator.UpgradeService {
+				reallocName = string(config.Orchestrator.UpgradeHeuristic)
+			}
 		}
-	}
-	
 
-	if reallocName == "" {
-		reallocName = "improved"
+		if reallocName == "" {
+			reallocName = "improved"
+		}
 	}
+
 	// Define output subdirectories
 	subDirs := []string{"runtimes", "qosPerCost", "qos", "cost", "eventTime"}
 

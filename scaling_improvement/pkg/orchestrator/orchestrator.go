@@ -2,6 +2,7 @@ package orchestrator
 
 import (
 	"os"
+	"strconv"
 
 	cnfg "github.com/nasim-samimi/scaling-simulator/pkg/config"
 	"github.com/sirupsen/logrus"
@@ -45,6 +46,7 @@ type Orchestrator struct {
 	Cost            cnfg.Cost
 	QoS             QoS
 	Config          *cnfg.OrchestratorConfig
+	NodeSize        uint64
 }
 
 func NewOrchestrator(config *cnfg.OrchestratorConfig, cloud *Cloud, domains Domains, services Services) *Orchestrator {
@@ -54,6 +56,7 @@ func NewOrchestrator(config *cnfg.OrchestratorConfig, cloud *Cloud, domains Doma
 			domainCost += cnfg.Cost(n.numCores) * config.EdgeNodeCost
 		}
 	}
+	NodeSize, _ := strconv.Atoi(config.NodeSize)
 	log.Info("Domain cost:", domainCost)
 	cloudCost := cnfg.Cost(len(cloud.ActiveNodes)) * cnfg.Cost(config.CloudNodeCost)
 
@@ -67,6 +70,7 @@ func NewOrchestrator(config *cnfg.OrchestratorConfig, cloud *Cloud, domains Doma
 		QoS:             0,
 		RunningServices: make(Services),
 		Config:          config,
+		NodeSize:        uint64(NodeSize),
 	}
 
 	o.cloudPowerOnNode()
@@ -103,6 +107,18 @@ func (o *Orchestrator) allocateEdgeReduced(service *Service, node *Node, eventID
 	}
 
 	return allocated, err
+}
+
+func (o *Orchestrator) fastDomainAdmission(domainID DomainID, service *Service, sortedNodes []NodeName, cpuThreshold float64) bool {
+	for _, eNodeName := range sortedNodes {
+		potentialNode := o.Domains[domainID].ActiveNodes[eNodeName]
+		potentialCores, _ := potentialNode.NodeAdmission.Admission(service.ReducedMode.cpusEdge, service.ReducedMode.bandwidthEdge, potentialNode.Cores, cpuThreshold)
+		if potentialCores == nil {
+			continue
+		}
+		return true
+	}
+	return false
 }
 
 func (o *Orchestrator) SplitSched(service *Service, domainID DomainID, eventID ServiceID) (bool, bool, *Service, error) {
@@ -183,7 +199,7 @@ func (o *Orchestrator) Allocate(domainID DomainID, serviceID ServiceID, eventID 
 	allocated := false
 	domain := o.Domains[domainID]
 	service := o.AllServices[serviceID]
-	sortedNodes, _ := o.sortNodes(domain.ActiveNodes, service.StandardMode.cpusEdge, service.StandardMode.bandwidthEdge)
+	sortedNodes, _ := o.sortNodes(domain.ActiveNodes, service.StandardMode.CpusEdge, service.StandardMode.BandwidthEdge)
 	for _, nodeName := range sortedNodes {
 		allocated, _ := o.allocateEdge(service, o.Domains[domainID].ActiveNodes[nodeName], eventID, o.Config.DomainNodeThreshold)
 		if allocated {
@@ -294,7 +310,7 @@ func (o *Orchestrator) Allocate(domainID DomainID, serviceID ServiceID, eventID 
 			if o.Config.IntraNodeReduced {
 				log.Info("going to intra node cloud reallocation")
 				otherEvent := o.RunningServices[ctx.ReallocatedEventID]
-				if service.StandardQoS-otherEvent.StandardQoS+otherEvent.ReducedQoS > service.ReducedQoS {
+				if (service.StandardQoS-otherEvent.StandardQoS+otherEvent.ReducedQoS > service.ReducedQoS){ // && (float64(service.StandardQoS-otherEvent.StandardQoS+otherEvent.ReducedQoS+o.QoS)/float64(o.Cost) > float64(o.QoS+service.StandardQoS)/float64(o.Cost+o.Config.EdgeNodeCost*cnfg.Cost(len(node.Cores)))) {
 					allocated, _ = o.IntraNodeReduced(ctx)
 					if allocated {
 
@@ -343,15 +359,14 @@ func (o *Orchestrator) Allocate(domainID DomainID, serviceID ServiceID, eventID 
 	// 		return allocated, nil
 	// 	}
 	// }
-
-	edgeAllocated, cloudAllocated, svc, _ := o.SplitSched(service, domainID, eventID)
-	if edgeAllocated && cloudAllocated {
-		log.Info("show svc in split scheduling", svc)
-		o.QoS = o.QoS + service.ReducedQoS
-		return true, nil
-	} else {
-		log.Info("the split scheduling didn't work. powering on some nodes")
-		if !edgeAllocated {
+	if (float64(service.ReducedQoS+o.QoS) / float64(o.Cost)) > float64(o.QoS+service.StandardQoS)/float64(o.Cost+o.Config.EdgeNodeCost*cnfg.Cost(o.NodeSize)) {
+		edgeAllocated, cloudAllocated, svc, _ := o.SplitSched(service, domainID, eventID)
+		if edgeAllocated && cloudAllocated {
+			log.Info("show svc in split scheduling", svc)
+			o.QoS = o.QoS + service.ReducedQoS
+			return true, nil
+		} else if !edgeAllocated {
+			log.Info("the split scheduling didn't work. powering on some nodes")
 			success, nodeName := o.edgePowerOnNode(domainID)
 			log.Info("Edge node powered on, node name: ", nodeName)
 			if success {
@@ -361,21 +376,41 @@ func (o *Orchestrator) Allocate(domainID DomainID, serviceID ServiceID, eventID 
 					return allocated, nil
 				}
 			}
+		} else {
+			o.cloudPowerOnNode()
+			edgeAllocated, cloudAllocated, _, _ := o.SplitSched(service, domainID, eventID)
+			if edgeAllocated && cloudAllocated {
+				o.QoS = o.QoS + service.ReducedQoS
+				return true, nil
+			}
 		}
 
-		if !cloudAllocated {
-			o.cloudPowerOnNode()
+	} else {
+		log.Info("the split scheduling didn't work. powering on some nodes")
+		success, nodeName := o.edgePowerOnNode(domainID)
+		log.Info("Edge node powered on, node name: ", nodeName)
+		if success {
+			allocated, _ := o.allocateEdge(service, o.Domains[domainID].ActiveNodes[nodeName], eventID, o.Config.DomainNodeThreshold)
+			if allocated {
+				o.QoS = o.QoS + service.StandardQoS
+				return allocated, nil
+			}
 		}
-	}
-	edgeAllocated, cloudAllocated, svc, _ = o.SplitSched(service, domainID, eventID)
-	if edgeAllocated && cloudAllocated {
-		o.QoS = o.QoS + service.ReducedQoS
-		return true, nil
+
+		if o.fastDomainAdmission(domainID, service, sortedNodes, o.Config.DomainNodeThreshold) {
+			o.cloudPowerOnNode()
+			edgeAllocated, cloudAllocated, _, _ := o.SplitSched(service, domainID, eventID)
+			if edgeAllocated && cloudAllocated {
+				o.QoS = o.QoS + service.ReducedQoS
+				return true, nil
+			}
+		}
+
 	}
 	// if !allocated {
 	// 	o.QoS = o.QoS - QoS(service.StandardQoS/10)
 	// }
-	return allocated, nil
+	return false, nil
 }
 
 func (o *Orchestrator) Deallocate(domainID DomainID, serviceID ServiceID, eventID ServiceID) bool {
@@ -446,4 +481,279 @@ func (o *Orchestrator) Deallocate(domainID DomainID, serviceID ServiceID, eventI
 	delete(o.RunningServices, eventID)
 
 	return true
+}
+
+func (o *Orchestrator) AllocateBaselineOld(domainID DomainID, serviceID ServiceID, eventID ServiceID) (bool, error) {
+	allocated := false
+	domain := o.Domains[domainID]
+	service := o.AllServices[serviceID]
+	sortedNodes, _ := o.sortNodes(domain.ActiveNodes, service.StandardMode.CpusEdge, service.StandardMode.BandwidthEdge)
+	for _, nodeName := range sortedNodes {
+		allocated, _ := o.allocateEdge(service, o.Domains[domainID].ActiveNodes[nodeName], eventID, o.Config.DomainNodeThreshold)
+		if allocated {
+			o.QoS = o.QoS + service.StandardQoS
+			return allocated, nil
+		}
+	}
+
+
+	edgeAllocated, cloudAllocated, svc, _ := o.SplitSched(service, domainID, eventID)
+	if edgeAllocated && cloudAllocated {
+		log.Info("show svc in split scheduling", svc)
+		o.QoS = o.QoS + service.ReducedQoS
+		return true, nil
+	} else if !edgeAllocated{
+		success, nodeName := o.edgePowerOnNode(domainID)
+		log.Info("Edge node powered on, node name: ", nodeName)
+		if success {
+			allocated, _ := o.allocateEdge(service, o.Domains[domainID].ActiveNodes[nodeName], eventID, o.Config.DomainNodeThreshold)
+			if allocated {
+				o.QoS = o.QoS + service.StandardQoS
+				return allocated, nil
+			}
+		}
+	} else if !cloudAllocated {
+		if o.fastDomainAdmission(domainID, service, sortedNodes, o.Config.DomainNodeThreshold) {
+			o.cloudPowerOnNode()
+			edgeAllocated, cloudAllocated, _, _ := o.SplitSched(service, domainID, eventID)
+			if edgeAllocated && cloudAllocated {
+				o.QoS = o.QoS + service.ReducedQoS
+				return true, nil
+			}
+		}
+	}
+
+	// if !allocated {
+	// 	o.QoS = o.QoS - QoS(service.StandardQoS/10)
+	// }
+	
+	return allocated, nil
+}
+
+func (o *Orchestrator) AllocateBaseline(domainID DomainID, serviceID ServiceID, eventID ServiceID) (bool, error) {
+	allocated := false
+	domain := o.Domains[domainID]
+	service := o.AllServices[serviceID]
+	sortedNodes, _ := o.sortNodes(domain.ActiveNodes, service.StandardMode.CpusEdge, service.StandardMode.BandwidthEdge)
+	for _, nodeName := range sortedNodes {
+		allocated, _ := o.allocateEdge(service, o.Domains[domainID].ActiveNodes[nodeName], eventID, o.Config.DomainNodeThreshold)
+		if allocated {
+			o.QoS = o.QoS + service.StandardQoS
+			return allocated, nil
+		}
+	}
+
+	log.Info("the split scheduling didn't work. powering on some nodes")
+	success, nodeName := o.edgePowerOnNode(domainID)
+	log.Info("Edge node powered on, node name: ", nodeName)
+	if success {
+		allocated, _ := o.allocateEdge(service, o.Domains[domainID].ActiveNodes[nodeName], eventID, o.Config.DomainNodeThreshold)
+		if allocated {
+			o.QoS = o.QoS + service.StandardQoS
+			return allocated, nil
+		}
+	}
+
+	edgeAllocated, cloudAllocated, svc, _ := o.SplitSched(service, domainID, eventID)
+	if edgeAllocated && cloudAllocated {
+		log.Info("show svc in split scheduling", svc)
+		o.QoS = o.QoS + service.ReducedQoS
+		return true, nil
+	} else if !cloudAllocated {
+		if o.fastDomainAdmission(domainID, service, sortedNodes, o.Config.DomainNodeThreshold) {
+			o.cloudPowerOnNode()
+			edgeAllocated, cloudAllocated, _, _ := o.SplitSched(service, domainID, eventID)
+			if edgeAllocated && cloudAllocated {
+				o.QoS = o.QoS + service.ReducedQoS
+				return true, nil
+			}
+		}
+	}
+
+	// if !allocated {
+	// 	o.QoS = o.QoS - QoS(service.StandardQoS/10)
+	// }
+	return allocated, nil
+}
+
+func (o *Orchestrator) AllocateNew(domainID DomainID, serviceID ServiceID, eventID ServiceID) (bool, error) {
+	allocated := false
+	domain := o.Domains[domainID]
+	service := o.AllServices[serviceID]
+	sortedNodes, _ := o.sortNodes(domain.ActiveNodes, service.StandardMode.CpusEdge, service.StandardMode.BandwidthEdge)
+	for _, nodeName := range sortedNodes {
+		allocated, _ := o.allocateEdge(service, o.Domains[domainID].ActiveNodes[nodeName], eventID, o.Config.DomainNodeThreshold)
+		if allocated {
+			o.QoS = o.QoS + service.StandardQoS
+			return allocated, nil
+		}
+	}
+
+	sortedNodesNoFilter, _ := o.sortNodesNoFilter(domain.ActiveNodes, Max)
+
+	intraDomainHelp := true
+	// reallocationHelp := false
+	// reducedHelpful := false
+	// removedHelpful := false
+	for _, nodeName := range sortedNodesNoFilter {
+		node := domain.ActiveNodes[nodeName]
+		reallocatedEventID, secondReallocatedEventID, thirdreallocatedEventID, err := o.getReallocatedService(node, service, o.Config.IntraNodeReallocHeu)
+		if err != nil {
+			continue
+		}
+
+		reallocationHelp, NewCores, _ := ReallocateTest(service, reallocatedEventID, *node)
+		selectedEventID := reallocatedEventID
+		// if service.StandardQoS-o.RunningServices[selectedEventID].StandardQoS+o.RunningServices[selectedEventID].ReducedQoS > service.ReducedQoS {
+		// 	reducedHelpful = true
+		// }
+		// if service.StandardQoS-o.RunningServices[selectedEventID].StandardQoS > service.ReducedQoS {
+		// 	removedHelpful = true
+		// }
+		if !reallocationHelp {
+			reallocationHelp, NewCores, _ = ReallocateTest(service, secondReallocatedEventID, *node)
+			selectedEventID = secondReallocatedEventID
+		}
+		if !reallocationHelp {
+			reallocationHelp, NewCores, _ = ReallocateTest(service, thirdreallocatedEventID, *node)
+			selectedEventID = thirdreallocatedEventID
+		}
+		log.Info("selected event id for reallocation:", selectedEventID)
+
+		if reallocationHelp {
+			ctx := ReallocContext{
+				Service:            service,
+				Node:               node,
+				Domain:             domain,
+				SortedNodes:        sortedNodes,
+				EventID:            eventID,
+				ReallocatedEventID: selectedEventID,
+				NewCores:           NewCores,
+			}
+			if o.Config.IntraNodeRealloc {
+				allocated, err := o.intraNodeRealloc(ctx)
+				if allocated {
+					o.QoS = o.QoS + service.StandardQoS
+					return allocated, nil
+				}
+				if err != nil {
+					log.Info("Error in intra node reallocation: ", err)
+				}
+			}
+			if o.Config.IntraDomainRealloc {
+				log.Info("going to intra domain reallocation")
+				if intraDomainHelp {
+					allocated, err := o.intraDomainRealloc(ctx)
+					if allocated {
+						o.QoS = o.QoS + service.StandardQoS
+						log.Info("allocated with intra domain reallocation")
+						return allocated, nil
+					}
+					if err != nil {
+						log.Info("Error in intra domain reallocation:", err)
+					}
+				}
+			}
+		} else {
+			log.Info("Reallocated event not helpful")
+		}
+	}
+
+	if (float64(service.ReducedQoS+o.QoS) / float64(o.Cost)) > float64(o.QoS+service.StandardQoS)/float64(o.Cost+o.Config.EdgeNodeCost*cnfg.Cost(o.NodeSize)) {
+		edgeAllocated, cloudAllocated, svc, _ := o.SplitSched(service, domainID, eventID)
+		if edgeAllocated && cloudAllocated {
+			log.Info("show svc in split scheduling", svc)
+			o.QoS = o.QoS + service.ReducedQoS
+			return true, nil
+		} else if !edgeAllocated {
+			log.Info("the split scheduling didn't work. powering on some nodes")
+			success, nodeName := o.edgePowerOnNode(domainID)
+			log.Info("Edge node powered on, node name: ", nodeName)
+			if success {
+				allocated, _ := o.allocateEdge(service, o.Domains[domainID].ActiveNodes[nodeName], eventID, o.Config.DomainNodeThreshold)
+				if allocated {
+					o.QoS = o.QoS + service.StandardQoS
+					return allocated, nil
+				}
+			}
+		} else {
+			o.cloudPowerOnNode()
+			edgeAllocated, cloudAllocated, _, _ := o.SplitSched(service, domainID, eventID)
+			if edgeAllocated && cloudAllocated {
+				o.QoS = o.QoS + service.ReducedQoS
+				return true, nil
+			}
+		}
+
+	} else {
+		log.Info("the split scheduling didn't work. powering on some nodes")
+		success, nodeName := o.edgePowerOnNode(domainID)
+		log.Info("Edge node powered on, node name: ", nodeName)
+		if success {
+			allocated, _ := o.allocateEdge(service, o.Domains[domainID].ActiveNodes[nodeName], eventID, o.Config.DomainNodeThreshold)
+			if allocated {
+				o.QoS = o.QoS + service.StandardQoS
+				return allocated, nil
+			}
+		}
+
+		if o.fastDomainAdmission(domainID, service, sortedNodes, o.Config.DomainNodeThreshold) {
+			o.cloudPowerOnNode()
+			edgeAllocated, cloudAllocated, _, _ := o.SplitSched(service, domainID, eventID)
+			if edgeAllocated && cloudAllocated {
+				o.QoS = o.QoS + service.ReducedQoS
+				return true, nil
+			}
+		}
+
+	}
+
+	for _, nodeName := range sortedNodesNoFilter {
+		node := domain.ActiveNodes[nodeName]
+		reallocatedEventID, secondReallocatedEventID, thirdreallocatedEventID, err := o.getReallocatedService(node, service, o.Config.IntraNodeReducedHeu)
+		if err != nil {
+			continue
+		}
+		reallocationHelp, NewCores, _ := ReallocateTest(service, reallocatedEventID, *node)
+		selectedEventID := reallocatedEventID
+
+		if !reallocationHelp {
+			reallocationHelp, NewCores, _ = ReallocateTest(service, secondReallocatedEventID, *node)
+			selectedEventID = secondReallocatedEventID
+		}
+		if !reallocationHelp {
+			reallocationHelp, NewCores, _ = ReallocateTest(service, thirdreallocatedEventID, *node)
+			selectedEventID = thirdreallocatedEventID
+		}
+		log.Info("selected event id for reallocation:", selectedEventID)
+
+		if reallocationHelp {
+			ctx := ReallocContext{
+				Service:            service,
+				Node:               node,
+				Domain:             domain,
+				SortedNodes:        sortedNodes,
+				EventID:            eventID,
+				ReallocatedEventID: selectedEventID,
+				NewCores:           NewCores,
+			}
+			if o.Config.IntraNodeReduced {
+				log.Info("going to intra node cloud reallocation")
+				otherEvent := o.RunningServices[ctx.ReallocatedEventID]
+				allocated, _ = o.IntraNodeReduced(ctx)
+				if allocated {
+
+					o.QoS = o.QoS + service.StandardQoS - otherEvent.StandardQoS + otherEvent.ReducedQoS
+					log.Info("allocated with intra node cloud reallocation")
+					return allocated, nil
+				}
+			}
+			
+		}
+
+	}
+	// if !allocated {
+	// 	o.QoS = o.QoS - QoS(service.StandardQoS/10)
+	// }
+	return false, nil
 }

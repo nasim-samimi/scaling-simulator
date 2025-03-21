@@ -21,11 +21,15 @@ func main() {
 	results := new(cnfg.ResultContext)
 	fmt.Println("../data/events/hightraffic/events_" + config.System.Addition + ".csv")
 	events := util.LoadEventsFromCSV("../data/events/hightraffic/events_" + config.System.Addition + ".csv")
-	if config.Orchestrator.IntervalBased {
-		results, err = eve.BufferEvents(events, 5.0, orchestrator)
-		// results, err = eve.BufferAllocateEvents(events, 5.0, orchestrator)
+	if config.Orchestrator.Baseline {
+		results, err = eve.ProcessEventsBaseline(events, orchestrator)
 	} else {
-		results, err = eve.ProcessEvents(events, orchestrator)
+		if config.Orchestrator.IntervalBased {
+			results, err = eve.BufferEvents(events, 20.0, orchestrator)
+			// results, err = eve.BufferAllocateEvents(events, 5.0, orchestrator)
+		} else {
+			results, err = eve.ProcessEvents(events, orchestrator)
+		}
 	}
 	if err != nil {
 		log.Fatal(err)

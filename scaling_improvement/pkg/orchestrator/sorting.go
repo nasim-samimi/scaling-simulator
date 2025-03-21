@@ -122,7 +122,7 @@ func (o *Orchestrator) sortServicesBW(services Services) []ServiceID {
 		sortedEventIDs = append(sortedEventIDs, id)
 	}
 	sort.Slice(sortedEventIDs, func(i, j int) bool {
-		return services[sortedEventIDs[i]].StandardMode.bandwidthEdge > services[sortedEventIDs[j]].StandardMode.bandwidthEdge
+		return services[sortedEventIDs[i]].StandardMode.BandwidthEdge > services[sortedEventIDs[j]].StandardMode.BandwidthEdge
 	})
 	return sortedEventIDs
 }

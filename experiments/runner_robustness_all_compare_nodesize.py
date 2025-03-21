@@ -13,7 +13,7 @@ n=1
 if __name__=='__main__':
 
 
-    dir=f'improved/allOpts/'
+    dir=f'improved/allOpts'
     robustness_compare_nodesize(dir1=dir,metric='cost',flags='all')            
     robustness_compare_nodesize(dir1=dir,metric='qos',flags='all')
     robustness_compare_nodesize(dir1=dir,metric='qosPerCost',flags='all')

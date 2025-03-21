@@ -19,17 +19,20 @@ REALLOCATION_REMOVED_H=["LI"]
 NODE_SELECTION_H=["mmRB"]
 # NODE_SELECTION_H=["MMRB","mmRB","MmRB","mMRB"]
 # ADDITION=[0]
-ADDITION=[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
+ADDITION=[0,0.2,0.4,0.6,0.8,1.0,1.2,1.4,1.6,1.8,2.0]
+# ADDITION=[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
 edge_node_cost=1
 cloud_node_cost=3
 # thresholds=[80,100]
 threshold=100
-node_sizes = [8,16]
-max_scaling_cores=[16,32,64,128]
+node_sizes = [8]
+# max_scaling_cores=[16,32,64,128]
+max_scaling_cores=[128,96,64,32,16,512,256,200]
 # divide cores by node size.
-max_scaling_threshold=[1,2,4]
 
 results_dir = "improved"
+data_dir="data"
+
 
 # Define fixed configuration
 fixed_config = {
@@ -40,7 +43,7 @@ fixed_config = {
         "partition_heuristic": "bestfit",
         "node_heuristic": "MaxMax",
         "reallocation_heuristic": "HB",
-        "upgrade_service":True,
+        "upgrade_service":False,
         "node_reclaim":False,
         "intra_node_realloc":True,
         "intra_domain_realloc":False,
@@ -48,6 +51,7 @@ fixed_config = {
         "intra_node_removed":False,
         "interval_based":False,
         "max_scaling_threshold":20,
+        "node_size": 8,
     },
     "system": {
         "init_node_size": 16,
@@ -83,19 +87,21 @@ def generate_param_combinations():
                         # config["orchestrator"] = {key: False for key in exclusive_options}  # Disable all first
                         # config["orchestrator"][exclusive_option] = True  # Enable only the current one
                         # config["orchestrator"][f"reallocation_heuristic"] = heuristic  # Assign heuristic
-                        config["orchestrator"]["intraintra_node_realloc_heu"]="LBCI"
-                        config["orchestrator"]["intra_node_reduced_heu"]="LRED"
+                        config["orchestrator"]["intraintra_node_realloc_heu"]="LB"
+                        config["orchestrator"]["intra_node_reduced_heu"]="LBCI"
                         config["orchestrator"]["domain_node_threshold"] = threshold
 
                         config["system"]["addition"] = addition
+                        config["system"]["data_dir"] = data_dir
                         config["system"]["results_dir"] = f'{results_dir}/allOpts/max_scaling_threshold={th}'
                         config["orchestrator"]["partition_heuristic"]=p
                         config["orchestrator"]["node_heuristic"]=n
                         config["orchestrator"]["edge_node_cost"]=edge_node_cost
                         config["orchestrator"]["cloud_node_cost"]=cloud_node_cost
-                        config["system"]["node_size"]=size
+                        config["orchestrator"]["node_size"]=size
                         config["orchestrator"]["max_scaling_threshold"]=max_scaling_threshold
                         config["orchestrator"]["upgrade_heuristic"]="HQ"
+                        config["system"]["file_name"]="improved"
 
                         # Write to config.yaml
                         print(config)

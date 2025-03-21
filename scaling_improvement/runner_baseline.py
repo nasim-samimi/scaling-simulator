@@ -6,12 +6,12 @@ import subprocess
 import itertools
 # import sleep
 
-PARTITIONING_H=['bestfit','worstfit']
+PARTITIONING_H=['bestfit']
 
 # REALLOCATION_H=["HBCI"]
-NODE_SELECTION_H=["MinMin","MaxMax"]
+NODE_SELECTION_H=["Max"]
 # NODE_SELECTION_H=["MinMin"]
-ADDITION=[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
+ADDITION=[0,0.3,0.6,0.9,1.2,1.5,1.8,2.1,2.4,2.7,3]
 # ADDITION=[0.7,0.8,0.9,1]
 
 edge_node_cost=1
@@ -45,8 +45,8 @@ fixed_config = {
 
 # Define mutually exclusive options (only one can be enabled at a time)
 # node_sizes = [8,12,16,20,24,28,32]
-node_sizes = [8,12]
-
+node_sizes = [8,16]
+data_dir="data"
 # Generate all parameter combinations
 def generate_param_combinations():
     for size in node_sizes:
@@ -59,11 +59,13 @@ def generate_param_combinations():
 
                     config["system"]["addition"] = addition
                     config["system"]["results_dir"] = f'{results_dir}'
+                    config["system"]["data_dir"] = data_dir
                     config["orchestrator"]["partition_heuristic"]=p
                     config["orchestrator"]["node_heuristic"]=n
                     config["orchestrator"]["edge_node_cost"]=edge_node_cost
                     config["orchestrator"]["cloud_node_cost"]=cloud_node_cost
-                    config["system"]["node_size"]=size
+                    config["orchestrator"]["node_size"]=size
+                    config["orchestrator"]["max_scaling_threshold"]=100
 
 
                     # Write to config.yaml

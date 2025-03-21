@@ -10,14 +10,14 @@ type reducedSched struct {
 }
 
 type standardSched struct {
-	bandwidthEdge float64
-	cpusEdge      uint64
+	BandwidthEdge float64
+	CpusEdge      uint64
 }
 
 func (s *standardSched) ServiceAllocate(service *Service, node *Node, eventID ServiceID, cpuThreshold float64) (bool, *Service, error) {
 	allocated := false
 	log.Info("Allocating service: ", service)
-	allocatedCores, err := node.NodeAllocate(s.cpusEdge, s.bandwidthEdge, service, eventID, cpuThreshold)
+	allocatedCores, err := node.NodeAllocate(s.CpusEdge, s.BandwidthEdge, service, eventID, cpuThreshold)
 	if err != nil {
 		log.Info("Error allocating service: ", err)
 		return allocated, service, err
@@ -36,8 +36,8 @@ func (s *standardSched) ServiceAllocate(service *Service, node *Node, eventID Se
 		AllocatedNodeCloud:       service.AllocatedNodeCloud,
 		AllocatedDomain:          node.DomainID,
 		AllocationMode:           StandardMode,
-		AverageConsumedBandwidth: s.bandwidthEdge,
-		TotalConsumedBandwidth:   s.bandwidthEdge * float64(s.cpusEdge),
+		AverageConsumedBandwidth: s.BandwidthEdge,
+		TotalConsumedBandwidth:   s.BandwidthEdge * float64(s.CpusEdge),
 		StandardQoS:              service.StandardQoS,
 		ReducedQoS:               service.ReducedQoS,
 	}
@@ -52,8 +52,8 @@ func (s *standardSched) ServiceAllocate(service *Service, node *Node, eventID Se
 		AllocatedNodeCloud:       service.AllocatedNodeCloud,
 		AllocatedDomain:          node.DomainID,
 		AllocationMode:           StandardMode,
-		AverageConsumedBandwidth: s.bandwidthEdge,
-		TotalConsumedBandwidth:   s.bandwidthEdge * float64(s.cpusEdge),
+		AverageConsumedBandwidth: s.BandwidthEdge,
+		TotalConsumedBandwidth:   s.BandwidthEdge * float64(s.CpusEdge),
 		StandardQoS:              service.StandardQoS,
 		ReducedQoS:               service.ReducedQoS,
 	}
@@ -199,8 +199,8 @@ type Service struct {
 
 func NewService(importanceFactor float64, serviceID ServiceID, standardBandwidth float64, standardCores uint64, reducedEdgeBandwidth float64, reducedEdgeCores uint64, reducedCloudBandwidth float64, reducedCloudCores uint64) *Service {
 	standard := &standardSched{
-		bandwidthEdge: standardBandwidth,
-		cpusEdge:      standardCores,
+		BandwidthEdge: standardBandwidth,
+		CpusEdge:      standardCores,
 	}
 	reduced := &reducedSched{
 		bandwidthEdge:  reducedEdgeBandwidth,
@@ -213,7 +213,7 @@ func NewService(importanceFactor float64, serviceID ServiceID, standardBandwidth
 		serviceID:        serviceID,
 		ReducedMode:      reduced,
 		StandardMode:     standard,
-		StandardQoS:      QoS(standard.bandwidthEdge * float64(standard.cpusEdge) * importanceFactor),
+		StandardQoS:      QoS(standard.BandwidthEdge * float64(standard.CpusEdge) * importanceFactor),
 		ReducedQoS:       QoS((reduced.bandwidthEdge*float64(reduced.cpusEdge) + reduced.bandwidthCloud*float64(reduced.cpusCloud)) * importanceFactor),
 		EdgeReducedQoS:   QoS(reduced.bandwidthCloud * float64(reduced.cpusCloud) * importanceFactor),
 	}

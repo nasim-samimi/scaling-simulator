@@ -1,7 +1,0 @@
-NodeName,NumCores,PartitioningHeuristic,NodeSelectionHeuristic
-domain7_worker0_r,28,bestfit,MinMin
-domain7_worker1_r,28,bestfit,MinMin
-domain7_worker2_r,28,bestfit,MinMin
-domain7_worker3_r,28,bestfit,MinMin
-domain7_worker4_r,28,bestfit,MinMin
-domain7_worker5_r,28,bestfit,MinMin

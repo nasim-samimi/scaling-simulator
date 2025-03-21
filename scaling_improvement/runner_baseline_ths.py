@@ -6,12 +6,13 @@ import subprocess
 import itertools
 # import sleep
 
-PARTITIONING_H=['bestfit','worstfit']
+PARTITIONING_H=['bestfit']
 
 # REALLOCATION_H=["HBCI"]
-NODE_SELECTION_H=["MinMin","MaxMax"]
+NODE_SELECTION_H=["Max"]
 # NODE_SELECTION_H=["MinMin"]
-ADDITION=[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
+# ADDITION=[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
+ADDITION=[0,0.2,0.4,0.6,0.8,1.0,1.2,1.4,1.6,1.8,2.0]
 # ADDITION=[0.7,0.8,0.9,1]
 
 edge_node_cost=1
@@ -34,7 +35,8 @@ fixed_config = {
         "intra_node_realloc":False,
         "intra_domain_realloc":False,
         "intra_node_reduced":False,
-        "baseline":True
+        "baseline":True,
+        "node_size": 8,
     },
     "system": {
         "init_node_size": 16,
@@ -45,8 +47,9 @@ fixed_config = {
 
 # Define mutually exclusive options (only one can be enabled at a time)
 # node_sizes = [8,12,16,20,24,28,32]
-node_sizes = [8,16]
-max_scaling_cores=[16,32,64]
+node_sizes = [8]
+max_scaling_cores=[128,96,64,32,16,512,256,200]
+data_dir="data"
 # Generate all parameter combinations
 def generate_param_combinations():
     for size in node_sizes:
@@ -61,11 +64,12 @@ def generate_param_combinations():
 
                         config["system"]["addition"] = addition
                         config["system"]["results_dir"] = f'{results_dir}_{th}'
+                        config["system"]["data_dir"] = data_dir
                         config["orchestrator"]["partition_heuristic"]=p
                         config["orchestrator"]["node_heuristic"]=n
                         config["orchestrator"]["edge_node_cost"]=edge_node_cost
                         config["orchestrator"]["cloud_node_cost"]=cloud_node_cost
-                        config["system"]["node_size"]=size
+                        config["orchestrator"]["node_size"]=size
                         config["orchestrator"]["max_scaling_threshold"]=max_scaling_threshold
 
 

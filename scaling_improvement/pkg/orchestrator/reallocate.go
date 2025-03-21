@@ -46,33 +46,33 @@ func (o *Orchestrator) getReallocatedService(node *Node, t *Service, heuristic c
 		case LI:
 			return 1 / service.ImportanceFactor
 		case HB:
-			return (service.StandardMode.bandwidthEdge)
+			return (service.StandardMode.BandwidthEdge)
 		case HC:
-			return float64(service.StandardMode.cpusEdge)
+			return float64(service.StandardMode.CpusEdge)
 		case HBC:
-			return (service.StandardMode.bandwidthEdge * float64(service.StandardMode.cpusEdge))
+			return (service.StandardMode.BandwidthEdge * float64(service.StandardMode.CpusEdge))
 		case LB:
-			return (1 / service.StandardMode.bandwidthEdge)
+			return (1 / service.StandardMode.BandwidthEdge)
 		case LC:
-			return 1 / float64(service.StandardMode.cpusEdge)
+			return 1 / float64(service.StandardMode.CpusEdge)
 		case LBC:
-			return 1 / (service.StandardMode.bandwidthEdge * float64(service.StandardMode.cpusEdge))
+			return 1 / (service.StandardMode.BandwidthEdge * float64(service.StandardMode.CpusEdge))
 		case LBI:
-			return 1 / (service.ImportanceFactor * (service.StandardMode.bandwidthEdge))
+			return 1 / (service.ImportanceFactor * (service.StandardMode.BandwidthEdge))
 		case LCI:
-			return 1 / (service.ImportanceFactor * (float64(service.StandardMode.cpusEdge)))
+			return 1 / (service.ImportanceFactor * (float64(service.StandardMode.CpusEdge)))
 		case HBI:
-			return (service.ImportanceFactor * service.StandardMode.bandwidthEdge)
+			return (service.ImportanceFactor * service.StandardMode.BandwidthEdge)
 		case HCI:
-			return service.ImportanceFactor * float64(service.StandardMode.cpusEdge)
+			return service.ImportanceFactor * float64(service.StandardMode.CpusEdge)
 		case HBCI:
-			return service.ImportanceFactor * (service.StandardMode.bandwidthEdge * float64(service.StandardMode.cpusEdge))
+			return service.ImportanceFactor * (service.StandardMode.BandwidthEdge * float64(service.StandardMode.CpusEdge))
 		case HBLI:
-			return (service.StandardMode.bandwidthEdge * float64(1/service.ImportanceFactor))
+			return (service.StandardMode.BandwidthEdge * float64(1/service.ImportanceFactor))
 		case HCLI:
-			return float64(service.StandardMode.cpusEdge) * float64(1/service.ImportanceFactor)
+			return float64(service.StandardMode.CpusEdge) * float64(1/service.ImportanceFactor)
 		case LBCI:
-			return 1 / (service.ImportanceFactor * (service.StandardMode.bandwidthEdge * float64(service.StandardMode.cpusEdge)))
+			return 1 / (service.ImportanceFactor * (service.StandardMode.BandwidthEdge * float64(service.StandardMode.CpusEdge)))
 		case LRED:
 			if (service.StandardQoS - service.ReducedQoS) < (t.StandardQoS - t.ReducedQoS) {
 				return 1 / float64(service.StandardQoS)
@@ -82,8 +82,8 @@ func (o *Orchestrator) getReallocatedService(node *Node, t *Service, heuristic c
 				return 1 / float64(service.StandardQoS)
 			}
 		case HBIcC:
-			if service.StandardMode.cpusEdge >= t.StandardMode.cpusEdge {
-				return service.StandardMode.bandwidthEdge * (1 / service.ImportanceFactor)
+			if service.StandardMode.CpusEdge >= t.StandardMode.CpusEdge {
+				return service.StandardMode.BandwidthEdge * (1 / service.ImportanceFactor)
 			}
 			// if service.StandardMode.bandwidthEdge >= t.StandardMode.bandwidthEdge {
 			// 	return 1 / float64(service.StandardMode.cpusEdge)
@@ -114,6 +114,7 @@ func (o *Orchestrator) getReallocatedService(node *Node, t *Service, heuristic c
 				secondSelectedEventID = selectedEventID
 				bestScore = score
 				selectedEventID = eventID
+				// }
 			} else if score > secondBestScore {
 				thirdBestScore = secondBestScore
 				thirdSelectedEventID = secondSelectedEventID
@@ -139,8 +140,8 @@ func (o *Orchestrator) intraNodeRealloc(ctx ReallocContext) (bool, error) {
 	if ctx.ReallocatedEventID == "" {
 		return false, nil
 	}
-	oldBandwidth := o.RunningServices[ctx.ReallocatedEventID].StandardMode.bandwidthEdge
-	_, err := ctx.Node.NodeAdmission.Admission(ctx.Node.AllocatedServices[ctx.ReallocatedEventID].StandardMode.cpusEdge, oldBandwidth, ctx.NewCores, cpuThreshold)
+	oldBandwidth := o.RunningServices[ctx.ReallocatedEventID].StandardMode.BandwidthEdge
+	_, err := ctx.Node.NodeAdmission.Admission(ctx.Node.AllocatedServices[ctx.ReallocatedEventID].StandardMode.CpusEdge, oldBandwidth, ctx.NewCores, cpuThreshold)
 
 	if err != nil {
 		return false, err
@@ -189,7 +190,7 @@ func (o *Orchestrator) intraDomainRealloc(ctx ReallocContext) (bool, error) {
 			log.Info("cores of the other node:", core)
 		}
 
-		allocatedCore, _ := otherNode.NodeAdmission.Admission(otherService.StandardMode.cpusEdge, otherService.StandardMode.bandwidthEdge, otherNode.Cores, cpuThreshold)
+		allocatedCore, _ := otherNode.NodeAdmission.Admission(otherService.StandardMode.CpusEdge, otherService.StandardMode.BandwidthEdge, otherNode.Cores, cpuThreshold)
 
 		log.Info("allocated core:", allocatedCore)
 		if allocatedCore != nil {

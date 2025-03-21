@@ -3,6 +3,7 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 import sys
+import math
 
 figsize=(5,4)
 linewidth=2.6
@@ -15,7 +16,8 @@ partitionHeus=['bestfit']
 reallocationHeus=["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC"]
 main_dir = 'experiments/results/'
 plots=main_dir+'plots/'
-ADDITIONS=[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
+# ADDITIONS=[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
+ADDITIONS=[0,0.2,0.4,0.6,0.8,1.0,1.2,1.4,1.6,1.8,2.0]
 ADDITIONS_LABEL=[0,0.3,0.6,0.9,1.2,1.5,1.8,2.1,2.4,2.7,3]
 node_sizes = [8,12,16,20,24,28,32]
 events_dir='data/events/hightraffic'
@@ -181,7 +183,9 @@ def time_based_avg(values,times):
     # add series of values as a new column to events dataframe because events does not have this column
     df = pd.DataFrame({'values': values, 'EventTime': events['EventTime']})
     # print("df",df)
-    df.dropna(subset=["values"], inplace=True)
+    # df["values"] = pd.to_numeric(df["values"], errors='coerce')
+    # Values.fillna(0,inplace=True)
+    # df.ffill()#(subset=["values"], inplace=True)
     df = df.loc[df.groupby("EventTime")["values"].idxmax()]
 
     df = df.sort_values(by="EventTime").reset_index(drop=True)
@@ -306,6 +310,7 @@ def robustness(dir1='improved/allOpts',dir2='baseline/',metric='cost',flags='all
     averages=pd.DataFrame(columns=['averages','heuristics','addition'])
     dirs=[main_dir+dir1,main_dir+dir2]
     leg=[]
+    nodeHeus=['mmRB']#,'MmRB','mMRB','MMRB']
     #cost
     
     for n in nodeHeus:
@@ -322,6 +327,7 @@ def robustness(dir1='improved/allOpts',dir2='baseline/',metric='cost',flags='all
                 Times_addr= f'{dir}eventTime/nodesize={nodesize}/addition={a}/{n}/{p}/'
                 # print(fulldir)
                 for files in os.listdir(fulldir):
+                    files="HQ.csv"
                     Values = pd.read_csv(f'{fulldir}{files}', header=None)
                     Times=pd.read_csv(f'{Times_addr}{files}',header=None)
                     Times.columns=['EventTime']
@@ -336,8 +342,8 @@ def robustness(dir1='improved/allOpts',dir2='baseline/',metric='cost',flags='all
                     i+=1
                 # for baseline
                 dir=dirs[1]
-                fulldir=f'{dir}{metric}/nodesize={nodesize}/addition={a}/MaxMax/{p}/'
-                Times_addr= f'{dir}eventTime/nodesize={nodesize}/addition={a}/MaxMax/{p}/'
+                fulldir=f'{dir}{metric}/nodesize={nodesize}/addition={a}/Max/{p}/'
+                Times_addr= f'{dir}eventTime/nodesize={nodesize}/addition={a}/Max/{p}/'
                 # print(fulldir)
                 for files in os.listdir(fulldir):
                     Values = pd.read_csv(f'{fulldir}{files}', header=None)
@@ -405,6 +411,7 @@ def robustness_compare_node_core_selection(dir1='improved/allOpts',dir2='baselin
     legend=[]
     max_size=[16,32,64]
     #cost
+    nodeHeus=['MMRB','mmRB','MmRB','mMRB']
     
     for m in max_size:
         plt.figure(figsize=figsize)
@@ -417,43 +424,42 @@ def robustness_compare_node_core_selection(dir1='improved/allOpts',dir2='baselin
                 for a in ADDITIONS:
                     # for heuristics
                     leg=[]
-                    if n not in ['MaxMax','MinMin']:
-                        dir=dirs[0]+f'/max_scaling_threshold={m}/'
-                        fulldir=f'{dir}{metric}/nodesize={nodesize}/addition={a}/{n}/{p}/'
-                        Times_addr= f'{dir}eventTime/nodesize={nodesize}/addition={a}/{n}/{p}/'
-                        # print(fulldir)
-                        for files in os.listdir(fulldir):
-                            Values = pd.read_csv(f'{fulldir}{files}', header=None)
-                            Times=pd.read_csv(f'{Times_addr}{files}',header=None)
-                            Times.columns=['EventTime']
-                            Values.columns = [metric]
+                    dir=dirs[0]+f'/max_scaling_threshold={m}/'
+                    fulldir=f'{dir}{metric}/nodesize={nodesize}/addition={a}/{n}/{p}/'
+                    Times_addr= f'{dir}eventTime/nodesize={nodesize}/addition={a}/{n}/{p}/'
+                    # print(fulldir)
+                    for files in os.listdir(fulldir):
+                        Values = pd.read_csv(f'{fulldir}{files}', header=None)
+                        Times=pd.read_csv(f'{Times_addr}{files}',header=None)
+                        Times.columns=['EventTime']
+                        Values.columns = [metric]
 
-                            if 'qos' in metric:
-                                avg_value = time_based_avg(Values[metric]/10000, Times)
-                            else:
-                                avg_value = time_based_avg(Values[metric], Times)
-                            averages.loc[i]=[avg_value,f'{n}_{p}',a]
-                            leg.append(f'{n}_{p}')
-                            i+=1
+                        if 'qos' in metric:
+                            avg_value = time_based_avg(Values[metric]/10000, Times)
+                        else:
+                            avg_value = time_based_avg(Values[metric], Times)
+                        averages.loc[i]=[avg_value,f'{n}_{p}',a]
+                        leg.append(f'{n}_{p}')
+                        i+=1
                     # for baseline
-                    if n=='MaxMax' and p=='bestfit':
-                        dir=dirs[1]+f'_{m}/'
-                        fulldir=f'{dir}{metric}/nodesize={nodesize}/addition={a}/MaxMax/bestfit/'
-                        Times_addr= f'{dir}eventTime/nodesize={nodesize}/addition={a}/MaxMax/bestfit/'
-                        # print(fulldir)
-                        for files in os.listdir(fulldir):
-                            Values = pd.read_csv(f'{fulldir}{files}', header=None)
-                            Times=pd.read_csv(f'{Times_addr}{files}',header=None)
-                            Times.columns=['EventTime']
-                            Values.columns = [metric]
 
-                            if 'qos' in metric:
-                                avg_value = time_based_avg(Values[metric]/10000, Times)
-                            else:
-                                avg_value = time_based_avg(Values[metric], Times)
-                            averages.loc[i]=[avg_value,'baseline',a]
-                            leg.append('baseline')
-                            i+=1
+                    dir=dirs[1]+f'_{m}/'
+                    fulldir=f'{dir}{metric}/nodesize={nodesize}/addition={a}/Max/bestfit/'
+                    Times_addr= f'{dir}eventTime/nodesize={nodesize}/addition={a}/Max/bestfit/'
+                    # print(fulldir)
+                    for files in os.listdir(fulldir):
+                        Values = pd.read_csv(f'{fulldir}{files}', header=None)
+                        Times=pd.read_csv(f'{Times_addr}{files}',header=None)
+                        Times.columns=['EventTime']
+                        Values.columns = [metric]
+
+                        if 'qos' in metric:
+                            avg_value = time_based_avg(Values[metric]/10000, Times)
+                        else:
+                            avg_value = time_based_avg(Values[metric], Times)
+                        averages.loc[i]=[avg_value,'baseline',a]
+                        leg.append('baseline')
+                        i+=1
     
                 # print(leg)
                 
@@ -507,7 +513,7 @@ def robustness_compare_nodesize(dir1='improved/allOpts',dir2='baseline',metric='
     averages=pd.DataFrame(columns=['averages','heuristics','addition'])
     dirs=[main_dir+dir1,main_dir+dir2]
     legend=[]
-    max_size=[64]
+    max_size=[32]
     nodesizes=[8,16]
     #cost
     plt.figure(figsize=figsize)
@@ -539,8 +545,8 @@ def robustness_compare_nodesize(dir1='improved/allOpts',dir2='baseline',metric='
                     i+=1
                 # for baseline
                 dir=dirs[1]+f'_{m}/'
-                fulldir=f'{dir}{metric}/nodesize={nodesize}/addition={a}/MaxMax/bestfit/'
-                Times_addr= f'{dir}eventTime/nodesize={nodesize}/addition={a}/MaxMax/bestfit/'
+                fulldir=f'{dir}{metric}/nodesize={nodesize}/addition={a}/Max/bestfit/'
+                Times_addr= f'{dir}eventTime/nodesize={nodesize}/addition={a}/Max/bestfit/'
                 # print(fulldir)
                 for files in os.listdir(fulldir):
                     Values = pd.read_csv(f'{fulldir}{files}', header=None)
@@ -563,9 +569,9 @@ def robustness_compare_nodesize(dir1='improved/allOpts',dir2='baseline',metric='
                 continue
             heuristic_averages = averages.groupby('heuristics')['averages'].mean()
             if metric=='cost':
-                top_heuristics = heuristic_averages.nsmallest(5).index
+                top_heuristics = heuristic_averages.nsmallest(4).index
             else:
-                top_heuristics = heuristic_averages.nlargest(5).index
+                top_heuristics = heuristic_averages.nlargest(4).index
             for l in leg:
                 if 'baseline' in l:
                     b=l
@@ -605,13 +611,13 @@ def compute_cost(qospercost:pd.DataFrame,qos:pd.DataFrame):
     cost=cost.fillna(0)
     return cost
 def robustness_max_scaling_size(dir1='improved/allOpts',dir2='baseline',metric='cost',flags='allOpts',nodesize=8):
-    nodeHeus=['MMRB','mmRB','MmRB','mMRB']
+    nodeHeus=['mmRB']#,'MmRB','mMRB','MMRB']
     avg=[]
     columns=[]
     averages=pd.DataFrame(columns=['averages','heuristics','addition'])
     dirs=[main_dir+dir1,main_dir+dir2]
     leg=[]
-    max_size=[16,32,64]
+    max_size=[512,128,200,96,256,64,32,16]
     #cost
 
     for m in max_size:
@@ -629,19 +635,26 @@ def robustness_max_scaling_size(dir1='improved/allOpts',dir2='baseline',metric='
                     Times_addr= f'{dir}/eventTime/nodesize={nodesize}/addition={a}/{n}/{p}/'
                     # print(fulldir)
                     for files in os.listdir(fulldir):
-                        Values = pd.read_csv(f'{fulldir}{files}', header=None)
-                        qos = pd.read_csv(f'{dir}/qos/nodesize={nodesize}/addition={a}/{n}/{p}/{files}', header=None)
-                        qospercost = pd.read_csv(f'{dir}/qosPerCost/nodesize={nodesize}/addition={a}/{n}/{p}/{files}', header=None)
-                        if 'cost' in metric:
-                            Values=compute_cost(qospercost=qospercost,qos=qos)
+                        # files="improved.csv"
+                        Values = pd.read_csv(f'{fulldir}{files}', header=None,dtype={f'{metric}': float})
+                        # qos = pd.read_csv(f'{dir}/qos/nodesize={nodesize}/addition={a}/{n}/{p}/{files}', header=None)
+                        # qospercost = pd.read_csv(f'{dir}/qosPerCost/nodesize={nodesize}/addition={a}/{n}/{p}/{files}', header=None)
+                        # if 'cost' in metric:
+                        #     Values=compute_cost(qospercost=qospercost,qos=qos)
                         Times=pd.read_csv(f'{Times_addr}{files}',header=None)
                         Times.columns=['EventTime']
                         Values.columns = [metric]
+                        # Values=Values.ffill()
+                        
+                        # Values[metric] = pd.to_numeric(Values[metric], errors='coerce')
+                        # Values.fillna(0,inplace=True)
 
+                        # print(fulldir)
+
+                        
+                        avg_value = time_based_avg(Values[metric], Times)
                         if 'qos' in metric:
-                            avg_value = time_based_avg(Values[metric]/10000, Times)
-                        else:
-                            avg_value = time_based_avg(Values[metric], Times)
+                            avg_value=avg_value/10000
                         # print(flags)
                         if 'with' in flags:
                             l=files[:-4]
@@ -652,8 +665,8 @@ def robustness_max_scaling_size(dir1='improved/allOpts',dir2='baseline',metric='
                         i+=1
                     # for baseline
                     dir=dirs[1]+f'_{m}'
-                    fulldir=f'{dir}/{metric}/nodesize={nodesize}/addition={a}/MaxMax/{p}/'
-                    Times_addr= f'{dir}/eventTime/nodesize={nodesize}/addition={a}/MaxMax/{p}/'
+                    fulldir=f'{dir}/{metric}/nodesize={nodesize}/addition={a}/Max/{p}/'
+                    Times_addr= f'{dir}/eventTime/nodesize={nodesize}/addition={a}/Max/{p}/'
                     # print(fulldir)
                     for files in os.listdir(fulldir):
                         Values = pd.read_csv(f'{fulldir}{files}', header=None)
@@ -661,22 +674,23 @@ def robustness_max_scaling_size(dir1='improved/allOpts',dir2='baseline',metric='
                         Times.columns=['EventTime']
                         Values.columns = [metric]
 
+                        avg_value = time_based_avg(Values[metric], Times)
                         if 'qos' in metric:
-                            avg_value = time_based_avg(Values[metric]/10000, Times)
-                        else:
-                            avg_value = time_based_avg(Values[metric], Times)
+                            avg_value = avg_value/10000
+                            
                         averages.loc[i]=[avg_value,'baseline',a]
                         leg.append('baseline')
                         i+=1
     
                 print(leg)
+                print(fulldir)
                 plt.figure(figsize=figsize)
                 # colors = plt.cm.rainbow(np.linspace(0, 1, 15))
                 heuristic_averages = averages.groupby('heuristics')['averages'].mean()
                 if metric=='cost':
-                    top_heuristics = heuristic_averages.nsmallest(8).index
+                    top_heuristics = heuristic_averages.nsmallest(15).index
                 else:
-                    top_heuristics = heuristic_averages.nlargest(8).index
+                    top_heuristics = heuristic_averages.nlargest(15).index
                 for l in leg:
                     if 'baseline' in l:
                         b=l
@@ -837,7 +851,7 @@ from scipy.interpolate import griddata  # For surface interpolation
 
 def robustness_max_scaling_size_3d_sheets(dir1='improved/allOpts', dir2='baseline', metric='cost', flags='allOpts', nodesize=8):
     dirs = [main_dir + dir1, main_dir + dir2]
-    max_size = np.array([16, 32, 64])  # Different max scaling sizes
+    max_size = np.array([ 64])  # Different max scaling sizes
     nodeHeus=['MMRB','mmRB','MmRB','mMRB']
     for n in nodeHeus:
         for p in partitionHeus:
@@ -872,8 +886,8 @@ def robustness_max_scaling_size_3d_sheets(dir1='improved/allOpts', dir2='baselin
 
                     # Process the baseline heuristics
                     dir = dirs[1] + f'_{m}'
-                    fulldir = f'{dir}/{metric}/nodesize={nodesize}/addition={a}/MaxMax/{p}/'
-                    Times_addr = f'{dir}/eventTime/nodesize={nodesize}/addition={a}/MaxMax/{p}/'
+                    fulldir = f'{dir}/{metric}/nodesize={nodesize}/addition={a}/Max/{p}/'
+                    Times_addr = f'{dir}/eventTime/nodesize={nodesize}/addition={a}/Max/{p}/'
 
                     for files in os.listdir(fulldir):
                         Values = pd.read_csv(f'{fulldir}{files}', header=None)
@@ -1133,3 +1147,5 @@ if __name__ == '__main__':
 #     averages.to_csv(f'{savingDir}{nodeHeu}_{partitionHeu}_averages.csv',index=False)
 #     plt.close()
 #     return averages
+
+

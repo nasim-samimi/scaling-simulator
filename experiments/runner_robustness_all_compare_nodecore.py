@@ -13,7 +13,7 @@ node_sizes = [8,16]
 if __name__=='__main__':
     # run()
     for n in node_sizes:
-        dir=f'improved/allOpts/'
+        dir=f'improved/allOpts'
         robustness_compare_node_core_selection(dir1=dir,metric='cost',flags='all',nodesize=n)            
         robustness_compare_node_core_selection(dir1=dir,metric='qos',flags='all',nodesize=n)
         robustness_compare_node_core_selection(dir1=dir,metric='qosPerCost',flags='all',nodesize=n)

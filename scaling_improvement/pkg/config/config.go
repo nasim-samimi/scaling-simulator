@@ -29,13 +29,16 @@ type OrchestratorConfig struct {
 	ReallocationHeuristic Heuristic `yaml:"reallocation_heuristic"`
 	Baseline              bool      `yaml:"baseline"`
 	MaxScalingThreshold   uint64    `yaml:"max_scaling_threshold"`
+
+	NodeSize string `yaml:"node_size"`
 }
 type SystemConfig struct {
 	InitNodeSize   uint64 `yaml:"init_node_size"`
 	ScaledNodeSize uint64 `yaml:"scaled_node_size"`
 	Addition       string `yaml:"addition"`
 	ResultsDir     string `yaml:"results_dir"`
-	NodeSize       string `yaml:"node_size"`
+	DataDir        string `yaml:"data_dir"`
+	Filaname       string `yaml:"file_name"`
 }
 
 type Config struct {

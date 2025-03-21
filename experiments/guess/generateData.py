@@ -51,17 +51,17 @@ NODE_SELECTION_H=["MinMin","MaxMax"]
 ## Constants for events
 ############################################
 EVENTS_LENGTH=1000
-ADDITION=[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
+ADDITION=[0.2,0.4,0.6,0.8,1.0,1.2,1.4,1.6,1.8,2.0]
 # ADDITION=[0.8,0.9,1]
-node_sizes=[8,12,16,20,24,28,32]
+node_sizes=[8,16]
 
 main_dir='data/'
 events_dir='data/events/hightraffic'
 ############################################
 
 if __name__=='__main__':
-    services=ServiceGenerator(NUM_SERVICES,importanceRange,sBandwidthRange,sCoresRange,0)
-    users=UserTiming(services,num_users=100,num_domains=NUM_DOMAINS)
+    services=ServiceGenerator(NUM_SERVICES,importanceRange,sBandwidthRange,sCoresRange,0,dir=main_dir)
+    users=UserTiming(services,num_users=150,num_domains=NUM_DOMAINS)
     print("users are generated")
     EventGenerator(EVENTS_LENGTH,weight=0.4,Users=users,Services=services,dir=events_dir)
     print("events are generated")
@@ -85,4 +85,4 @@ if __name__=='__main__':
     print('done with generating domain nodes')
 
 
-    interference(ADDITION,totalUtil,events,Services,0.3,events_dir)
+    interference(ADDITION,totalUtil,events,Services,0.2,events_dir)
