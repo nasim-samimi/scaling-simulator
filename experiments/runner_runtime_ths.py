@@ -14,7 +14,9 @@ if __name__=='__main__':
     # run()
     for n in node_sizes:
                 dir=f'improved/allOpts/'
-                runtimes(dir1=dir,flags='all',nodesize=n)            
+                runtimes(dir1=dir,flags='all',nodesize=n)    
+                dir=f'improved/none/'
+                runtimes_enhanced(dir1=dir,flags='none',nodesize=n)         
 
 
             

@@ -6,22 +6,82 @@ import (
 	"github.com/nasim-samimi/scaling-simulator/pkg/config"
 )
 
+// func (o *Orchestrator) sortNodes(nodes Nodes, serviceCpus uint64, serviceBandwidth float64) ([]NodeName, error) {
+// 	// sort nodes according to the heuristic
+// 	sortedNodes := []Node{}
+// 	for _, node := range nodes {
+// 		// must filter out the nodes that do not pass admission test
+// 		available, _ := node.NodeAdmission.QuickFilter(serviceCpus, serviceBandwidth, node.Cores)
+// 		if available {
+// 			sortedNodes = append(sortedNodes, *node)
+// 		}
+// 	}
+
+// 	switch o.Config.NodeHeuristic {
+
+// 	case Min:
+// 		// Sort by number of cores (descending) first, then by average residual bandwidth (ascending)
+// 		sort.Slice(sortedNodes, func(i, j int) bool {
+// 			if len(sortedNodes[i].Cores) == len(sortedNodes[j].Cores) {
+// 				return sortedNodes[i].AverageConsumedBandwidth < sortedNodes[j].AverageConsumedBandwidth
+// 			}
+// 			return len(sortedNodes[i].Cores) > len(sortedNodes[j].Cores)
+// 		})
+
+// 	case Max:
+// 		// Sort by number of cores (descending) first, then by average residual bandwidth (descending)
+// 		sort.Slice(sortedNodes, func(i, j int) bool {
+// 			if len(sortedNodes[i].Cores) == len(sortedNodes[j].Cores) {
+// 				return sortedNodes[i].AverageConsumedBandwidth > sortedNodes[j].AverageConsumedBandwidth
+// 			}
+// 			return len(sortedNodes[i].Cores) > len(sortedNodes[j].Cores)
+// 		})
+
+// 	case MMRB:
+// 		// get the node with a core that the core has highest residual bandwidth among all cores in all nodes
+// 		sort.Slice(sortedNodes, func(i, j int) bool {
+// 			return getMaxResBWCore(sortedNodes[i]) > getMaxResBWCore(sortedNodes[j])
+// 		})
+
+// 	case mmRB:
+// 		// get the node with a core that the core has lowest residual bandwidth among all cores in all nodes
+// 		sort.Slice(sortedNodes, func(i, j int) bool {
+// 			return getMinResBWCore(sortedNodes[i]) < getMinResBWCore(sortedNodes[j])
+// 		})
+// 	case mMRB:
+// 		// get the node with a core that the core has highest residual bandwidth among all cores in all nodes
+// 		sort.Slice(sortedNodes, func(i, j int) bool {
+// 			return getMaxResBWCore(sortedNodes[i]) < getMaxResBWCore(sortedNodes[j])
+// 		})
+// 	case MmRB:
+// 		// get the node with a core that the core has lowest residual bandwidth among all cores in all nodes
+// 		sort.Slice(sortedNodes, func(i, j int) bool {
+// 			return getMinResBWCore(sortedNodes[i]) > getMinResBWCore(sortedNodes[j])
+// 		})
+
+// 	}
+// 	// Extract sorted NodeNames
+// 	sortedNodeNames := make([]NodeName, len(sortedNodes))
+// 	for i, node := range sortedNodes {
+// 		sortedNodeNames[i] = node.NodeName
+// 	}
+
+// 	return sortedNodeNames, nil
+// }
+
 func (o *Orchestrator) sortNodes(nodes Nodes, serviceCpus uint64, serviceBandwidth float64) ([]NodeName, error) {
 	// sort nodes according to the heuristic
 	sortedNodes := []Node{}
+	sortedNodesMap := make(map[NodeName][]CoreID)
 	for _, node := range nodes {
 		// must filter out the nodes that do not pass admission test
-		available, _ := node.NodeAdmission.QuickFilter(serviceCpus, serviceBandwidth, node.Cores)
-		if available {
+		available, _ := node.NodeAdmission.Admission(serviceCpus, serviceBandwidth, node.Cores, 100.0)
+		if available != nil {
 			sortedNodes = append(sortedNodes, *node)
-		}
-		log.Info("Node: ", node.NodeName, " Average Residual Bandwidth: ", node.AverageConsumedBandwidth, "total residual bandwidth: ", node.TotalConsumedBandwidth)
-		for _, core := range node.Cores {
-			log.Info("Core: ", core.ID, " Consumed Bandwidth: ", core.ConsumedBandwidth)
+			sortedNodesMap[node.NodeName] = available
 		}
 	}
 
-	log.Info("inside switch case", o.Config.NodeHeuristic)
 	switch o.Config.NodeHeuristic {
 
 	case Min:
@@ -45,23 +105,23 @@ func (o *Orchestrator) sortNodes(nodes Nodes, serviceCpus uint64, serviceBandwid
 	case MMRB:
 		// get the node with a core that the core has highest residual bandwidth among all cores in all nodes
 		sort.Slice(sortedNodes, func(i, j int) bool {
-			return getMaxResBWCore(sortedNodes[i]) > getMaxResBWCore(sortedNodes[j])
+			return getMaxResBWCore(sortedNodes[i], sortedNodesMap[sortedNodes[i].NodeName]) > getMaxResBWCore(sortedNodes[j], sortedNodesMap[sortedNodes[j].NodeName])
 		})
 
 	case mmRB:
 		// get the node with a core that the core has lowest residual bandwidth among all cores in all nodes
 		sort.Slice(sortedNodes, func(i, j int) bool {
-			return getMinResBWCore(sortedNodes[i]) < getMinResBWCore(sortedNodes[j])
+			return getMinResBWCore(sortedNodes[i], sortedNodesMap[sortedNodes[i].NodeName]) < getMinResBWCore(sortedNodes[j], sortedNodesMap[sortedNodes[j].NodeName])
 		})
 	case mMRB:
 		// get the node with a core that the core has highest residual bandwidth among all cores in all nodes
 		sort.Slice(sortedNodes, func(i, j int) bool {
-			return getMaxResBWCore(sortedNodes[i]) < getMaxResBWCore(sortedNodes[j])
+			return getMaxResBWCore(sortedNodes[i], sortedNodesMap[sortedNodes[i].NodeName]) < getMaxResBWCore(sortedNodes[j], sortedNodesMap[sortedNodes[j].NodeName])
 		})
 	case MmRB:
 		// get the node with a core that the core has lowest residual bandwidth among all cores in all nodes
 		sort.Slice(sortedNodes, func(i, j int) bool {
-			return getMinResBWCore(sortedNodes[i]) > getMinResBWCore(sortedNodes[j])
+			return getMinResBWCore(sortedNodes[i], sortedNodesMap[sortedNodes[i].NodeName]) > getMinResBWCore(sortedNodes[j], sortedNodesMap[sortedNodes[j].NodeName])
 		})
 
 	}
@@ -70,7 +130,7 @@ func (o *Orchestrator) sortNodes(nodes Nodes, serviceCpus uint64, serviceBandwid
 	for i, node := range sortedNodes {
 		sortedNodeNames[i] = node.NodeName
 	}
-	log.Info("sorted nodes: ", sortedNodeNames)
+
 	return sortedNodeNames, nil
 }
 
@@ -80,7 +140,6 @@ func (o *Orchestrator) sortNodesNoFilter(nodes Nodes, nodeSelection config.Heuri
 	for _, node := range nodes {
 		// must filter out the nodes that do not pass admission test
 		sortedNodes = append(sortedNodes, *node)
-		log.Info("Node: ", node.NodeName, " Average Residual Bandwidth: ", node.AverageConsumedBandwidth, "total residual bandwidth: ", node.TotalConsumedBandwidth)
 	}
 
 	switch nodeSelection {
@@ -138,22 +197,24 @@ func (o *Orchestrator) sortServicesForUpgrade(services Services) []ServiceID {
 	return sortedEventIDs
 }
 
-func getMinResBWCore(node Node) float64 {
+func getMinResBWCore(node Node, possibleCores []CoreID) float64 {
 	maxBW := 0.0
-	for _, core := range node.Cores {
-		if core.ConsumedBandwidth > maxBW {
-			maxBW = core.ConsumedBandwidth
+	for _, core := range possibleCores {
+		if node.Cores[core].ConsumedBandwidth > maxBW {
+			maxBW = node.Cores[core].ConsumedBandwidth
 		}
 	}
 	return (100.0 - maxBW)
 }
 
-func getMaxResBWCore(node Node) float64 {
+func getMaxResBWCore(node Node, possibleCores []CoreID) float64 {
 	minBW := 100.0
-	for _, core := range node.Cores {
-		if core.ConsumedBandwidth < minBW {
-			minBW = core.ConsumedBandwidth
+	for _, core := range possibleCores {
+
+		if node.Cores[core].ConsumedBandwidth < minBW {
+			minBW = node.Cores[core].ConsumedBandwidth
 		}
 	}
+
 	return (100.0 - minBW)
 }

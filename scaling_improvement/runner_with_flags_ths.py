@@ -10,9 +10,11 @@ import itertools
 PARTITIONING_H=['bestfit']
 
 REALLOCATION_H=["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC","LBCI","LBI","LCI"]
-REALLOCATION_INTRANODE_H=["LB"]#["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC","LBCI","LBI","LCI"]
+# REALLOCATION_INTRANODE_H=["LB"]#["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC","LBCI","LBI","LCI"]
 REALLOCATION_INTRADOMAIN_H=["LB"]#["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC","LBCI","LBI","LCI"]
-REALLOCATION_REDUCED_H=["LBCI"]#["LB","LC","LBC","LBCI","LBI","LCI","LRED","LI"]
+# REALLOCATION_REDUCED_H=["LBCI"]#["LB","LC","LBC","LBCI","LBI","LCI","LRED","LI"]
+REALLOCATION_REDUCED_H=["LIHBC"]#,"LBCI","LRED","LI"]
+REALLOCATION_INTRANODE_H=["LB","HC","LBC"]
 # REALLOCATION_REDUCED_H=["LI"]
 # REALLOCATION_REMOVED_H=["LB","LC","LBC","LBCI","LBI","LCI","LREM","LI"]
 REALLOCATION_REMOVED_H=["LI"]
@@ -28,8 +30,8 @@ cloud_node_cost=3
 # thresholds=[80,100]
 threshold=100
 node_sizes = [8]
-max_scaling_cores=[64,32,512,128,200,96,256,16]
-UPGRADE_H=["HQ"]#,"HQcC","HQcB","HQcCB"]
+max_scaling_cores=[16,32,64,128]
+UPGRADE_H=["HQ"]
 # divide cores by node size.
 # max_scaling_threshold=[1,2,4]
 
@@ -67,10 +69,10 @@ exclusive_options = [
     # "upgrade_service",
     # "node_reclaim",
     # "intra_domain_realloc",
-    "intra_node_realloc",
+    # "intra_node_realloc",
     "intra_node_reduced",
     # "intra_node_removed"
-    "interval_based"
+    # "interval_based"
 ]
 
 # Generate all parameter combinations

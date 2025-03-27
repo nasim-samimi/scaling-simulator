@@ -6,8 +6,8 @@ import random
 # variables: total number of services, importance, bandwidth, cores
 NUM_SERVICES = 100
 importanceRange=range(1,NUM_SERVICES+1)
-sBandwidthRange=range(5,41,1)
-sCoresRange=range(2,7)#range(2,11,2) # max number of cores should be matched with the number of cores in the system
+sBandwidthRange=range(5,81,1)
+sCoresRange=range(1,8)#range(2,11,2) # max number of cores should be matched with the number of cores in the system
 
 SERVICE_IDS=range(NUM_SERVICES)
 
@@ -19,7 +19,7 @@ Services.index = Services['ServiceID']
 def reduced(bandwidth:list,cores:list) -> tuple :
     # require some strategy to generate the reduced parameters
     # reduced strategy has impact on qos
-    rEBandwidth=[5 for x in bandwidth]
+    rEBandwidth=[x/2 for x in bandwidth]
     rECores=[1 for x in cores]
     rCBandwidth=[x/2 for x in bandwidth]
     rCCores=[max(x-1,1) for x in cores]

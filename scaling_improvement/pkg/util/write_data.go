@@ -88,6 +88,7 @@ func WriteResults(results *cnfg.ResultContext, config *cnfg.Config) error {
 		filepath.Join("../experiments/results", baseFolder, "qos", name, reallocName+".csv"):        results.Qos,
 		filepath.Join("../experiments/results", baseFolder, "cost", name, reallocName+".csv"):       results.Cost,
 		filepath.Join("../experiments/results", baseFolder, "eventTime", name, reallocName+".csv"):  results.EventTime,
+		// filepath.Join("../experiments/results", baseFolder, "acceptance", name, reallocName+".csv"): results.Acceptance,
 	}
 
 	// Write results to CSV files

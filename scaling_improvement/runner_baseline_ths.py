@@ -9,7 +9,7 @@ import itertools
 PARTITIONING_H=['bestfit']
 
 # REALLOCATION_H=["HBCI"]
-NODE_SELECTION_H=["Max"]
+NODE_SELECTION_H=["None"]
 # NODE_SELECTION_H=["MinMin"]
 # ADDITION=[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
 ADDITION=[0,0.2,0.4,0.6,0.8,1.0,1.2,1.4,1.6,1.8,2.0]
@@ -48,7 +48,7 @@ fixed_config = {
 # Define mutually exclusive options (only one can be enabled at a time)
 # node_sizes = [8,12,16,20,24,28,32]
 node_sizes = [8]
-max_scaling_cores=[128,96,64,32,16,512,256,200]
+max_scaling_cores=[16,32,64,128,256]#[128,96,64,32,16,512,256,200]
 data_dir="data"
 # Generate all parameter combinations
 def generate_param_combinations():
@@ -63,7 +63,7 @@ def generate_param_combinations():
                         config=fixed_config.copy()
 
                         config["system"]["addition"] = addition
-                        config["system"]["results_dir"] = f'{results_dir}_{th}'
+                        config["system"]["results_dir"] = f'{results_dir}/{th}'
                         config["system"]["data_dir"] = data_dir
                         config["orchestrator"]["partition_heuristic"]=p
                         config["orchestrator"]["node_heuristic"]=n

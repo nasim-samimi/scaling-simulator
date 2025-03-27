@@ -26,12 +26,14 @@ cloud_node_cost=3
 # thresholds=[80,100]
 threshold=100
 node_sizes = [8]
-max_scaling_cores=[512,128,200,96,256,64,32,16]
+max_scaling_cores=[16,32,64,128]#,64,128]#[512,128,200,96,256,64,32,16]
 # divide cores by node size.
 max_scaling_threshold=[1,2,4]
+# interval_length=[5,10,20,30,40,50,100]
+interval_length=[5,10,20,30,40,50]
 
 results_dir = "improved"
-data_dir="data"
+data_dir="data_interval"
 filename="improved"
 
 # Define fixed configuration
@@ -43,7 +45,7 @@ fixed_config = {
         "partition_heuristic": "bestfit",
         "node_heuristic": "MaxMax",
         "reallocation_heuristic": "HB",
-        "upgrade_service":True,
+        "upgrade_service":False,
         "node_reclaim":False,
         "intra_node_realloc":False,
         "intra_domain_realloc":False,
@@ -74,44 +76,46 @@ exclusive_options = [
 # Generate all parameter combinations
 def generate_param_combinations():
     for size in node_sizes:
-        for th in max_scaling_cores:
-            max_scaling_threshold=th/size
-            for addition in ADDITION:
-                for p in PARTITIONING_H:
-                    for n in NODE_SELECTION_H:
-                            # If the option is a reallocation strategy, iterate through heuristics
+        for i in interval_length:
+            for th in max_scaling_cores:
+                max_scaling_threshold=th/size
+                for addition in ADDITION:
+                    for p in PARTITIONING_H:
+                        for n in NODE_SELECTION_H:
+                                # If the option is a reallocation strategy, iterate through heuristics
 
-                        # for heuristic in REALLOCATION_H:
-                            # Create a new config with only one flag enabled
-                        config=fixed_config.copy()
-                        # config["orchestrator"] = {key: False for key in exclusive_options}  # Disable all first
-                        # config["orchestrator"][exclusive_option] = True  # Enable only the current one
-                        # config["orchestrator"][f"reallocation_heuristic"] = heuristic  # Assign heuristic
-                        config["orchestrator"]["intraintra_node_realloc_heu"]="LB"
-                        config["orchestrator"]["intra_node_reduced_heu"]="LBCI"
-                        config["orchestrator"]["domain_node_threshold"] = threshold
+                            # for heuristic in REALLOCATION_H:
+                                # Create a new config with only one flag enabled
+                            config=fixed_config.copy()
+                            # config["orchestrator"] = {key: False for key in exclusive_options}  # Disable all first
+                            # config["orchestrator"][exclusive_option] = True  # Enable only the current one
+                            # config["orchestrator"][f"reallocation_heuristic"] = heuristic  # Assign heuristic
+                            config["orchestrator"]["intraintra_node_realloc_heu"]="LB"
+                            config["orchestrator"]["intra_node_reduced_heu"]="LRED"
+                            config["orchestrator"]["domain_node_threshold"] = threshold
 
-                        config["system"]["addition"] = addition
-                        config["system"]["results_dir"] = f'{results_dir}/allOpts_interval_based/max_scaling_threshold={th}'
-                        config["system"]["data_dir"] = data_dir
-                        config["orchestrator"]["partition_heuristic"]=p
-                        config["orchestrator"]["node_heuristic"]=n
-                        config["orchestrator"]["edge_node_cost"]=edge_node_cost
-                        config["orchestrator"]["cloud_node_cost"]=cloud_node_cost
-                        config["orchestrator"]["node_size"]=size
-                        config["orchestrator"]["max_scaling_threshold"]=max_scaling_threshold
-                        config["orchestrator"]["upgrade_heuristic"]="HQ"
-                        config["system"]["file_name"]=filename
+                            config["system"]["addition"] = addition
+                            config["system"]["results_dir"] = f'{results_dir}/allOpts_interval_based/interval={i}/max_scaling_threshold={th}'
+                            config["system"]["data_dir"] = data_dir
+                            config["orchestrator"]["partition_heuristic"]=p
+                            config["orchestrator"]["node_heuristic"]=n
+                            config["orchestrator"]["edge_node_cost"]=edge_node_cost
+                            config["orchestrator"]["cloud_node_cost"]=cloud_node_cost
+                            config["orchestrator"]["node_size"]=size
+                            config["orchestrator"]["max_scaling_threshold"]=max_scaling_threshold
+                            config["orchestrator"]["upgrade_heuristic"]="HQ"
+                            config["system"]["file_name"]=filename
+                            config["system"]["interval_length"]=i
 
-                        # Write to config.yaml
-                        print(config)
-                        with open("config.yaml", "w") as file:
-                            yaml.dump(config, file, default_flow_style=False)
+                            # Write to config.yaml
+                            print(config)
+                            with open("config.yaml", "w") as file:
+                                yaml.dump(config, file, default_flow_style=False)
 
-                        print(f"Generated config.yaml with: all options, Addition = {addition}, Results Dir = {results_dir}")
+                            print(f"Generated config.yaml with: all options, Addition = {addition}, Results Dir = {results_dir}")
 
-                        # Run the Go script
-                        os.system(f'go run main.go > log.txt')
+                            # Run the Go script
+                            os.system(f'go run main.go > log.txt')
 
     print("All parameter combinations processed.")
     return

@@ -20,12 +20,13 @@ func main() {
 	orchestrator := util.Initialise(config)
 	results := new(cnfg.ResultContext)
 	fmt.Println("../data/events/hightraffic/events_" + config.System.Addition + ".csv")
-	events := util.LoadEventsFromCSV("../data/events/hightraffic/events_" + config.System.Addition + ".csv")
+	events := util.LoadEventsFromCSV("../" + config.System.DataDir + "/events/hightraffic/events_" + config.System.Addition + ".csv")
 	if config.Orchestrator.Baseline {
 		results, err = eve.ProcessEventsBaseline(events, orchestrator)
 	} else {
 		if config.Orchestrator.IntervalBased {
-			results, err = eve.BufferEvents(events, 20.0, orchestrator)
+			events := util.LoadEventsFromCSV("../" + config.System.DataDir + "/events/hightraffic/events_" + config.System.Addition + ".csv")
+			results, err = eve.BufferEvents(events, config.System.IntervalLength, orchestrator) // 20ms was working before
 			// results, err = eve.BufferAllocateEvents(events, 5.0, orchestrator)
 		} else {
 			results, err = eve.ProcessEvents(events, orchestrator)

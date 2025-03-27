@@ -1,5 +1,20 @@
 package events
 
+/*
+#include <pthread.h>
+#include <time.h>
+#include <stdio.h>
+
+static unsigned long long int getProcessTime() {
+    struct timespec t;
+    if (clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t)) {
+        perror("clock_gettime");
+        return 0;
+    }
+    return t.tv_sec * 1000000000LL + t.tv_nsec;
+}
+*/
+import "C"
 import (
 	"math"
 
@@ -38,16 +53,22 @@ func ProcessEvents(events []Event, orchestrator *src.Orchestrator) (*cnfg.Result
 	cost := make([]float64, 0)
 	durations := make([]float64, 0)
 	eventTime := make([]float64, 0)
+	acceptance := make([]float64, 0)
 	// rejected := make([]float64, 0)
 	test := 0
+	e := 0
 	for _, event := range events {
 		eventID := event.EventID
 		log.Info("event:", event)
 		log.Info("service:", orchestrator.AllServices[event.TargetServiceID])
 		if event.EventType == "allocate" {
-			startTime := time.Now()
+			// startTime := time.Now()
+			startTime := C.getProcessTime()
 			allocated, err := orchestrator.Allocate(event.TargetDomainID, event.TargetServiceID, eventID)
-			duration := time.Since(startTime)
+			endTime := C.getProcessTime()
+			cpuTime := endTime - startTime
+			duration := float64(cpuTime) / 1000000
+			// duration := time.Since(startTime)
 			log.Info("Allocate:", allocated, orchestrator.QoS, orchestrator.Cost)
 			log.Info("Time to allocate:", duration)
 			if err != nil {
@@ -56,6 +77,7 @@ func ProcessEvents(events []Event, orchestrator *src.Orchestrator) (*cnfg.Result
 			if allocated {
 				log.Info("/////////////////////")
 				log.Info("service is allocated ")
+				e++
 				log.Info("/////////////////////")
 			} else {
 				log.Info("/////////////////////")
@@ -68,8 +90,9 @@ func ProcessEvents(events []Event, orchestrator *src.Orchestrator) (*cnfg.Result
 			qosPerCost = append(qosPerCost, math.Round(float64(orchestrator.QoS)*1000/float64(orchestrator.Cost))/1000)
 			qos = append(qos, float64(orchestrator.QoS))
 			cost = append(cost, float64(orchestrator.Cost))
-			durations = append(durations, float64(duration.Microseconds())/1000)
+			durations = append(durations, float64(duration))
 			eventTime = append(eventTime, float64(event.EventTime))
+
 			test++
 			// if test == 50 {
 			// 	break
@@ -100,12 +123,14 @@ func ProcessEvents(events []Event, orchestrator *src.Orchestrator) (*cnfg.Result
 	log.Info("QoS per Cost: ", qosPerCost)
 
 	log.Info("Durations: ", durations)
+	acceptance = append(acceptance, float64(e)/float64(len(events)))
 	return &cnfg.ResultContext{
 		QosPerCost: qosPerCost,
 		Qos:        qos,
 		Cost:       cost,
 		Durations:  durations,
 		EventTime:  eventTime,
+		Acceptance: acceptance,
 	}, nil
 }
 
@@ -154,13 +179,12 @@ func BufferEvents(events []Event, interval float64, orchestrator *src.Orchestrat
 			// unprocessedDeallocs = make([]Event, 0)
 			for id, _ := range orchestrator.Domains {
 				// if upgrade {
-				orchestrator.UpgradeServiceIfEnabledIntervalBased(id) // change this to only one domain.
+				// orchestrator.UpgradeServiceIfEnabledIntervalBased(id) // change this to only one domain.
 				// }
 				orchestrator.BasicNodeReclaim(id)
 			}
 
-			t := math.Floor(event.EventTime)
-			initTime = t
+			initTime = math.Floor(event.EventTime/interval) * interval
 			endTime = interval + initTime
 			eventsBuffer = EventsBuffer{
 				DeallocEvents: make(DeallocEvents, 0),
@@ -203,16 +227,16 @@ func sortEvents(allocEvents []Event, allServices src.Services, unprocessedDeallo
 	// sort.Slice(sortedEventIDs, func(i, j int) bool {
 	// 	serviceimpi := allServices[sortedEvents[sortedEventIDs[i]].TargetServiceID].ImportanceFactor
 	// 	serviceimpj := allServices[sortedEvents[sortedEventIDs[j]].TargetServiceID].ImportanceFactor
-	// 	return float64(sortedEvents[sortedEventIDs[i]].TotalUtil)*serviceimpi > float64(sortedEvents[sortedEventIDs[j]].TotalUtil)*serviceimpj
+	// 	return float64(serviceimpi)*float64(sortedEvents[sortedEventIDs[i]].TotalUtil) > float64(serviceimpj)*float64(sortedEvents[sortedEventIDs[j]].TotalUtil)
 	// })
 	sort.Slice(sortedEventIDs, func(i, j int) bool {
 		serviceimpi := allServices[sortedEvents[sortedEventIDs[i]].TargetServiceID].ImportanceFactor
 		serviceimpj := allServices[sortedEvents[sortedEventIDs[j]].TargetServiceID].ImportanceFactor
 		servicebwi := allServices[sortedEvents[sortedEventIDs[i]].TargetServiceID].StandardMode.BandwidthEdge
 		servicebwj := allServices[sortedEvents[sortedEventIDs[j]].TargetServiceID].StandardMode.BandwidthEdge
-		// serviceci := allServices[sortedEvents[sortedEventIDs[i]].TargetServiceID].StandardMode.CpusEdge
-		// servicecj := allServices[sortedEvents[sortedEventIDs[j]].TargetServiceID].StandardMode.CpusEdge
-		return float64(servicebwi*serviceimpi) > float64(servicebwj*serviceimpj) //+servicecj
+		serviceci := allServices[sortedEvents[sortedEventIDs[i]].TargetServiceID].StandardMode.CpusEdge
+		servicecj := allServices[sortedEvents[sortedEventIDs[j]].TargetServiceID].StandardMode.CpusEdge
+		return float64(serviceimpi)/((servicebwi)*float64(serviceci)) > float64(serviceimpj)/((servicebwj)*float64(servicecj)) //+servicecj
 	})
 	return sortedEventIDs, sortedEvents
 
@@ -245,7 +269,7 @@ func allocateBufferedEvents(orchestrator *src.Orchestrator, eventsBuffer EventsB
 		log.Info("allocate event:", aEvent)
 		eventID := aEvent.EventID
 		startTime := time.Now()
-		allocated, err := orchestrator.AllocateBaseline(aEvent.TargetDomainID, aEvent.TargetServiceID, eventID)
+		allocated, err := orchestrator.Allocate(aEvent.TargetDomainID, aEvent.TargetServiceID, eventID)
 		duration := time.Since(startTime)
 		log.Info("Allocate:", allocated, orchestrator.QoS, orchestrator.Cost)
 		log.Info("Time to allocate:", duration)
@@ -278,7 +302,9 @@ func deallocateBufferedEvents(orchestrator *src.Orchestrator, eventsBuffer []Eve
 		eventID := dEvent.EventID
 		if _, ok := orchestrator.RunningServices[eventID]; ok {
 			orchestrator.Deallocate(dEvent.TargetDomainID, dEvent.TargetServiceID, eventID)
-
+			// orchestrator.BasicNodeReclaim(dEvent.TargetDomainID)
+			// orchestrator.UpgradeServiceIfEnabledIntervalBased(dEvent.TargetDomainID) // change this to only one domain.
+			orchestrator.CloudBasicNodeReclaim()
 			log.Info("service exists in the first round")
 			log.Info("/////////////////////")
 		} else {
@@ -370,8 +396,11 @@ func ProcessEventsBaseline(events []Event, orchestrator *src.Orchestrator) (*cnf
 	cost := make([]float64, 0)
 	durations := make([]float64, 0)
 	eventTime := make([]float64, 0)
+	acceptance := make([]float64, 0)
 	// rejected := make([]float64, 0)
 	test := 0
+	e := 0
+
 	for _, event := range events {
 		eventID := event.EventID
 		log.Info("event:", event)
@@ -388,6 +417,7 @@ func ProcessEventsBaseline(events []Event, orchestrator *src.Orchestrator) (*cnf
 			if allocated {
 				log.Info("/////////////////////")
 				log.Info("service is allocated ")
+				e++
 				log.Info("/////////////////////")
 			} else {
 				log.Info("/////////////////////")
@@ -413,7 +443,7 @@ func ProcessEventsBaseline(events []Event, orchestrator *src.Orchestrator) (*cnf
 			if _, ok := orchestrator.RunningServices[eventID]; ok {
 				orchestrator.Deallocate(event.TargetDomainID, event.TargetServiceID, eventID)
 
-				orchestrator.BasicNodeReclaim(event.TargetDomainID)
+				orchestrator.CloudBasicNodeReclaim()
 
 			} else {
 				log.Info("Service does not exist. rejected?")
@@ -425,7 +455,7 @@ func ProcessEventsBaseline(events []Event, orchestrator *src.Orchestrator) (*cnf
 		}
 	}
 	log.Info("QoS per Cost: ", qosPerCost)
-
+	acceptance = append(acceptance, float64(e/len(events)))
 	log.Info("Durations: ", durations)
 	return &cnfg.ResultContext{
 		QosPerCost: qosPerCost,
@@ -433,5 +463,6 @@ func ProcessEventsBaseline(events []Event, orchestrator *src.Orchestrator) (*cnf
 		Cost:       cost,
 		Durations:  durations,
 		EventTime:  eventTime,
+		Acceptance: acceptance,
 	}, nil
 }

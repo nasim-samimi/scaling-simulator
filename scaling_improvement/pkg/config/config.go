@@ -33,12 +33,13 @@ type OrchestratorConfig struct {
 	NodeSize string `yaml:"node_size"`
 }
 type SystemConfig struct {
-	InitNodeSize   uint64 `yaml:"init_node_size"`
-	ScaledNodeSize uint64 `yaml:"scaled_node_size"`
-	Addition       string `yaml:"addition"`
-	ResultsDir     string `yaml:"results_dir"`
-	DataDir        string `yaml:"data_dir"`
-	Filaname       string `yaml:"file_name"`
+	InitNodeSize   uint64  `yaml:"init_node_size"`
+	ScaledNodeSize uint64  `yaml:"scaled_node_size"`
+	Addition       string  `yaml:"addition"`
+	ResultsDir     string  `yaml:"results_dir"`
+	DataDir        string  `yaml:"data_dir"`
+	Filaname       string  `yaml:"file_name"`
+	IntervalLength float64 `yaml:"interval_length"`
 }
 
 type Config struct {

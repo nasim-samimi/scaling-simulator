@@ -26,8 +26,8 @@ def unexpectedServices():
 #     newEventsIDs=range(events['EventID'].max()+1,events['EventID'].max()+newEventsCount+1)
 #     newEvents['EventTime']=newEventsTime
 #     newEvents['EventType']='allocate'
-MAX_UP_TIME=100#int(TOTAL_DURATION/2)
-MIN_UP_TIME=NUM_DOMAINS*3
+MAX_UP_TIME=10000#int(TOTAL_DURATION/2)
+MIN_UP_TIME=8000
 
 
 def generateRandomUser(Users,Services,addedUtil,addition,events:pd.DataFrame):
@@ -44,7 +44,7 @@ def generateRandomUser(Users,Services,addedUtil,addition,events:pd.DataFrame):
         randUsersID=random.choice(potentialUsers.index)
         randUser=Users.loc[randUsersID]
         numAppearance=random.choice(range(1,5))
-        randFirstAppearance=random.choice(range(0,int(events['EventTime'].max()*0.6)))
+        randFirstAppearance=random.choice(range(0,int(events['EventTime'].max()*0.4)))
         arrival=randFirstAppearance
         for n in range(numAppearance):
             eT=arrival
@@ -54,7 +54,7 @@ def generateRandomUser(Users,Services,addedUtil,addition,events:pd.DataFrame):
             for d in randUser['Domains']:
                 i=eventCount
                 for s in randUser['Services']:
-                    extraEvents.loc[ind,'EventTime']=round(eT,1)
+                    extraEvents.loc[ind,'EventTime']=round(eT,2)
                     extraEvents.loc[ind,'EventType']='allocate'
                     extraEvents.loc[ind,'DomainID']=d
                     extraEvents.loc[ind,'ServiceID']=s
@@ -67,7 +67,7 @@ def generateRandomUser(Users,Services,addedUtil,addition,events:pd.DataFrame):
                 i=eventCount
                 
                 for s in randUser['Services']:
-                    extraEvents.loc[ind,'EventTime']=round(eT,1)
+                    extraEvents.loc[ind,'EventTime']=round(eT,2)
                     extraEvents.loc[ind,'EventType']='deallocate'
                     extraEvents.loc[ind,'DomainID']=d
                     extraEvents.loc[ind,'ServiceID']=s
@@ -79,7 +79,7 @@ def generateRandomUser(Users,Services,addedUtil,addition,events:pd.DataFrame):
                     
                 eventCount=i
             if randUser['MinArrivalTime']!=randUser['MaxArrivalTime']:
-                arrival=arrival+random.choice(range(int(randUser['MinArrivalTime']*10),int(randUser['MaxArrivalTime']*10)))/10
+                arrival=arrival+random.choice(range(int(randUser['MinArrivalTime']*10),int(randUser['MaxArrivalTime']*5)))/10
             else:
                 arrival=arrival+randUser['MinArrivalTime']
             if arrival>events['EventTime'].max():
@@ -104,24 +104,44 @@ def generateRandomUpTime(addedUpTime,maxTime):
         
     return upTimes
 
-def generateRandService(addedUtil,addition,events:pd.DataFrame,Services:pd.DataFrame):
+def generateRandService(addedUtil,events:pd.DataFrame,Services:pd.DataFrame):
     u=0
     extraEvents=pd.DataFrame(columns=events.columns)
     ind=0
     i=len(events)+1
+    max_time=events['EventTime'].max()
+    range1 = range(int(max_time * 0.1), int(max_time * 0.2))
+    range2 = range(int(max_time * 0.35), int(max_time * 0.55))
+    range3=range(int(max_time * 0.7), int(max_time * 0.8))
+    # range3=range(int(max_time * 0.9), int(max_time * 1))
+    c_range=list(range1)+list(range2)+list(range3)
+
+    
     while u<addedUtil:
         randServiceID=random.choice(SERVICE_IDS)
         randService=Services.loc[randServiceID]
         if randService['sTotalUtil']==0:
             continue
-        max_time=events['EventTime'].max()
-        range1 = range(int(max_time * 0.1), int(max_time * 0.2))
-        range2 = range(int(max_time * 0.4), int(max_time * 0.5))
-        range3=range(int(max_time * 0.7), int(max_time * 0.9))
-        c_range=list(range1)+list(range2)+list(range3)
+
+        #     ##############################################
+        # valid_events = events[(events['EventTime'].isin(c_range)) & (events['EventType'] == 'deallocate')]
+
+        # if valid_events.empty:
+        #     continue  # Skip iteration if no valid times found
+        # valid_events = valid_events.sample(frac=1).reset_index(drop=True)
+
+        # # Select a random deallocate event
+        # chosen_event = valid_events.iloc[0]  # Pick the first after shuffling
+
+        # # Extract EventTime and DomainID from the selected event
+        # randFirstAppearance = chosen_event["EventTime"] + 0.1
+        # randDomain = chosen_event["DomainID"]
+        # #####################################################
         randFirstAppearance=random.choice(c_range) # the 0.8 is to make sure that the service is not added at the end of the events
         randDomain=random.choice(range(NUM_DOMAINS))
-        randUpTime=random.choice(range(math.ceil(MIN_UP_TIME),math.ceil(MAX_UP_TIME)))
+        #######################################################
+
+        randUpTime=random.choice(range(MIN_UP_TIME,math.ceil(MAX_UP_TIME)))
         util=randService['sTotalUtil']*randUpTime
         if util>addedUtil-u:
             # randUpTime=randUpTime-1
@@ -165,9 +185,17 @@ def interference(additions,totalUtil,events,Services,additionStep,events_dir):
     addedUtil=totalUtil*additionStep
     newEvents=events
     for addition in additions: 
-        newUserEvents=generateRandService(addedUtil,0.5,newEvents,Services)
+        newUserEvents=generateRandService(addedUtil,newEvents,Services)
         newEvents=pd.concat([newEvents,newUserEvents])
         newEvents.sort_values(by='EventTime',inplace=True)
+        event_type_order = {"allocate": 0, "deallocate": 1}
+
+# Sort by EventType first, then by EventTime
+        # newEvents.sort_values(
+        #     by=['EventType', 'EventTime'], 
+        #     ascending=[True, True],  # Ascending for EventType (allocate first), then for EventTime
+        #     key=lambda x: x.map(event_type_order) if x.name == 'EventType' else x  # Apply custom sorting for EventType
+        # )
         newEvents.to_csv(f'{events_dir}/events_{addition}.csv',index=False)
 
         print('done')

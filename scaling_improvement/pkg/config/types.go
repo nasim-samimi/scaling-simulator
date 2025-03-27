@@ -10,4 +10,5 @@ type ResultContext struct {
 	Cost       []float64
 	Durations  []float64
 	EventTime  []float64
+	Acceptance []float64
 }

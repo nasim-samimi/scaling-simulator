@@ -16,13 +16,10 @@ type standardSched struct {
 
 func (s *standardSched) ServiceAllocate(service *Service, node *Node, eventID ServiceID, cpuThreshold float64) (bool, *Service, error) {
 	allocated := false
-	log.Info("Allocating service: ", service)
 	allocatedCores, err := node.NodeAllocate(s.CpusEdge, s.BandwidthEdge, service, eventID, cpuThreshold)
 	if err != nil {
-		log.Info("Error allocating service: ", err)
 		return allocated, service, err
 	}
-	log.Info("node name:", node.NodeName)
 	allocated = true
 
 	newSvc := &Service{
@@ -213,9 +210,11 @@ func NewService(importanceFactor float64, serviceID ServiceID, standardBandwidth
 		serviceID:        serviceID,
 		ReducedMode:      reduced,
 		StandardMode:     standard,
-		StandardQoS:      QoS(standard.BandwidthEdge * float64(standard.CpusEdge) * importanceFactor),
-		ReducedQoS:       QoS((reduced.bandwidthEdge*float64(reduced.cpusEdge) + reduced.bandwidthCloud*float64(reduced.cpusCloud)) * importanceFactor),
-		EdgeReducedQoS:   QoS(reduced.bandwidthCloud * float64(reduced.cpusCloud) * importanceFactor),
+		StandardQoS:      QoS(importanceFactor),
+		// ReducedQoS:       QoS((reduced.bandwidthEdge*float64(reduced.cpusEdge) + reduced.bandwidthCloud*float64(reduced.cpusCloud)) * importanceFactor),
+		// EdgeReducedQoS:   QoS(reduced.bandwidthCloud * float64(reduced.cpusCloud) * importanceFactor),
+		ReducedQoS:     QoS(0.5 * importanceFactor),
+		EdgeReducedQoS: QoS(importanceFactor),
 	}
 
 	return service

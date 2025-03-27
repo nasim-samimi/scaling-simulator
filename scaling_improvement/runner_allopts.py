@@ -16,8 +16,8 @@ REALLOCATION_REDUCED_H=["LB","LC","LBC","LBCI","LBI","LCI","LRED","LI"]
 # REALLOCATION_REMOVED_H=["LB","LC","LBC","LBCI","LBI","LCI","LREM","LI"]
 REALLOCATION_REMOVED_H=["LI"]
 # REALLOCATION_H=["HBCI"]
-NODE_SELECTION_H=["mmRB"]
-# NODE_SELECTION_H=["MMRB","mmRB","MmRB","mMRB"]
+# NODE_SELECTION_H=["mmRB"]
+NODE_SELECTION_H=["mmRB","MmRB","mMRB","MMRB"]
 # ADDITION=[0]
 ADDITION=[0,0.2,0.4,0.6,0.8,1.0,1.2,1.4,1.6,1.8,2.0]
 # ADDITION=[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
@@ -25,9 +25,9 @@ edge_node_cost=1
 cloud_node_cost=3
 # thresholds=[80,100]
 threshold=100
-node_sizes = [8]
+node_sizes = [8,16]
 # max_scaling_cores=[16,32,64,128]
-max_scaling_cores=[128,96,64,32,16,512,256,200]
+max_scaling_cores=[16,32,64,128]#,256]#,128,256,512]#[128,96,64,32,16,512,256,200]
 # divide cores by node size.
 
 results_dir = "improved"
@@ -88,7 +88,7 @@ def generate_param_combinations():
                         # config["orchestrator"][exclusive_option] = True  # Enable only the current one
                         # config["orchestrator"][f"reallocation_heuristic"] = heuristic  # Assign heuristic
                         config["orchestrator"]["intraintra_node_realloc_heu"]="LB"
-                        config["orchestrator"]["intra_node_reduced_heu"]="LBCI"
+                        config["orchestrator"]["intra_node_reduced_heu"]="LI"
                         config["orchestrator"]["domain_node_threshold"] = threshold
 
                         config["system"]["addition"] = addition

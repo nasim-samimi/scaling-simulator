@@ -5,7 +5,7 @@ addition = [0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0]
 
 for a in addition:
     # Load the dataset
-    df = pd.read_csv(f'data/events/hightraffic/events_{a}.csv')
+    df = pd.read_csv(f'data_interval/events/hightraffic/events_{a}.csv')
 
     # Sort by EventTime to process in order
     df = df.sort_values("EventTime")

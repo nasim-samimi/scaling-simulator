@@ -18,7 +18,7 @@ func (o *Orchestrator) BasicNodeReclaim(domainID DomainID) {
 	for nodeName, node := range domain.ActiveNodes {
 		if node.AverageConsumedBandwidth == 0 && node.TotalConsumedBandwidth == 0 {
 			o.edgePowerOffNode(domainID, nodeName)
-			log.Info("node powered off:", nodeName)
+
 		}
 	}
 
@@ -28,7 +28,20 @@ func (o *Orchestrator) BasicNodeReclaim(domainID DomainID) {
 		}
 		if node.AverageConsumedBandwidth == 0 && node.TotalConsumedBandwidth == 0 {
 			o.cloudPowerOffNode(nodeName)
-			log.Info("node powered off:", nodeName)
+
+		}
+	}
+}
+
+func (o *Orchestrator) CloudBasicNodeReclaim() {
+
+	for nodeName, node := range o.Cloud.ActiveNodes {
+		if len(o.Cloud.ActiveNodes) == 1 {
+			break
+		}
+		if node.AverageConsumedBandwidth == 0 && node.TotalConsumedBandwidth == 0 {
+			o.cloudPowerOffNode(nodeName)
+
 		}
 	}
 }
@@ -65,12 +78,12 @@ func (o *Orchestrator) NodeReclaim(domainID DomainID) {
 		// j = l - 1
 		if node.AverageConsumedBandwidth < 0.4 {
 			// for _, otherNodeName := range domain.AlwaysActiveNodes {
-			log.Info("nodes underloaded:", nodeName)
+
 			for j := l - 1; j > i; j-- {
 				otherNodeName := sortedNodes[j]
 				otherNode := domain.ActiveNodes[otherNodeName]
 				if otherNode.AverageConsumedBandwidth < 0.5 {
-					log.Info("other node underloaded:", otherNodeName)
+
 					allocatedService := node.AllocatedServices
 					sortedServices := o.sortServicesBW(allocatedService)
 					for _, eventID := range sortedServices {
@@ -88,7 +101,7 @@ func (o *Orchestrator) NodeReclaim(domainID DomainID) {
 								o.RunningServices[eventID] = svc
 							} else {
 								allAllocated = false
-								log.Info("service was deallocated and not allocated to other node for node reclaim")
+
 							}
 						}
 						if service.AllocationMode == ReducedMode {
@@ -104,7 +117,7 @@ func (o *Orchestrator) NodeReclaim(domainID DomainID) {
 								o.RunningServices[eventID] = svc
 							} else {
 								allAllocated = false
-								log.Info("service was deallocated and not allocated to other node for node reclaim")
+
 							}
 						}
 					}
