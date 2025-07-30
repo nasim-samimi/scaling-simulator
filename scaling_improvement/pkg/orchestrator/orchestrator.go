@@ -270,15 +270,13 @@ func (o *Orchestrator) Allocate(domainID DomainID, serviceID ServiceID, eventID 
 					}
 					// if o.Config.IntraDomainRealloc {
 					// 	log.Info("going to intra domain reallocation")
-					// 	if intraDomainHelp {
-					// 		allocated, err := o.intraDomainRealloc(ctx)
-					// 		if allocated {
-					// 			o.QoS = o.QoS + service.StandardQoS
-					// 			return allocated, nil
-					// 		}
-					// 		if err != nil {
-					// 			log.Info("Error in intra domain reallocation:", err)
-					// 		}
+					// 	allocated, err := o.intraDomainRealloc(ctx)
+					// 	if allocated {
+					// 		o.QoS = o.QoS + service.StandardQoS
+					// 		return allocated, nil
+					// 	}
+					// 	if err != nil {
+					// 		log.Info("Error in intra domain reallocation:", err)
 					// 	}
 					// }
 				}

@@ -2,26 +2,27 @@ orchestrator:
   cloud_node_cost: 3
   domain_node_threshold: 100
   edge_node_cost: 1
-  interval_based: false
+  interval_based: true
   intra_domain_realloc: false
-  intra_node_realloc: true
+  intra_node_realloc: false
   intra_node_reduced: true
   intra_node_reduced_heu: LI
   intra_node_removed: false
   intraintra_node_realloc_heu: LB
-  max_scaling_threshold: 8.0
-  node_heuristic: MMRB
+  max_scaling_threshold: 4.0
+  node_heuristic: mmRB
   node_reclaim: false
-  node_size: 16
+  node_size: 8
   partition_heuristic: bestfit
   reallocation_heuristic: HB
   upgrade_heuristic: HQ
   upgrade_service: false
 system:
   addition: 2.0
-  data_dir: data
+  data_dir: data_interval
   file_name: improved
   init_node_size: 16
+  interval_length: 50
   node_size: 8
-  results_dir: improved/allOpts/max_scaling_threshold=128
+  results_dir: improved/allOpts_interval_based/interval=50/max_scaling_threshold=32
   scaled_node_size: 8

@@ -123,7 +123,7 @@ def generateRandService(addedUtil,events:pd.DataFrame,Services:pd.DataFrame):
             continue
 
         #     ##############################################
-        valid_events = events[(events['EventTime'].isin(c_range))& (events['EventType'] == 'deallocate')] #& (events['EventType'] == 'deallocate')
+        valid_events = events[(events['EventTime'].isin(c_range))] #& (events['EventType'] == 'deallocate')
 
         if valid_events.empty:
             continue  # Skip iteration if no valid times found
@@ -133,7 +133,7 @@ def generateRandService(addedUtil,events:pd.DataFrame,Services:pd.DataFrame):
         chosen_event = valid_events.iloc[0]  # Pick the first after shuffling
 
         # Extract EventTime and DomainID from the selected event
-        r=random.choice(range(1,10))
+        r=random.choice(range(200,500))
         randFirstAppearance = chosen_event["EventTime"] - r
         randDomain = chosen_event["DomainID"]
         # #####################################################

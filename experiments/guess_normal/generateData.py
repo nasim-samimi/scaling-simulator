@@ -48,7 +48,7 @@ EVENTS_LENGTH=100000
 # ADDITION=[0.8,0.9,1]
 node_sizes=[8,16]
 
-main_dir='data_interval/'
+main_dir='data/'
 events_dir=f'{main_dir}events/hightraffic'
 ############################################
 

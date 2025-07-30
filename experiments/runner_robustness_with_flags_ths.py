@@ -6,7 +6,7 @@ from results import *
 
 
 # flags=['interval_based'] #did we have more flags?
-flags=['intra_node_realloc','intra_node_reduced','upgrade_service','interval_based'] #did we have more flags?
+flags=['intra_node_realloc','intra_node_reduced']#,'upgrade_service','interval_based'] #did we have more flags?
 node_sizes = [8]
 
 

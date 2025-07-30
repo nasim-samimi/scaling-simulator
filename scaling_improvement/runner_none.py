@@ -25,7 +25,7 @@ edge_node_cost=1
 cloud_node_cost=3
 # thresholds=[80,100]
 threshold=100
-node_sizes = [8]
+node_sizes = [16]
 # max_scaling_cores=[16,32,64,128]
 max_scaling_cores=[16,32,64,128]
 # divide cores by node size.

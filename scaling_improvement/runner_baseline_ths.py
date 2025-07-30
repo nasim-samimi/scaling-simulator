@@ -19,7 +19,7 @@ edge_node_cost=1
 cloud_node_cost=3
 
 
-results_dir = "baseline"
+results_dir = "baseline_real"
 
 # Define fixed configuration
 fixed_config = {
@@ -47,9 +47,9 @@ fixed_config = {
 
 # Define mutually exclusive options (only one can be enabled at a time)
 # node_sizes = [8,12,16,20,24,28,32]
-node_sizes = [8]
-max_scaling_cores=[16,32,64,128,256]#[128,96,64,32,16,512,256,200]
-data_dir="data"
+node_sizes = [8,16]
+max_scaling_cores=[16,32,64,128]#[128,96,64,32,16,512,256,200]
+data_dir="data_real"
 # Generate all parameter combinations
 def generate_param_combinations():
     for size in node_sizes:

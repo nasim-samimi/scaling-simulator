@@ -44,6 +44,10 @@ func (o *Orchestrator) getReallocatedService(node *Node, t *Service, heuristic c
 
 	calculateScore := func(service *Service, heuristic cnfg.Heuristic) float64 {
 		switch heuristic {
+		case LRED:
+			if (service.StandardQoS - service.ReducedQoS) < (t.StandardQoS - t.ReducedQoS) {
+				return 1 / float64(service.StandardQoS)
+			}
 		case LI:
 			return 1 / service.ImportanceFactor
 		case HB:
@@ -76,10 +80,6 @@ func (o *Orchestrator) getReallocatedService(node *Node, t *Service, heuristic c
 			return 1 / (service.ImportanceFactor * (service.StandardMode.BandwidthEdge * float64(service.StandardMode.CpusEdge)))
 		case LIHBC:
 			return (service.StandardMode.BandwidthEdge * float64(service.StandardMode.CpusEdge)) / (service.ImportanceFactor)
-		case LRED:
-			if (service.StandardQoS - service.ReducedQoS) < (t.StandardQoS - t.ReducedQoS) {
-				return 1 / float64(service.StandardQoS)
-			}
 		case LREM:
 			if service.StandardQoS < (t.StandardQoS - t.ReducedQoS) {
 				return 1 / float64(service.StandardQoS)

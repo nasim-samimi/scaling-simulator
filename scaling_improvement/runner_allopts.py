@@ -17,7 +17,7 @@ REALLOCATION_REDUCED_H=["LB","LC","LBC","LBCI","LBI","LCI","LRED","LI"]
 REALLOCATION_REMOVED_H=["LI"]
 # REALLOCATION_H=["HBCI"]
 # NODE_SELECTION_H=["mmRB"]
-NODE_SELECTION_H=["mmRB","MmRB","mMRB","MMRB"]
+NODE_SELECTION_H=["mmRB"]#,"MmRB","mMRB","MMRB"]
 # ADDITION=[0]
 ADDITION=[0,0.2,0.4,0.6,0.8,1.0,1.2,1.4,1.6,1.8,2.0]
 # ADDITION=[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
@@ -43,7 +43,7 @@ fixed_config = {
         "partition_heuristic": "bestfit",
         "node_heuristic": "MaxMax",
         "reallocation_heuristic": "HB",
-        "upgrade_service":False,
+        "upgrade_service":True,
         "node_reclaim":False,
         "intra_node_realloc":True,
         "intra_domain_realloc":False,

@@ -11,7 +11,7 @@ PARTITIONING_H=['bestfit']
 
 REALLOCATION_H=["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC","LBCI","LBI","LCI"]
 # REALLOCATION_INTRANODE_H=["LB"]#["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC","LBCI","LBI","LCI"]
-REALLOCATION_INTRADOMAIN_H=["LB"]#["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC","LBCI","LBI","LCI"]
+REALLOCATION_INTRADOMAIN_H=["LB","HC","LBC"]#["HBCI","HBI","HCI","HB","HC","HBC","LB","LC","LBC","LBCI","LBI","LCI"]
 # REALLOCATION_REDUCED_H=["LBCI"]#["LB","LC","LBC","LBCI","LBI","LCI","LRED","LI"]
 REALLOCATION_REDUCED_H=["LIHBC"]#,"LBCI","LRED","LI"]
 REALLOCATION_INTRANODE_H=["LB","HC","LBC"]
@@ -68,9 +68,9 @@ fixed_config = {
 exclusive_options = [
     # "upgrade_service",
     # "node_reclaim",
-    # "intra_domain_realloc",
+    "intra_domain_realloc",
     # "intra_node_realloc",
-    "intra_node_reduced",
+    # "intra_node_reduced",
     # "intra_node_removed"
     # "interval_based"
 ]
