@@ -14,12 +14,13 @@ func main() {
 	configPath := flag.String("config", "config.yaml", "Path to the configuration YAML file")
 	flag.Parse()
 	config, err := cnfg.LoadConfig(*configPath)
+	fmt.Println("../" + config.System.DataDir + "/events/hightraffic/events_" + config.System.Addition + ".csv")
 	if err != nil {
 		log.Fatal(err)
 	}
 	orchestrator := util.Initialise(config)
 	results := new(cnfg.ResultContext)
-	fmt.Println("../data/events/hightraffic/events_" + config.System.Addition + ".csv")
+	fmt.Println("../" + config.System.DataDir + config.System.Addition + ".csv")
 	events := util.LoadEventsFromCSV("../" + config.System.DataDir + "/events/hightraffic/events_" + config.System.Addition + ".csv")
 	if config.Orchestrator.Baseline {
 		results, err = eve.ProcessEventsBaseline(events, orchestrator)

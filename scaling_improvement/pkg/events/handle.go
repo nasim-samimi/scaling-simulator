@@ -110,6 +110,7 @@ func ProcessEvents(events []Event, orchestrator *src.Orchestrator) (*cnfg.Result
 				// orchestrator.UpgradeServiceIfEnabled(orchestrator.Config.UpgradeHeuristic, svc, event.TargetDomainID) // change this to only one domain.
 
 				orchestrator.BasicNodeReclaim(event.TargetDomainID)
+				orchestrator.CloudBasicNodeReclaim()
 				// orchestrator.NodeReclaimIfEnabled(event.TargetDomainID)
 			} else {
 				log.Info("Service does not exist. rejected?")

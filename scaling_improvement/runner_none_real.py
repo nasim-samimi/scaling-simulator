@@ -19,13 +19,13 @@ REALLOCATION_REMOVED_H=["LI"]
 NODE_SELECTION_H=["mmRB"]
 # NODE_SELECTION_H=["MMRB","mmRB","MmRB","mMRB"]
 # ADDITION=[0]
-ADDITION=[0,0.2,0.4,0.6,0.8,1.0,1.2,1.4,1.6,1.8,2.0]
+ADDITION=[0.1,0.25,0.5,0.75,1.0]
 # ADDITION=[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
 edge_node_cost=1
 cloud_node_cost=3
 # thresholds=[80,100]
 threshold=100
-node_sizes = [16]
+node_sizes = [8]
 # max_scaling_cores=[16,32,64,128]
 max_scaling_cores=[16,32,64,128]
 # divide cores by node size.

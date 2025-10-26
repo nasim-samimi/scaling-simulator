@@ -109,6 +109,19 @@ for idx in range(len(events_df)):
             connection_state[obj_id] = None
 # Convert and save
 cleaned_df = pd.DataFrame(cleaned_events)
+def drop_if_last_is_allocate(group):
+    if group.iloc[-1]['event_type'] == 'allocate':
+        return group.iloc[:-1]  # drop last row
+    else:
+        return group  # keep all
+
+# Sort by time and apply the function per user
+cleaned_df = (
+    cleaned_df.sort_values(['ID', 'time'])
+    .groupby('ID', group_keys=False)  # preserve flat structure
+    .apply(drop_if_last_is_allocate)
+    .reset_index(drop=True)
+)
 cleaned_df.to_csv(CLEANED_EVENTS_FILE, index=False)
 print(f"Cleaned event list saved to {CLEANED_EVENTS_FILE}")
 

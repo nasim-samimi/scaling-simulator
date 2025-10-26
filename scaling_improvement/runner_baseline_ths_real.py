@@ -12,14 +12,14 @@ PARTITIONING_H=['bestfit']
 NODE_SELECTION_H=["None"]
 # NODE_SELECTION_H=["MinMin"]
 # ADDITION=[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
-ADDITION=[0,0.2,0.4,0.6,0.8,1.0,1.2,1.4,1.6,1.8,2.0]
+ADDITION=[0.1,0.25,0.5,0.75,1.0]
 # ADDITION=[0.7,0.8,0.9,1]
 
 edge_node_cost=1
 cloud_node_cost=3
 
 
-results_dir = "baseline"
+results_dir = "baseline_real"
 
 # Define fixed configuration
 fixed_config = {
@@ -49,7 +49,7 @@ fixed_config = {
 # node_sizes = [8,12,16,20,24,28,32]
 node_sizes = [8,16]
 max_scaling_cores=[16,32,64,128]#[128,96,64,32,16,512,256,200]
-data_dir="data"
+data_dir="data_real"
 # Generate all parameter combinations
 def generate_param_combinations():
     for size in node_sizes:
@@ -81,6 +81,8 @@ def generate_param_combinations():
 
                         # Run the Go script
                         os.system(f'go run main.go > log.txt')
+                        # return
+
 
     print("All parameter combinations processed.")
     return

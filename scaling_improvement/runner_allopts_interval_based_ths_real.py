@@ -20,7 +20,7 @@ NODE_SELECTION_H=["mmRB"]
 # NODE_SELECTION_H=["MMRB","mmRB","MmRB","mMRB"]
 # ADDITION=[0]
 # ADDITION=[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
-ADDITION=[0,0.2,0.4,0.6,0.8,1.0,1.2,1.4,1.6,1.8,2.0]
+ADDITION=[0.1,0.25,0.5,0.75,1.0]
 edge_node_cost=1
 cloud_node_cost=3
 # thresholds=[80,100]
@@ -32,8 +32,8 @@ max_scaling_threshold=[1,2,4]
 # interval_length=[5,10,20,30,40,50,100]
 interval_length=[5,10,20,30,40,50]
 
-results_dir = "improved"
-data_dir="data_interval"
+results_dir = "improved_real"
+data_dir="data_real"
 filename="improved"
 
 # Define fixed configuration

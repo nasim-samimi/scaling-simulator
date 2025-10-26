@@ -350,11 +350,11 @@ def compareBaselines(dir='baseline/'):
                 avgs = avgs.sort_values(by='addition')
                 plt.plot(avgs['addition'], avgs['averages'], marker='o')
             plt.grid(True)
-            plt.xlabel('random workload')
+            plt.xlabel('extra workload (x100%)')
             # plt.xticks(range(len(ADDITIONS)), ADDITIONS)
             plt.ylabel(metric)
             # plt.title(f'Robustness comparison for {metric} - {n}-{p}')    
-            plt.legend(leg)
+            # plt.legend(leg)
             savingDir=f'{plots}/robustness/baselines/nodesize={node_size}/'
             if not os.path.exists(savingDir):
                 os.makedirs(savingDir)
@@ -447,11 +447,11 @@ def robustness(dir1='improved/allOpts',dir2='baseline/',metric='cost',flags='all
                     avgs = avgs.sort_values(by='addition')
                     plt.plot(avgs['addition'], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
             plt.grid(True)
-            plt.xlabel('random workload')
+            plt.xlabel('extra workload (x100%)')
             # plt.xticks(range(len(ADDITIONS)), ADDITIONS)
             plt.ylabel(metric)
             # plt.title(f'Robustness comparison for {metric} - {n}-{p}')    
-            plt.legend(top_heuristics)
+            # plt.legend(top_heuristics)
             savingDir=f'{plots}robustness/{flags}/nodesize={nodesize}/{n}/{p}/'
             if not os.path.exists(savingDir):
                 os.makedirs(savingDir)
@@ -555,7 +555,7 @@ def robustness_compare_node_core_selection(dir1='improved/allOpts',dir2='baselin
                     
                     # plt.plot(avgs['addition'], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
         plt.grid(True)
-        plt.xlabel('random workload',fontsize=fontsizetxt)
+        plt.xlabel('extra workload (x100%)',fontsize=fontsizetxt)
         plt.xticks(fontsize=fontsize)
         plt.yticks(fontsize=fontsize)
         if 'cost' in metric:
@@ -564,7 +564,7 @@ def robustness_compare_node_core_selection(dir1='improved/allOpts',dir2='baselin
             plt.ylabel('QoS per cost',fontsize=fontsizetxt)
         else:
             plt.ylabel('QoS',fontsize=fontsizetxt)
-        plt.legend(legend,fontsize=fontsizetxt)
+        # plt.legend(legend,fontsize=fontsizetxt)
         savingDir=f'{plots}robustness/{flags}/{m}/nodesize={nodesize}/'
         if not os.path.exists(savingDir):
             os.makedirs(savingDir)
@@ -660,11 +660,11 @@ def robustness_compare_cloudcost(flags='allOpts'):
                     
                         # plt.plot(avgs['addition'], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
             plt.grid(True)
-            plt.xlabel('random workload',fontsize=fontsizetxt)
+            plt.xlabel('extra workload (x100%)',fontsize=fontsizetxt)
             plt.xticks(fontsize=fontsize)
             plt.yticks(fontsize=fontsize)
             plt.ylabel(metric,fontsize=fontsizetxt)
-            plt.legend(legend,fontsize=fontsizetxt)
+            # plt.legend(legend,fontsize=fontsizetxt)
             savingDir=f'{plots}robustness/cloud_cost/{m}/'
             if not os.path.exists(savingDir):
                 os.makedirs(savingDir)
@@ -765,11 +765,11 @@ def robustness_compare_qos(flags='allOpts'):
                     
                         # plt.plot(avgs['addition'], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
             plt.grid(True)
-            plt.xlabel('random workload',fontsize=fontsizetxt)
+            plt.xlabel('extra workload (x100%)',fontsize=fontsizetxt)
             plt.xticks(fontsize=fontsize)
             plt.yticks(fontsize=fontsize)
             plt.ylabel(metric,fontsize=fontsizetxt)
-            plt.legend(legend,fontsize=fontsizetxt)
+            # plt.legend(legend,fontsize=fontsizetxt)
             savingDir=f'{plots}robustness/QoS/{m}/'
             if not os.path.exists(savingDir):
                 os.makedirs(savingDir)
@@ -888,7 +888,7 @@ def robustness_compare_nodesize(dir1='improved/allOpts',dir2='baseline',metric='
                 
                 # plt.plot(avgs['addition'], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
         plt.grid(True)
-        plt.xlabel('random workload',fontsize=fontsizetxt)
+        plt.xlabel('extra workload (x100%)',fontsize=fontsizetxt)
         plt.xticks(fontsize=fontsize)
         plt.yticks(fontsize=fontsize)
         if 'cost' in metric:
@@ -898,7 +898,7 @@ def robustness_compare_nodesize(dir1='improved/allOpts',dir2='baseline',metric='
         else:
             plt.ylabel('QoS',fontsize=fontsizetxt)
         # plt.ylabel(metric,fontsize=fontsizetxt)
-        plt.legend(legend,fontsize=fontsizetxt)
+        # plt.legend(legend,fontsize=fontsizetxt)
         savingDir=f'{plots}robustness/{flags}/{m}/'
         if not os.path.exists(savingDir):
             os.makedirs(savingDir)
@@ -1016,7 +1016,7 @@ def robustness_compare_nodesize_none(dir1='improved/allOpts',dir2='baseline',met
                 
                 # plt.plot(avgs['addition'], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
         plt.grid(True)
-        plt.xlabel('random workload',fontsize=fontsizetxt)
+        plt.xlabel('extra workload (x100%)',fontsize=fontsizetxt)
         plt.xticks(fontsize=fontsize)
         plt.yticks(fontsize=fontsize)
         if 'cost' in metric:
@@ -1026,7 +1026,7 @@ def robustness_compare_nodesize_none(dir1='improved/allOpts',dir2='baseline',met
         else:
             plt.ylabel('QoS',fontsize=fontsizetxt)
         # plt.ylabel(metric,fontsize=fontsizetxt)
-        plt.legend(legend,fontsize=fontsizetxt)
+        # plt.legend(legend,fontsize=fontsizetxt)
         savingDir=f'{plots}robustness/{flags}/{m}/'
         if not os.path.exists(savingDir):
             os.makedirs(savingDir)
@@ -1164,7 +1164,7 @@ def robustness_max_scaling_size(dir1='improved/allOpts',dir2='baseline',metric='
                         avgs = avgs.sort_values(by='addition')
                         plt.plot(avgs['addition'], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
                 plt.grid(True)
-                plt.xlabel('random workload',fontsize=fontsizetxt)
+                plt.xlabel('extra workload (x100%)',fontsize=fontsizetxt)
                 if 'cost' in metric:
                     plt.ylabel('cost',fontsize=fontsizetxt)
                 elif 'qosPer' in metric:
@@ -1174,7 +1174,7 @@ def robustness_max_scaling_size(dir1='improved/allOpts',dir2='baseline',metric='
                 plt.xticks(fontsize=fontsize)
                 plt.yticks(fontsize=fontsize)
                 # plt.title(f'Robustness comparison for {metric} - {n}-{p}')    
-                plt.legend(top_heuristics,fontsize=fontsizetxt)
+                # plt.legend(top_heuristics,fontsize=fontsizetxt)
                 savingDir=f'{plots}robustness/{flags}/{m}/nodesize={nodesize}/{n}/{p}/'
                 if not os.path.exists(savingDir):
                     os.makedirs(savingDir)
@@ -1188,7 +1188,7 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
+# from mpl_toolkits.mplot3d import Axes3D
 from scipy.interpolate import griddata  # For surface interpolation
 
 def robustness_max_scaling_size_3d_sheets(dir1='improved/allOpts', dir2='baseline', metric='cost', flags='allOpts', nodesize=8):
@@ -1335,7 +1335,7 @@ def robustness_max_scaling_size_3d_sheets(dir1='improved/allOpts', dir2='baselin
                 
 
             # Set 3D plot labels and grid
-            ax.set_xlabel('random workload',labelpad=15,fontsize=fontsizetxt)
+            ax.set_xlabel('extra workload (x100%)',labelpad=15,fontsize=fontsizetxt)
             ax.set_ylabel('Max Scaling Size',fontsize=fontsizetxt)
             # ax.set_box_aspect([1.75, 1, 1])
             if 'cost' in metric:
@@ -1522,7 +1522,7 @@ def robustness_interval_length_3d_sheets(dir1='improved/allOpts', dir2='baseline
 
             # Set 3D plot labels and grid
             
-            ax.set_xlabel('random workload',labelpad=10,fontsize=fontsizetxt)
+            ax.set_xlabel('extra workload (x100%)',labelpad=10,fontsize=fontsizetxt)
             ax.set_ylabel('Interval Length',fontsize=fontsizetxt)
             # ax.set_box_aspect([1.75, 1, 1])
             # ax.set_zlabel(metric,fontsize=fontsizetxt)
@@ -1710,7 +1710,7 @@ def robustness_cloud_cost_3d_sheets(dir1='improved/allOpts', dir2='baseline', me
                     
 
                 # Set 3D plot labels and grid
-                ax.set_xlabel('random workload',labelpad=10,fontsize=fontsizetxt)
+                ax.set_xlabel('extra workload (x100%)',labelpad=10,fontsize=fontsizetxt)
                 ax.set_ylabel('Cloud Cost',fontsize=fontsizetxt)
                 ax.set_zlabel(metric,fontsize=fontsizetxt)
                 if 'cost' in metric:
@@ -1889,7 +1889,7 @@ def robustness_qos_3d_sheets(dir1='improved/allOpts', dir2='baseline', metric='c
                     
 
                 # Set 3D plot labels and grid
-                ax.set_xlabel('random workload',labelpad=10,fontsize=fontsizetxt)
+                ax.set_xlabel('extra workload (x100%)',labelpad=10,fontsize=fontsizetxt)
                 ax.set_ylabel('QoS',fontsize=fontsizetxt)
                 ax.set_zlabel(metric,fontsize=fontsizetxt)
                 if 'cost' in metric:
@@ -2078,7 +2078,7 @@ def robustness_max_scaling_size_interval_based(dir1='improved/allOpts',dir2='bas
                         avgs = avgs.sort_values(by='addition')
                         plt.plot(avgs['addition'], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8,color='red')
                 plt.grid(True)
-                plt.xlabel('random workload',fontsize=fontsizetxt)
+                plt.xlabel('extra workload (x100%)',fontsize=fontsizetxt)
                 if 'cost' in metric:
                     plt.ylabel('cost',fontsize=fontsizetxt)
                 elif 'qosPer' in metric:
@@ -2087,7 +2087,7 @@ def robustness_max_scaling_size_interval_based(dir1='improved/allOpts',dir2='bas
                     plt.ylabel('QoS',fontsize=fontsizetxt)  
                 plt.xticks(fontsize=fontsize)
                 plt.yticks(fontsize=fontsize)
-                plt.legend(top_heuristics,fontsize=fontsizetxt)
+                # plt.legend(top_heuristics,fontsize=fontsizetxt)
                 savingDir=f'{plots}robustness/{flags}/{m}/size={nodesize}/{n}/{p}/'
                 if not os.path.exists(savingDir):
                     os.makedirs(savingDir)
