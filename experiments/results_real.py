@@ -60,6 +60,8 @@ def plotfiles(main_dir,dir,addition,metric,dirs):
     if not os.path.exists(f'{main_dir}plots/baselines/addition={addition}'):
         os.makedirs(f'{main_dir}plots/baselines/addition={addition}')
     plt.savefig(f'{main_dir}plots/baselines/addition={addition}/{metric}_baseline.pdf', bbox_inches='tight')
+    plt.savefig(f'{main_dir}plots/baselines/addition={addition}/{metric}_baseline.svg', bbox_inches='tight')
+    plt.savefig(f'{main_dir}plots/baselines/addition={addition}/{metric}_baseline.svg', bbox_inches='tight')
     plt.close()
     
     return
@@ -114,6 +116,8 @@ def processfiles(dir1='improved/',dir2='baseline/',metric='cost'):
     if not os.path.exists(savingDir):
         os.makedirs(savingDir)
     plt.savefig(f'{savingDir}{nodeHeu}_{partitionHeu}.pdf')
+    plt.savefig(f'{savingDir}{nodeHeu}_{partitionHeu}.svg')
+    plt.savefig(f'{savingDir}{nodeHeu}_{partitionHeu}.svg')
     averages.to_csv(f'{savingDir}{nodeHeu}_{partitionHeu}_averages.csv',index=False)
     plt.close()
     return averages
@@ -173,8 +177,11 @@ def runtimes_enhanced(dir1='improved/',dir2='baseline/',nodesize=16,flags='allOp
     if not os.path.exists(savingDir):
         os.makedirs(savingDir)
     plt.savefig(f"robustness_runtimes_enhanced_{flags}.pdf", dpi=300, bbox_inches='tight')
+    plt.savefig(f"robustness_runtimes_enhanced_{flags}.svg", dpi=300, bbox_inches='tight')
+    plt.savefig(f"robustness_runtimes_enhanced_{flags}.svg", dpi=300, bbox_inches='tight')
 
     # plt.savefig(f'{savingDir}robustness_runtimes_{flags}.pdf')
+    # plt.savefig(f'{savingDir}robustness_runtimes_{flags}.svg')
     plt.close()
 
 def runtimes(dir1='improved/',dir2='baseline/',nodesize=16,flags='allOpts'):
@@ -232,8 +239,10 @@ def runtimes(dir1='improved/',dir2='baseline/',nodesize=16,flags='allOpts'):
     if not os.path.exists(savingDir):
         os.makedirs(savingDir)
     plt.savefig(f"robustness_runtimes_all_{flags}.pdf", dpi=300, bbox_inches='tight')
+    plt.savefig(f"robustness_runtimes_all_{flags}.svg", dpi=300, bbox_inches='tight')
 
     # plt.savefig(f'{savingDir}robustness_runtimes_{flags}.pdf')
+    # plt.savefig(f'{savingDir}robustness_runtimes_{flags}.svg')
     plt.close()
 
 def time_based_avg(values,times):
@@ -297,6 +306,7 @@ def compareBaselines(dir='baseline/'):
     #     if not os.path.exists(f'{main_dir}/plots/baselines/nodesize={node_size}/addition={addition}'):
     #         os.makedirs(f'{main_dir}/plots/baselines/nodesize={node_size}/addition={addition}')
     #     plt.savefig(f'{main_dir}/plots/baselines/nodesize={node_size}/addition={addition}/runs_baselines.pdf')
+    #     plt.savefig(f'{main_dir}/plots/baselines/nodesize={node_size}/addition={addition}/runs_baselines.svg')
     #     plt.close()
 
     #     fulldir=f'{main_dir}{dir}qosPerCost/nodesize={node_size}/addition={addition}/'
@@ -348,7 +358,7 @@ def compareBaselines(dir='baseline/'):
             for l in leg:
                 avgs = averages[averages['heuristics'] == l]
                 avgs = avgs.sort_values(by='addition')
-                plt.plot(avgs['addition'], avgs['averages'], marker='o')
+                plt.plot(avgs['addition'] * 100, avgs['averages'], marker='o')
             plt.grid(True)
             plt.xlabel('extra workload (%)')
             # plt.xticks(range(len(ADDITIONS)), ADDITIONS)
@@ -359,6 +369,7 @@ def compareBaselines(dir='baseline/'):
             if not os.path.exists(savingDir):
                 os.makedirs(savingDir)
             plt.savefig(f'{savingDir}robustness_{metric}.pdf', bbox_inches='tight')
+            plt.savefig(f'{savingDir}robustness_{metric}.svg', bbox_inches='tight')
             plt.close()
 
     return
@@ -439,13 +450,13 @@ def robustness(dir1='improved/allOpts',dir2='baseline/',metric='cost',flags='all
                     linestyle='--'
                     avgs = averages[averages['heuristics'] == l]
                     avgs = avgs.sort_values(by='addition')
-                    plt.plot(avgs['addition'], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8,color='black')
+                    plt.plot(avgs['addition'] * 100, avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8,color='black')
                 else:
                     marker='x'
                     linestyle='-'
                     avgs = averages[averages['heuristics'] == l]
                     avgs = avgs.sort_values(by='addition')
-                    plt.plot(avgs['addition'], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
+                    plt.plot(avgs['addition'] * 100, avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
             plt.grid(True)
             plt.xlabel('extra workload (%)')
             # plt.xticks(range(len(ADDITIONS)), ADDITIONS)
@@ -456,6 +467,7 @@ def robustness(dir1='improved/allOpts',dir2='baseline/',metric='cost',flags='all
             if not os.path.exists(savingDir):
                 os.makedirs(savingDir)
             plt.savefig(f'{savingDir}robustness_{metric}_{flags}.pdf', bbox_inches='tight')
+            plt.savefig(f'{savingDir}robustness_{metric}_{flags}.svg', bbox_inches='tight')
             plt.close()
 
     return
@@ -547,11 +559,11 @@ def robustness_compare_node_core_selection(dir1='improved/allOpts',dir2='baselin
                     if 'baseline' in l:
                         marker='x'
                         linestyle='-'
-                        plt.plot(avgs['addition'], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8,color='black')
+                        plt.plot(avgs['addition'] * 100, avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8,color='black')
                     else:
                         marker='o'
                         linestyle='--'
-                        plt.plot(avgs['addition'], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
+                        plt.plot(avgs['addition'] * 100, avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
                     
                     # plt.plot(avgs['addition'], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
         plt.grid(True)
@@ -569,6 +581,7 @@ def robustness_compare_node_core_selection(dir1='improved/allOpts',dir2='baselin
         if not os.path.exists(savingDir):
             os.makedirs(savingDir)
         plt.savefig(f'{savingDir}robustness_{metric}_all_nodeheus.pdf', bbox_inches='tight')
+        plt.savefig(f'{savingDir}robustness_{metric}_all_nodeheus.svg', bbox_inches='tight')
         plt.close()
 
 
@@ -652,11 +665,11 @@ def robustness_compare_cloudcost(flags='allOpts'):
                     if 'baseline' in l:
                         marker='x'
                         linestyle='-'
-                        plt.plot(ADDITIONS, avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
+                        plt.plot([a * 100 for a in ADDITIONS], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
                     else:
                         marker='o'
                         linestyle='--'
-                        plt.plot(ADDITIONS, avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
+                        plt.plot([a * 100 for a in ADDITIONS], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
                     
                         # plt.plot(avgs['addition'], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
             plt.grid(True)
@@ -669,6 +682,7 @@ def robustness_compare_cloudcost(flags='allOpts'):
             if not os.path.exists(savingDir):
                 os.makedirs(savingDir)
             plt.savefig(f'{savingDir}robustness_{metric}_all_cloud_cost.pdf', bbox_inches='tight')
+            plt.savefig(f'{savingDir}robustness_{metric}_all_cloud_cost.svg', bbox_inches='tight')
             print(f'{savingDir}robustness_{metric}_all_cloud_cost.pdf')
             plt.close()
 
@@ -757,11 +771,11 @@ def robustness_compare_qos(flags='allOpts'):
                     if 'baseline' in l:
                         marker='x'
                         linestyle='-'
-                        plt.plot(ADDITIONS, avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
+                        plt.plot([a * 100 for a in ADDITIONS], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
                     else:
                         marker='o'
                         linestyle='--'
-                        plt.plot(ADDITIONS, avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
+                        plt.plot([a * 100 for a in ADDITIONS], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
                     
                         # plt.plot(avgs['addition'], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
             plt.grid(True)
@@ -774,6 +788,7 @@ def robustness_compare_qos(flags='allOpts'):
             if not os.path.exists(savingDir):
                 os.makedirs(savingDir)
             plt.savefig(f'{savingDir}robustness_{metric}_all_QoS.pdf', bbox_inches='tight')
+            plt.savefig(f'{savingDir}robustness_{metric}_all_QoS.svg', bbox_inches='tight')
             print(f'{savingDir}robustness_{metric}_all_QoS.pdf')
             plt.close()
 
@@ -876,15 +891,15 @@ def robustness_compare_nodesize(dir1='improved/allOpts',dir2='baseline',metric='
                 if 'baseline' in l and 'e-' not in l:
                     marker='x'
                     linestyle='-'
-                    plt.plot(ADDITIONS, avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
+                    plt.plot([a * 100 for a in ADDITIONS], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
                 elif 'e-' in l:
                     marker='x'
                     linestyle='-'
-                    plt.plot(ADDITIONS, avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
+                    plt.plot([a * 100 for a in ADDITIONS], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
                 else:
                     marker='o'
                     linestyle='--'
-                    plt.plot(ADDITIONS, avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
+                    plt.plot([a * 100 for a in ADDITIONS], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
                 
                 # plt.plot(avgs['addition'], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
         plt.grid(True)
@@ -903,6 +918,7 @@ def robustness_compare_nodesize(dir1='improved/allOpts',dir2='baseline',metric='
         if not os.path.exists(savingDir):
             os.makedirs(savingDir)
         plt.savefig(f'{savingDir}robustness_{metric}_all_nodesizes.pdf', bbox_inches='tight')
+        plt.savefig(f'{savingDir}robustness_{metric}_all_nodesizes.svg', bbox_inches='tight')
         print(f'{savingDir}robustness_{metric}_all_nodesizes.pdf')
         plt.close()
 
@@ -1004,15 +1020,15 @@ def robustness_compare_nodesize_none(dir1='improved/allOpts',dir2='baseline',met
                 if 'baseline' in l and 'e-' not in l:
                     marker='x'
                     linestyle='-'
-                    plt.plot(ADDITIONS, avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
+                    plt.plot([a * 100 for a in ADDITIONS], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
                 elif 'e-' in l:
                     marker='x'
                     linestyle='-'
-                    plt.plot(ADDITIONS, avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
+                    plt.plot([a * 100 for a in ADDITIONS], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
                 else:
                     marker='o'
                     linestyle='--'
-                    plt.plot(ADDITIONS, avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
+                    plt.plot([a * 100 for a in ADDITIONS], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
                 
                 # plt.plot(avgs['addition'], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
         plt.grid(True)
@@ -1031,6 +1047,7 @@ def robustness_compare_nodesize_none(dir1='improved/allOpts',dir2='baseline',met
         if not os.path.exists(savingDir):
             os.makedirs(savingDir)
         plt.savefig(f'{savingDir}robustness_{metric}_all_none_nodesizes.pdf', bbox_inches='tight')
+        plt.savefig(f'{savingDir}robustness_{metric}_all_none_nodesizes.svg', bbox_inches='tight')
         print(f'{savingDir}robustness_{metric}_all_none_nodesizes.pdf')
         plt.close()
 
@@ -1150,19 +1167,19 @@ def robustness_max_scaling_size(dir1='improved/allOpts',dir2='baseline',metric='
                         linestyle='-'
                         avgs = averages[averages['heuristics'] == l]
                         avgs = avgs.sort_values(by='addition')
-                        plt.plot(avgs['addition'], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8,color='black')
+                        plt.plot(avgs['addition'] * 100, avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8,color='black')
                     elif 'e-' in l:
                         marker='x'
                         linestyle='-'
                         avgs = averages[averages['heuristics'] == l]
                         avgs = avgs.sort_values(by='addition')
-                        plt.plot(avgs['addition'], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8,color='green')
+                        plt.plot(avgs['addition'] * 100, avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8,color='green')
                     else:
                         marker='o'
                         linestyle='--'
                         avgs = averages[averages['heuristics'] == l]
                         avgs = avgs.sort_values(by='addition')
-                        plt.plot(avgs['addition'], avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
+                        plt.plot(avgs['addition'] * 100, avgs['averages'], marker=marker,linestyle=linestyle, label=l,linewidth=linewidth,markersize=8)
                 plt.grid(True)
                 plt.xlabel('extra workload (%)',fontsize=fontsizetxt)
                 if 'cost' in metric:
@@ -1179,6 +1196,7 @@ def robustness_max_scaling_size(dir1='improved/allOpts',dir2='baseline',metric='
                 if not os.path.exists(savingDir):
                     os.makedirs(savingDir)
                 plt.savefig(f'{savingDir}robustness_{metric}_{flags}.pdf', bbox_inches='tight')
+                plt.savefig(f'{savingDir}robustness_{metric}_{flags}.svg', bbox_inches='tight')
                 plt.close()
 
     return
@@ -1283,7 +1301,7 @@ def robustness_max_scaling_size_3d_sheets(dir1='improved/allOpts', dir2='baselin
                         continue
                     
                     avgs = avgs.sort_values(by='addition')
-                    X_vals.extend(avgs['addition'].values)
+                    X_vals.extend(avgs['addition'].values * 100)
                     Y_vals.extend([m] * len(avgs))  # Y-axis is max_size
                     Z_vals.extend(avgs['averages'].values)
 
@@ -1370,7 +1388,9 @@ def robustness_max_scaling_size_3d_sheets(dir1='improved/allOpts', dir2='baselin
             if not os.path.exists(savingDir):
                 os.makedirs(savingDir)
             
-            plt.savefig(f'{savingDir}robustness_{metric}_3D_{flags}_sheets.pdf', bbox_inches='tight',pad_inches=0.35)
+            plt.subplots_adjust(bottom=0.15, top=0.95, left=0.1, right=0.95)
+            plt.savefig(f'{savingDir}robustness_{metric}_3D_{flags}_sheets.pdf', bbox_inches='tight',pad_inches=0.8)
+            plt.savefig(f'{savingDir}robustness_{metric}_3D_{flags}_sheets.svg', bbox_inches='tight',pad_inches=0.8)
             plt.close()  # Clear the plot for the next iteration
 
 
@@ -1469,7 +1489,7 @@ def robustness_interval_length_3d_sheets(dir1='improved/allOpts', dir2='baseline
                         continue
                     
                     avgs = avgs.sort_values(by='addition')
-                    X_vals.extend(avgs['addition'].values)
+                    X_vals.extend(avgs['addition'].values * 100)
                     Y_vals.extend([intl] * len(avgs))  # Y-axis is max_size
                     Z_vals.extend(avgs['averages'].values)
 
@@ -1556,7 +1576,9 @@ def robustness_interval_length_3d_sheets(dir1='improved/allOpts', dir2='baseline
             if not os.path.exists(savingDir):
                 os.makedirs(savingDir)
             
-            plt.savefig(f'{savingDir}robustness_{metric}_3D_{flags}_sheets.pdf', bbox_inches='tight',pad_inches=0.35)
+            plt.subplots_adjust(bottom=0.15, top=0.95, left=0.1, right=0.95)
+            plt.savefig(f'{savingDir}robustness_{metric}_3D_{flags}_sheets.pdf', bbox_inches='tight',pad_inches=0.8)
+            plt.savefig(f'{savingDir}robustness_{metric}_3D_{flags}_sheets.svg', bbox_inches='tight',pad_inches=0.8)
             plt.close()  # Clear the plot for the next iteration
 
 def robustness_cloud_cost_3d_sheets(dir1='improved/allOpts', dir2='baseline', metric='cost', flags='allOpts', nodesize=8):
@@ -1658,7 +1680,7 @@ def robustness_cloud_cost_3d_sheets(dir1='improved/allOpts', dir2='baseline', me
                             continue
                         
                         avgs = avgs.sort_values(by='addition')
-                        X_vals.extend(avgs['addition'].values)
+                        X_vals.extend(avgs['addition'].values * 100)
                         Y_vals.extend([c] * len(avgs))  # Y-axis is max_size
                         Z_vals.extend(avgs['averages'].values)
 
@@ -1735,7 +1757,9 @@ def robustness_cloud_cost_3d_sheets(dir1='improved/allOpts', dir2='baseline', me
                 if not os.path.exists(savingDir):
                     os.makedirs(savingDir)
                 
-                plt.savefig(f'{savingDir}robustness_cloud_cost_{metric}_sheets.pdf', bbox_inches='tight',pad_inches=0.35)
+                plt.subplots_adjust(bottom=0.15, top=0.95, left=0.1, right=0.95)
+                plt.savefig(f'{savingDir}robustness_cloud_cost_{metric}_sheets.pdf', bbox_inches='tight',pad_inches=0.8)
+                plt.savefig(f'{savingDir}robustness_cloud_cost_{metric}_sheets.svg', bbox_inches='tight',pad_inches=0.8)
                 plt.close()  # Clear the plot for the next iteration
 
 def robustness_qos_3d_sheets(dir1='improved/allOpts', dir2='baseline', metric='cost', flags='allOpts', nodesize=8):
@@ -1837,7 +1861,7 @@ def robustness_qos_3d_sheets(dir1='improved/allOpts', dir2='baseline', metric='c
                             continue
                         
                         avgs = avgs.sort_values(by='addition')
-                        X_vals.extend(avgs['addition'].values)
+                        X_vals.extend(avgs['addition'].values * 100)
                         Y_vals.extend([c] * len(avgs))  # Y-axis is max_size
                         Z_vals.extend(avgs['averages'].values)
 
@@ -1914,7 +1938,9 @@ def robustness_qos_3d_sheets(dir1='improved/allOpts', dir2='baseline', metric='c
                 if not os.path.exists(savingDir):
                     os.makedirs(savingDir)
                 
-                plt.savefig(f'{savingDir}robustness_QoS_{metric}_sheets.pdf', bbox_inches='tight',pad_inches=0.35)
+                plt.subplots_adjust(bottom=0.15, top=0.95, left=0.1, right=0.95)
+                plt.savefig(f'{savingDir}robustness_QoS_{metric}_sheets.pdf', bbox_inches='tight',pad_inches=0.8)
+                plt.savefig(f'{savingDir}robustness_QoS_{metric}_sheets.svg', bbox_inches='tight',pad_inches=0.8)
                 plt.close()  # Clear the plot for the next iteration
 
 
@@ -2115,6 +2141,7 @@ def robustness_max_scaling_size_interval_based(dir1='improved/allOpts',dir2='bas
                 if not os.path.exists(savingDir):
                     os.makedirs(savingDir)
                 plt.savefig(f'{savingDir}robustness_{metric}_interval_based.pdf', bbox_inches='tight')
+                plt.savefig(f'{savingDir}robustness_{metric}_interval_based.svg', bbox_inches='tight')
                 plt.close()
 
     return
