@@ -5,10 +5,10 @@ import numpy as np
 import sys
 import math
 
-figsize=(4,3)
+figsize=(8,3)
 linewidth=2.6
-fontsize=13
-fontsizetxt=15
+fontsize=11
+fontsizetxt=13
 
 # nodeHeus=['MMRB','mmRB','MmRB','mMRB']
 # nodeHeus=['MMRB','mmRB','MmRB','mMRB','MaxMax','MinMin']
@@ -1281,7 +1281,7 @@ def robustness_max_scaling_size_3d_sheets(dir1='improved/allOpts', dir2='baselin
 
             # Create a new 3D figure for each `(n, p)` combination
             # fig = plt.figure(figsize=(6,5))
-            fig = plt.figure(figsize=(5,4))
+            fig = plt.figure(figsize=(6,4))
             ax = fig.add_subplot(111, projection='3d')
 
             # Distinguishable colors for each heuristic
@@ -1468,7 +1468,7 @@ def robustness_interval_length_3d_sheets(dir1='improved/allOpts', dir2='baseline
                 top_heuristics = top_heuristics.append(pd.Index([baseline_label]))
 
             # Create a new 3D figure for each `(n, p)` combination
-            fig = plt.figure(figsize=(5,4))
+            fig = plt.figure(figsize=(6,4))
             # fig = plt.figure(figsize=(6,5))
             ax = fig.add_subplot(111, projection='3d')
 
@@ -1659,7 +1659,7 @@ def robustness_cloud_cost_3d_sheets(dir1='improved/allOpts', dir2='baseline', me
                     top_heuristics = top_heuristics.append(pd.Index([baseline_label]))
 
                 # Create a new 3D figure for each `(n, p)` combination
-                fig = plt.figure(figsize=(4,3))
+                fig = plt.figure(figsize=(6,4))
                 ax = fig.add_subplot(111, projection='3d')
                 # print(files,"files:::")
 
@@ -1840,7 +1840,7 @@ def robustness_qos_3d_sheets(dir1='improved/allOpts', dir2='baseline', metric='c
                     top_heuristics = top_heuristics.append(pd.Index([baseline_label]))
 
                 # Create a new 3D figure for each `(n, p)` combination
-                fig = plt.figure(figsize=(6,5))
+                fig = plt.figure(figsize=(6,4))
                 ax = fig.add_subplot(111, projection='3d')
                 # print(files,"files:::")
 
